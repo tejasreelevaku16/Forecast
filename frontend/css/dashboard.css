@@ -1,0 +1,885 @@
+/* ==========================================================================
+   WeatherTrust AI — Dashboard Layout & Components (Phase 1)
+   ========================================================================== */
+
+/* Main App Shell Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar Navigation */
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--bg-card-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+
+.brand-section {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.brand-text h1 {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.brand-tagline {
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* Nav Links */
+.nav-menu {
+  list-style: none;
+  padding: 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-item a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-item a:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.nav-item.active a {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(59, 130, 246, 0.05));
+  color: var(--accent-cyan);
+  border-left: 3px solid var(--accent-cyan);
+  font-weight: 600;
+}
+
+.nav-item .nav-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--bg-card-border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Main Content Area */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Header */
+.top-header {
+  height: var(--header-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.search-box-container {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  width: 100%;
+}
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  z-index: 150;
+}
+.search-dropdown.active {
+  display: block;
+}
+.search-dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.search-dropdown-item:hover {
+  background: var(--bg-surface-hover);
+  color: var(--accent-cyan);
+}
+
+/* Quick City Filter Pills */
+.quick-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.pill-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-secondary);
+  font-size: 0.775rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pill-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.pill-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--risk-low);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+/* Dashboard Content Grid */
+.dashboard-content {
+  padding: 24px 28px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Primary Top Grid: Weather Hero + Forecast Trust Layer Hero */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 24px;
+}
+
+/* Current Weather Card */
+.weather-hero-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(24, 35, 60, 0.9), rgba(17, 26, 46, 0.95));
+}
+
+.weather-hero-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.location-title {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.location-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.temp-display-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 24px;
+}
+
+.temp-primary {
+  font-size: 3.8rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.temp-primary sup {
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--accent-cyan);
+}
+
+.weather-condition-box {
+  text-align: right;
+}
+
+.weather-cond-icon {
+  font-size: 2.8rem;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.weather-cond-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.temp-subtext {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.temp-range-pills {
+  display: flex;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--bg-card-border);
+  font-size: 0.825rem;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   FORECAST TRUST CARD (SIH Innovation Spotlight)
+   ========================================================================== */
+.trust-hero-card {
+  padding: 24px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: linear-gradient(145deg, rgba(24, 35, 60, 0.95), rgba(15, 23, 42, 0.98));
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.trust-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #38bdf8, #f59e0b, #ef4444);
+}
+
+.trust-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.trust-title-group h2 {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trust-subtitle {
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  font-weight: 500;
+}
+
+/* Trust Metrics Dual Row */
+.trust-metrics-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(10, 15, 29, 0.6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--bg-card-border);
+}
+
+.metric-block {
+  text-align: center;
+  padding: 4px 8px;
+}
+.metric-block:not(:last-child) {
+  border-right: 1px solid var(--bg-card-border);
+}
+
+.metric-label {
+  font-size: 0.725rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.score-display {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-low {
+  color: var(--risk-high);
+}
+.score-mod {
+  color: var(--risk-mod);
+}
+.score-high {
+  color: var(--risk-low);
+}
+
+.score-sublabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.bust-prob-value {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--risk-high);
+  line-height: 1;
+}
+
+.stability-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--risk-high);
+  margin-top: 4px;
+}
+
+/* Explainable "Why?" Section */
+.why-section {
+  margin-bottom: 18px;
+}
+
+.section-label-small {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.why-factor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.why-factor-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--risk-high);
+}
+
+.why-factor-item.mod {
+  border-left-color: var(--risk-mod);
+}
+
+.why-icon {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.why-content h4 {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.why-content p {
+  font-size: 0.775rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* User Recommendation Box */
+.recommendation-card {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--risk-high-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rec-icon {
+  font-size: 1.4rem;
+  color: var(--risk-high);
+}
+
+.rec-text h5 {
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  color: var(--risk-high);
+  margin-bottom: 2px;
+}
+
+.rec-text p {
+  font-size: 0.825rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* 8-Grid Weather Details Section */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.detail-card {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.detail-icon-wrap {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: var(--accent-cyan);
+  border: 1px solid var(--bg-card-border);
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-sub {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+/* Hourly Forecast Timeline */
+.hourly-container {
+  padding: 20px 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hourly-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-behavior: smooth;
+}
+
+.hourly-card {
+  flex: 0 0 100px;
+  padding: 14px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.hourly-card:hover {
+  background: var(--bg-surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.hourly-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hourly-icon {
+  font-size: 1.6rem;
+}
+
+.hourly-temp {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hourly-rain {
+  font-size: 0.725rem;
+  color: var(--accent-cyan);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Day 1-10 Dual Forecast Table */
+.daily-container {
+  padding: 20px 24px;
+}
+
+.daily-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.daily-row {
+  display: grid;
+  grid-template-columns: 140px 180px 100px 120px 1fr 140px;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+.daily-row:hover {
+  background: var(--bg-surface-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.daily-row.highlight-day6 {
+  border-color: var(--risk-high-border);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.daily-day-col {
+  display: flex;
+  flex-direction: column;
+}
+.daily-day-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.daily-day-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.daily-cond-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.daily-cond-icon {
+  font-size: 1.4rem;
+}
+
+.daily-temp-col {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.daily-temp-low {
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.daily-rain-col {
+  font-size: 0.825rem;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+/* Trust Progress Bar in Table */
+.daily-trust-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.trust-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.trust-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.trust-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.daily-risk-badge-col {
+  text-align: right;
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.chart-card {
+  padding: 20px 24px;
+}
+
+.chart-container-inner {
+  position: relative;
+  height: 280px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* Map Section */
+.map-card {
+  padding: 20px 24px;
+}
+
+.map-frame-wrapper {
+  position: relative;
+  height: 380px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--bg-card-border);
+  margin-top: 14px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
+}
+
+.map-overlay-legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bg-card-border);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-overlay-legend h5 {
+  font-size: 0.725rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1200px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .daily-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .daily-trust-col, .daily-rain-col {
+    grid-column: span 2;
+    padding: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none; /* In Phase 1 mobile collapse */
+  }
+  .top-header {
+    padding: 0 16px;
+  }
+  .dashboard-content {
+    padding: 16px;
+  }
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  .trust-metrics-summary {
+    grid-template-columns: 1fr;
+  }
+  .metric-block:not(:last-child) {
+    border-right: none;
+    border-bottom: 1px solid var(--bg-card-border);
+    padding-bottom: 12px;
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "krishna_district": {
+    "location": "Krishna District, Andhra Pradesh",
+    "focus_lead_day": 6,
+    "reliability_score": 24,
+    "confidence_label": "LOW CONFIDENCE",
+    "bust_probability_pct": 76,
+    "risk_level": "HIGH",
+    "forecast_stability": "LOW",
+    "demo_notice": "DEMO DATA — AI reliability model will be integrated later.",
+    "is_demo": true,
+    "reasons": [
+      {
+        "id": "reason-1",
+        "icon_type": "error",
+        "title": "Historical forecast error is high",
+        "description": "Similar Day-6 forecasts for this region historically exhibited mean absolute errors exceeding 45mm.",
+        "severity": "high"
+      },
+      {
+        "id": "reason-2",
+        "icon_type": "drift",
+        "title": "Forecast changed significantly (Drift)",
+        "description": "The predicted 24h rainfall jumped from 25 mm to 80 mm (+55 mm) between the last two model cycles.",
+        "severity": "high"
+      },
+      {
+        "id": "reason-3",
+        "icon_type": "variability",
+        "title": "Regional variability is high",
+        "description": "Similar historical atmospheric conditions along coastal Andhra produced divergent, localized rainbands.",
+        "severity": "moderate"
+      }
+    ],
+    "drift_monitor": {
+      "target_lead_day": 6,
+      "variable_name": "24h Cumulative Rainfall",
+      "previous_run_value": 25.0,
+      "latest_run_value": 80.0,
+      "unit": "mm",
+      "absolute_change": 55.0,
+      "stability_level": "LOW"
+    },
+    "recommendation": "Do not make important decisions based only on this forecast. Check the next forecast update."
+  }
+}

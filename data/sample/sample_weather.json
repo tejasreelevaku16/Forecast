@@ -1,0 +1,117 @@
+{
+  "krishna_district": {
+    "location": "Krishna District",
+    "region": "Andhra Pradesh",
+    "country": "India",
+    "latitude": 16.5062,
+    "longitude": 80.648,
+    "current": {
+      "temperature_c": 31.5,
+      "feels_like_c": 37.0,
+      "condition": "Humid & Partly Cloudy",
+      "condition_icon": "cloud-sun",
+      "humidity_pct": 78,
+      "wind_speed_kmh": 19.5,
+      "wind_direction": "SE",
+      "pressure_hpa": 1007,
+      "precipitation_mm": 2.4,
+      "rain_chance_pct": 40,
+      "uv_index": 7,
+      "visibility_km": 8.5,
+      "sunrise": "06:01 AM",
+      "sunset": "06:12 PM"
+    }
+  },
+  "hyderabad": {
+    "location": "Hyderabad",
+    "region": "Telangana",
+    "country": "India",
+    "latitude": 17.385,
+    "longitude": 78.4867,
+    "current": {
+      "temperature_c": 29.0,
+      "feels_like_c": 32.5,
+      "condition": "Scattered Clouds",
+      "condition_icon": "cloud",
+      "humidity_pct": 65,
+      "wind_speed_kmh": 14.0,
+      "wind_direction": "ENE",
+      "pressure_hpa": 1011,
+      "precipitation_mm": 0.0,
+      "rain_chance_pct": 20,
+      "uv_index": 8,
+      "visibility_km": 9.0,
+      "sunrise": "06:08 AM",
+      "sunset": "06:19 PM"
+    }
+  },
+  "bengaluru": {
+    "location": "Bengaluru",
+    "region": "Karnataka",
+    "country": "India",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "current": {
+      "temperature_c": 24.5,
+      "feels_like_c": 25.0,
+      "condition": "Mild Breeze & Overcast",
+      "condition_icon": "cloud",
+      "humidity_pct": 72,
+      "wind_speed_kmh": 18.0,
+      "wind_direction": "W",
+      "pressure_hpa": 1014,
+      "precipitation_mm": 1.2,
+      "rain_chance_pct": 35,
+      "uv_index": 6,
+      "visibility_km": 10.0,
+      "sunrise": "06:09 AM",
+      "sunset": "06:17 PM"
+    }
+  },
+  "delhi": {
+    "location": "Delhi",
+    "region": "NCR",
+    "country": "India",
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "current": {
+      "temperature_c": 33.0,
+      "feels_like_c": 36.0,
+      "condition": "Hazy Sunshine",
+      "condition_icon": "sun",
+      "humidity_pct": 55,
+      "wind_speed_kmh": 11.0,
+      "wind_direction": "NW",
+      "pressure_hpa": 1010,
+      "precipitation_mm": 0.0,
+      "rain_chance_pct": 10,
+      "uv_index": 7,
+      "visibility_km": 6.0,
+      "sunrise": "06:14 AM",
+      "sunset": "06:18 PM"
+    }
+  },
+  "mumbai": {
+    "location": "Mumbai",
+    "region": "Maharashtra",
+    "country": "India",
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "current": {
+      "temperature_c": 30.0,
+      "feels_like_c": 36.5,
+      "condition": "Passing Coastal Showers",
+      "condition_icon": "cloud-rain",
+      "humidity_pct": 82,
+      "wind_speed_kmh": 22.0,
+      "wind_direction": "WSW",
+      "pressure_hpa": 1008,
+      "precipitation_mm": 5.8,
+      "rain_chance_pct": 60,
+      "uv_index": 5,
+      "visibility_km": 7.0,
+      "sunrise": "06:29 AM",
+      "sunset": "06:36 PM"
+    }
+  }
+}
