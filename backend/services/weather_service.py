@@ -170,6 +170,7 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
     daily_data = payload.get("daily", {})
 
     cond_text, cond_icon = _wmo_to_condition(curr_data.get("weather_code", 2))
+    wmo_code = curr_data.get("weather_code", 2)
     wind_deg = curr_data.get("wind_direction_10m", 0)
 
     # Parse Current Weather
@@ -208,6 +209,7 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
         dew_point_c=dew_pt,
         wind_gusts_kmh=gusts,
         air_quality_index="Moderate (AQI 78)",
+        wmo_code=wmo_code,
     )
 
     # Parse 24 Hourly Items

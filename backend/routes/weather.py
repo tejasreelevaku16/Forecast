@@ -160,3 +160,31 @@ def common_forecast(
     from backend.services.common_forecast_service import get_common_forecast_data
     return get_common_forecast_data(location=location, lead_day=lead_day, sector=sector)
 
+
+@router.get("/scene", summary="Get Weather Scene Data")
+def weather_scene(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    latitude: Optional[float] = Query(None, description="Exact latitude alias"),
+    longitude: Optional[float] = Query(None, description="Exact longitude alias"),
+    region: Optional[str] = Query(None, description="Optional state/region name"),
+):
+    """
+    Returns weather scene data for animated canvas rendering based on Open-Meteo WMO codes.
+    Includes scene type, wind overlay status, and animation parameters.
+    """
+    from backend.services.weather_scene_service import get_weather_scene
+    
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    
+    # If coordinates are provided, append them to location for precision
+    if final_lat is not None and final_lon is not None:
+        location_query = f"{clean_loc} ({final_lat:.4f}, {final_lon:.4f})"
+    else:
+        location_query = clean_loc
+    
+    return get_weather_scene(location=location_query)
+

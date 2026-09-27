@@ -200,6 +200,11 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
 
+    // Update Weather Scene Engine (Live Weather Scene)
+    if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
+      WeatherSceneEngine.loadSceneForLocation(locationQuery);
+    }
+
     // Page 2: Live Weather / Live Tracking Page View
     if (weatherData && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
