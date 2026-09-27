@@ -11,18 +11,10 @@
  * 6. Full synchronization with Dashboard and Live Tracking.
  */
 
-const CARTO_API_KEY = "PASTE_MY_CARTO_KEY_HERE";
-
-function buildCartoTileLayer(style = "voyager") {
-  const baseUrl = `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}.png`;
-  const tileUrl = CARTO_API_KEY && CARTO_API_KEY !== "PASTE_MY_CARTO_KEY_HERE"
-    ? `${baseUrl}?key=${CARTO_API_KEY}`
-    : baseUrl;
-
-  return L.tileLayer(tileUrl, {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+function buildOsmTileLayer() {
+  return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
     maxZoom: 19,
-    subdomains: "abcd",
   });
 }
 
@@ -47,11 +39,30 @@ const IndiaMapUI = {
   stateLayersMap: {},
   searchDebounceTimer: null,
 
-  // Clamped geographical bounding box for India
+  // Full subcontinental bounds for India
   indiaBounds: [
-    [6.0, 68.0],
+    [6.5, 68.0],
     [37.5, 97.5]
   ],
+
+  /**
+   * Fits the complete India boundary comfortably within the map container
+   */
+  fitIndiaBounds(animate = false) {
+    if (!this.map) return;
+    this.map.invalidateSize(true);
+    let bounds = null;
+    if (this.geoJsonLayer && typeof this.geoJsonLayer.getBounds === 'function') {
+      const gBounds = this.geoJsonLayer.getBounds();
+      if (gBounds && gBounds.isValid()) {
+        bounds = gBounds;
+      }
+    }
+    if (!bounds) {
+      bounds = L.latLngBounds([[6.5, 68.0], [37.5, 97.5]]);
+    }
+    this.map.fitBounds(bounds, { padding: [16, 16], maxZoom: 6, animate: animate });
+  },
 
   /**
    * Initializes the Leaflet map and loads reliability & boundary data
@@ -69,19 +80,21 @@ const IndiaMapUI = {
 
     try {
       this.map = L.map('indiaMap', {
-        center: [22.5, 82.0],
-        zoom: 5,
-        minZoom: 4,
-        maxZoom: 11,
+        center: [22.0, 82.0],
+        zoom: 4.5,
+        minZoom: 3.5,
+        maxZoom: 12,
+        zoomSnap: 0.25,
+        zoomDelta: 0.5,
         zoomControl: true,
         maxBounds: [
-          [4.0, 65.0],
-          [39.0, 100.0]
+          [2.0, 60.0],
+          [40.0, 105.0]
         ],
-        maxBoundsViscosity: 1.0,
+        maxBoundsViscosity: 0.6,
       });
 
-      buildCartoTileLayer('voyager').addTo(this.map);
+      buildOsmTileLayer().addTo(this.map);
 
       this.setupControls();
 
@@ -116,7 +129,7 @@ const IndiaMapUI = {
       this.renderGeoJsonLayer();
       this.hideMapLoading();
 
-      // Default select Krishna District, Andhra Pradesh
+      // Default select Krishna District, Andhra Pradesh without zooming in so entire India view is preserved
       const defaultLoc = {
         country: "India",
         state: "Andhra Pradesh",
@@ -126,7 +139,8 @@ const IndiaMapUI = {
         latitude: 16.1875,
         longitude: 81.1389,
       };
-      this.selectLocation(defaultLoc, false);
+      await this.selectLocation(defaultLoc, false);
+      this.fitIndiaBounds(false);
     } catch (err) {
       console.error("India Map Initialization Error:", err);
       this.showMapError("India map could not be loaded. Please retry.", "general");
@@ -235,11 +249,15 @@ const IndiaMapUI = {
         this.stateLayersMap[stateName] = layer;
 
         const data = this.statesData[stateName];
-
-        let tooltipContent = `<strong style="color: #fff; font-size: 0.85rem;">${stateName}</strong>`;
+        let riskInfo = {
+          trust_score: 50,
+          bust_probability: 50,
+          risk_display: "Moderate Risk",
+          color: "#f59e0b"
+        };
         if (data) {
           const bustProb = data.bust_probability ?? data.bust_risk_pct ?? 50;
-          const riskInfo = typeof WeatherTrustCommon !== 'undefined'
+          riskInfo = typeof WeatherTrustCommon !== 'undefined'
             ? WeatherTrustCommon.classifyRisk(bustProb)
             : {
                 trust_score: data.trust_score ?? (100 - bustProb),
@@ -247,23 +265,56 @@ const IndiaMapUI = {
                 risk_display: data.bust_risk || "Risk",
                 color: data.color || '#38bdf8'
               };
-
-          tooltipContent = `
-            <div style="font-family: Inter, sans-serif; font-size: 0.8rem; line-height: 1.45; padding: 2px;">
-              <div style="color: #fff; font-size: 0.875rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px; margin-bottom: 4px;">${stateName}</div>
-              <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;">Regional Reliability Overview</div>
-              <div>Trust: <strong style="color: ${riskInfo.color};">${riskInfo.trust_score}/100</strong></div>
-              <div>Bust Risk: <strong style="color: ${riskInfo.color};">${riskInfo.bust_probability}% (${riskInfo.risk_display || data.bust_risk || riskInfo.risk_label})</strong></div>
-            </div>
-          `;
-        } else {
-          tooltipContent += `<br><span style="font-size:0.75rem; color:#94a3b8;">Data unavailable</span>`;
         }
 
-        layer.bindTooltip(tooltipContent, {
-          sticky: true,
-          className: 'leaflet-state-tooltip',
-          direction: 'auto',
+        // Single Region Reliability Card Popup
+        // Enforces: Exactly ONE active popup at a time.
+        // autoClose: true and closeOnClick: true ensure that clicking another region
+        // or clicking the map closes/replaces the previous card. No cards stack or pile up.
+        const popupContent = `
+          <div class="state-reliability-popup" style="font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; min-width: 210px; padding: 4px 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 6px; margin-bottom: 8px;">
+              <strong style="font-size: 0.95rem; color: #0f172a;">${stateName}</strong>
+              <span style="font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: ${riskInfo.color}22; color: ${riskInfo.color}; border: 1px solid ${riskInfo.color}66;">
+                ${data ? (riskInfo.risk_display || data.bust_risk || "Monitored") : "Unavailable"}
+              </span>
+            </div>
+            <div style="font-size: 0.725rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+              Regional Reliability Overview
+            </div>
+            ${data ? `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.8rem;">
+                <span style="color: #475569;">Trust Score:</span>
+                <strong style="color: ${riskInfo.color}; font-size: 0.9rem;">${riskInfo.trust_score} / 100</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8rem;">
+                <span style="color: #475569;">Bust Risk:</span>
+                <strong style="color: ${riskInfo.color}; font-size: 0.9rem;">${riskInfo.bust_probability}%</strong>
+              </div>
+            ` : `
+              <div style="font-size: 0.775rem; color: #94a3b8; font-style: italic; margin-bottom: 6px;">
+                State model calibration unavailable
+              </div>
+            `}
+            <div style="font-size: 0.7rem; color: #64748b; border-top: 1px dashed rgba(0,0,0,0.08); padding-top: 6px; margin-top: 4px;">
+              📍 Clicked region loaded in Live Weather panel
+            </div>
+          </div>
+        `;
+
+        layer.bindPopup(popupContent, {
+          autoClose: true,
+          closeOnClick: true,
+          className: 'custom-region-popup',
+          maxWidth: 270,
+        });
+
+        // Simple transient hover tooltip showing only state name (does NOT stick or pile up)
+        layer.bindTooltip(stateName, {
+          sticky: false,
+          direction: 'top',
+          className: 'leaflet-state-hover-hint',
+          opacity: 0.9,
         });
 
         layer.on({
@@ -289,16 +340,13 @@ const IndiaMapUI = {
             if (this.districtMarker) this.districtMarker.bringToFront();
           },
           click: () => {
-            this.selectState(stateName, true);
+            this.selectState(stateName, false);
           }
         });
       }
     }).addTo(this.map);
 
-    const bounds = this.geoJsonLayer.getBounds();
-    if (bounds.isValid()) {
-      this.map.fitBounds(bounds, { padding: [15, 15] });
-    }
+    this.fitIndiaBounds(false);
   },
 
   /**
@@ -341,7 +389,7 @@ const IndiaMapUI = {
    * When user clicks a state polygon, select primary district in that state
    * Keeps State = regional context, District = weather tracking location
    */
-  selectState(stateName, zoomTo = true) {
+  selectState(stateName, zoomTo = false) {
     this.selectedState = stateName;
     const defaultPlace = this.resolveDefaultPlaceForState(stateName);
     this.selectLocation(defaultPlace, zoomTo);
@@ -398,10 +446,10 @@ const IndiaMapUI = {
       }
 
       this.districtMarker = L.circleMarker([lat, lon], {
-        radius: 9,
+        radius: 8,
         fillColor: '#38bdf8',
         color: '#ffffff',
-        weight: 3,
+        weight: 2.5,
         opacity: 1,
         fillOpacity: 0.95,
       }).addTo(this.map);
@@ -413,10 +461,15 @@ const IndiaMapUI = {
           <div style="font-size: 0.775rem; color: #475569; margin-top: 2px;">${loc.district ? loc.district + ' District • ' : ''}${loc.state}</div>
           <div style="font-size: 0.725rem; color: #64748b; margin-top: 4px;">📍 ${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E</div>
         </div>
-      `).openPopup();
+      `, {
+        autoClose: true,
+        closeOnClick: true,
+        maxWidth: 240,
+      });
 
       if (zoomTo) {
-        this.map.setView([lat, lon], 8, { animate: true });
+        this.map.setView([lat, lon], 7, { animate: true });
+        this.districtMarker.openPopup();
       }
     }
 
@@ -525,20 +578,20 @@ const IndiaMapUI = {
     }
 
     // Current Weather Parameters
-    const tempC = curr ? `${Math.round(curr.temperature_c)}°C` : "31°C";
-    const feelsLikeC = curr ? `${Math.round(curr.feels_like_c || curr.temperature_c)}°C` : "34°C";
-    const condText = curr ? curr.condition : "Observational Weather";
-    const condIcon = curr ? (curr.condition_icon || "🌤️") : "🌤️";
-    const humPct = curr ? `${curr.humidity_pct}%` : "76%";
-    const windSpeed = curr ? `${curr.wind_speed_kmh} km/h ${curr.wind_direction || ''}` : "14 km/h SE";
-    const pressHpa = curr ? `${curr.pressure_hpa} hPa` : "1007 hPa";
-    const precipMm = curr ? `${curr.precipitation_mm} mm` : "0.0 mm";
-    const updatedTime = curr ? curr.updated_at : "Today, 6:30 PM";
+    const tempC = curr ? `${Math.round(curr.temperature_c)}°C` : "--°C";
+    const feelsLikeC = curr ? `${Math.round(curr.feels_like_c || curr.temperature_c)}°C` : "--°C";
+    const condText = curr ? curr.condition : "Weather data unavailable";
+    const condIcon = curr ? (curr.condition_icon || "🌤️") : "❓";
+    const humPct = curr ? `${curr.humidity_pct}%` : "--%";
+    const windSpeed = curr ? `${curr.wind_speed_kmh} km/h ${curr.wind_direction || ''}` : "-- km/h";
+    const pressHpa = curr ? `${curr.pressure_hpa} hPa` : "-- hPa";
+    const precipMm = curr ? `${curr.precipitation_mm} mm` : "-- mm";
+    const updatedTime = curr ? curr.updated_at : "Data Unavailable";
 
     // Forecast Projection
     const fcDesc = d6
       ? `Day 6 Projection: ${d6.precipitation_mm} mm rain (${d6.rain_chance_pct}% probability, ${d6.condition})`
-      : "Day 6 Outlook: Continuous convective radar tracking active";
+      : "Day 6 Outlook: Forecast data unavailable for this location";
 
     // Forecast Drift (strictly location-isolated)
     let driftDisplay = "Not enough forecast history yet";
@@ -634,15 +687,13 @@ const IndiaMapUI = {
    * Resets map view to show the complete India geometry
    */
   resetIndiaView() {
-    if (this.map && this.geoJsonLayer) {
-      this.map.invalidateSize();
-      const bounds = this.geoJsonLayer.getBounds();
-      if (bounds.isValid()) {
-        this.map.fitBounds(bounds, { padding: [15, 15] });
+    if (this.map) {
+      this.fitIndiaBounds(true);
+      if (this.geoJsonLayer) {
+        this.geoJsonLayer.eachLayer(layer => {
+          this.geoJsonLayer.resetStyle(layer);
+        });
       }
-      this.geoJsonLayer.eachLayer(layer => {
-        this.geoJsonLayer.resetStyle(layer);
-      });
       if (this.selectedState && this.stateLayersMap[this.selectedState]) {
         this.stateLayersMap[this.selectedState].setStyle({
           weight: 2.8,
@@ -815,6 +866,12 @@ const IndiaMapUI = {
         }
       });
     }
+
+    window.addEventListener('resize', () => {
+      if (this.map && document.getElementById('indiaMap') && document.getElementById('page-map')?.classList.contains('active')) {
+        this.map.invalidateSize();
+      }
+    });
   },
 
   /**

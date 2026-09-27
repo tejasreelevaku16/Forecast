@@ -6,18 +6,10 @@
  * MoES-standard confidence color transitions, tooltips, and explainability popups.
  */
 
-const CARTO_API_KEY = "PASTE_MY_CARTO_KEY_HERE";
-
 function buildCartoTileLayer(style = "voyager") {
-  const baseUrl = `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}.png`;
-  const tileUrl = CARTO_API_KEY && CARTO_API_KEY !== "PASTE_MY_CARTO_KEY_HERE"
-    ? `${baseUrl}?key=${CARTO_API_KEY}`
-    : baseUrl;
-
-  return L.tileLayer(tileUrl, {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+  return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
     maxZoom: 19,
-    subdomains: "abcd",
   });
 }
 

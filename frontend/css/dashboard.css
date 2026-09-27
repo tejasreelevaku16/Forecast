@@ -1166,6 +1166,29 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Region Popup Card styling — single clean popup with no overlapping cards */
+.custom-region-popup .leaflet-popup-content-wrapper {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 2px;
+}
+.custom-region-popup .leaflet-popup-tip {
+  background: #ffffff;
+}
+.leaflet-state-hover-hint {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  color: #f8fafc !important;
+  font-weight: 600 !important;
+  font-size: 0.775rem !important;
+  border-radius: 4px !important;
+  padding: 3px 8px !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+  pointer-events: none !important;
+}
+
 @media (max-width: 900px) {
   .map-layout-grid {
     grid-template-columns: 1fr;

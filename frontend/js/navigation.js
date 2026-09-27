@@ -167,7 +167,7 @@ const AppRouter = {
           if (!IndiaMapUI.map) {
             IndiaMapUI.initMap();
           } else {
-            IndiaMapUI.map.invalidateSize();
+            IndiaMapUI.fitIndiaBounds();
           }
         }
       }, 150);
