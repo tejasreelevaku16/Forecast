@@ -1,12 +1,17 @@
 /**
  * WeatherTrust AI — Complete Single-Page Application (SPA) Router & Navigation
- * Manages persistent sidebar navigation, mobile drawer, page routing,
- * history state, and cross-component view synchronization.
+ * Ministry of Earth Sciences (MoES) — National Centre for Medium Range Weather Forecasting (NCMRWF)
+ * SIH Problem ID: 26079
  */
 
 const AppRouter = {
   routes: [
     "dashboard",
+    "confidence-map",
+    "daywise",
+    "uncertainty",
+    "calibration",
+    "explain",
     "live-weather",
     "forecast",
     "trust",
@@ -30,13 +35,11 @@ const AppRouter = {
   },
 
   getRouteFromUrl() {
-    // Check path first
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
     if (this.routes.includes(path)) {
       return path;
     }
 
-    // Check hash fallback (e.g., #/live-weather or #live-weather)
     const hash = window.location.hash.replace(/^#\/?/, "");
     if (this.routes.includes(hash)) {
       return hash;
@@ -93,14 +96,41 @@ const AppRouter = {
   },
 
   onPageActivated(pageSlug) {
-    // Invalidate Leaflet Map dimensions when Map page becomes visible
-    if (pageSlug === "map" && typeof IndiaMapUI !== "undefined" && IndiaMapUI.map) {
+    const loc = window.currentSelectedLocation || "Vijayawada";
+
+    // Initialize GIS confidence map
+    if (pageSlug === "confidence-map" || pageSlug === "map") {
       setTimeout(() => {
-        IndiaMapUI.map.invalidateSize();
-      }, 200);
+        if (typeof initConfidenceMap === "function") {
+          initConfidenceMap();
+        }
+        if (typeof IndiaMapUI !== "undefined" && IndiaMapUI.map) {
+          IndiaMapUI.map.invalidateSize();
+        }
+      }, 150);
     }
 
-    // Redraw charts when Drift or Forecast or Live Weather or Technical pages open
+    // Trigger Day-wise ML Predictions
+    if (pageSlug === "daywise" && typeof loadDaywiseForecast === "function") {
+      loadDaywiseForecast(loc);
+    }
+
+    // Trigger Forecast Uncertainty Engine
+    if (pageSlug === "uncertainty" && typeof loadUncertaintyView === "function") {
+      loadUncertaintyView(loc);
+    }
+
+    // Trigger Model Calibration & Reliability
+    if (pageSlug === "calibration" && typeof loadCalibrationView === "function") {
+      loadCalibrationView();
+    }
+
+    // Trigger Explainable AI (SHAP)
+    if (pageSlug === "explain" && typeof loadExplainabilityData === "function") {
+      loadExplainabilityData(loc, 6);
+    }
+
+    // Redraw charts when view changes
     if (typeof Chart !== "undefined") {
       setTimeout(() => {
         Chart.instances && Object.values(Chart.instances).forEach((chart) => chart.resize());
@@ -110,7 +140,6 @@ const AppRouter = {
 
   setupLinkInterception() {
     document.addEventListener("click", (e) => {
-      // Find closest anchor or button with data-page attribute
       const targetEl = e.target.closest("[data-page]");
       if (targetEl) {
         const pageSlug = targetEl.getAttribute("data-page");
@@ -156,7 +185,11 @@ const AppRouter = {
   },
 };
 
-// Initialize Router when DOM is loaded
+// Global routing helper
+window.navigateToPage = function(page) {
+  AppRouter.navigateTo(page);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   AppRouter.init();
 });

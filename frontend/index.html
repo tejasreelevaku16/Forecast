@@ -39,7 +39,7 @@
           <div class="brand-icon">WT</div>
           <div class="brand-text">
             <h1>WeatherTrust AI</h1>
-            <span class="brand-tagline">Know when to trust the forecast</span>
+            <span class="brand-tagline">MoES / NCMRWF Control Room</span>
           </div>
         </a>
       </div>
@@ -50,6 +50,36 @@
             <span>🏠</span> Dashboard
           </a>
         </li>
+        <li class="nav-item" data-page="confidence-map">
+          <a href="/confidence-map" data-page="confidence-map">
+            <span>🗺️</span> Forecast Confidence Map
+            <span class="nav-badge" style="color: #10b981;">SIH #1</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="daywise">
+          <a href="/daywise" data-page="daywise">
+            <span>📅</span> Day-wise Confidence
+            <span class="nav-badge" style="color: #38bdf8;">SIH #2</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="uncertainty">
+          <a href="/uncertainty" data-page="uncertainty">
+            <span>📉</span> Forecast Uncertainty
+            <span class="nav-badge" style="color: #f59e0b;">SIH #3</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="calibration">
+          <a href="/calibration" data-page="calibration">
+            <span>🔬</span> Model Reliability & Calibration
+            <span class="nav-badge" style="color: #6366f1;">SIH #4</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="explain">
+          <a href="/explain" data-page="explain">
+            <span>🧠</span> Explainable AI (SHAP)
+            <span class="nav-badge" style="color: #ec4899;">SIH #5</span>
+          </a>
+        </li>
         <li class="nav-item" data-page="live-weather">
           <a href="/live-weather" data-page="live-weather">
             <span>🌦</span> Live Weather
@@ -57,13 +87,12 @@
         </li>
         <li class="nav-item" data-page="forecast">
           <a href="/forecast" data-page="forecast">
-            <span>📊</span> Forecast
+            <span>📊</span> 10-Day Forecast
           </a>
         </li>
         <li class="nav-item" data-page="trust">
           <a href="/trust" data-page="trust">
-            <span>🛡</span> Forecast Trust
-            <span class="nav-badge" style="color: #38bdf8;">SIH Core</span>
+            <span>🛡️</span> Trust Diagnostics
           </a>
         </li>
         <li class="nav-item" data-page="drift">
@@ -73,12 +102,12 @@
         </li>
         <li class="nav-item" data-page="map">
           <a href="/map" data-page="map">
-            <span>🗺</span> India Reliability Map
+            <span>🇮🇳</span> India Reliability Map
           </a>
         </li>
         <li class="nav-item" data-page="alerts">
           <a href="/alerts" data-page="alerts">
-            <span>🚨</span> Alerts
+            <span>🚨</span> Early Alerts
             <span class="nav-badge" id="alertsNavBadge" style="color: #ef4444; font-weight: 700;">2</span>
           </a>
         </li>
@@ -89,19 +118,18 @@
         </li>
         <li class="nav-item" data-page="technical">
           <a href="/technical" data-page="technical">
-            <span>🔬</span> Technical View
-            <span class="nav-badge" style="color: #6366f1;">SIH ML</span>
+            <span>⚙️</span> Technical Evaluator
           </a>
         </li>
         <li class="nav-item" data-page="about">
           <a href="/about" data-page="about">
-            <span>ℹ</span> About
+            <span>ℹ</span> About & MoES Info
           </a>
         </li>
       </ul>
 
       <div class="sidebar-footer">
-        <div>Platform: <strong>WeatherTrust v2.0</strong></div>
+        <div>MoES / NCMRWF: <strong>Problem #26079</strong></div>
         <div style="margin-top: 4px; color: #64748b;">Smart India Hackathon 2024</div>
       </div>
     </aside>
@@ -119,7 +147,7 @@
         <div class="search-box-container">
           <div class="search-input-wrapper">
             <span>🔍</span>
-            <input type="text" id="citySearchInput" class="search-input" placeholder="Search Indian districts or cities (e.g. Krishna, Hyderabad, Delhi)..." autocomplete="off">
+            <input type="text" id="citySearchInput" class="search-input" placeholder="Search Indian districts or cities (e.g. Delhi, Krishna, Hyderabad)..." autocomplete="off">
             <button id="locateMeBtn" class="locate-btn" title="Use Current GPS Location">
               <span>📍</span> Locate
             </button>
@@ -129,10 +157,11 @@
 
         <!-- Quick location pills -->
         <div class="quick-pills">
-          <button class="pill-btn active" data-location="Krishna District">Krishna District (AP)</button>
+          <button class="pill-btn active" data-location="Delhi">Delhi</button>
+          <button class="pill-btn" data-location="Vijayawada">Vijayawada</button>
+          <button class="pill-btn" data-location="Krishna District">Krishna District</button>
           <button class="pill-btn" data-location="Hyderabad">Hyderabad</button>
           <button class="pill-btn" data-location="Bengaluru">Bengaluru</button>
-          <button class="pill-btn" data-location="Delhi">Delhi</button>
           <button class="pill-btn" data-location="Mumbai">Mumbai</button>
         </div>
 
@@ -332,6 +361,342 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- =================================================================
+             SIH FEATURE 1: DYNAMIC FORECAST CONFIDENCE MAP
+             ================================================================= -->
+        <div class="page-view" id="page-confidence-map">
+          <div class="section-header" style="margin-bottom: 16px;">
+            <div>
+              <h3><span>🗺️</span> India Forecast Confidence GIS Map</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">MoES / NCMRWF Spatial Verification Layer — Real-time calibrated confidence across Indian states and districts</p>
+            </div>
+            <span class="badge badge-neutral" id="confMapTimestamp">NCMRWF Operational Run</span>
+          </div>
+
+          <div class="conf-map-header-bar">
+            <div class="conf-day-selector-group">
+              <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Lead Horizon:</span>
+              <button class="conf-day-pill active" data-day="1">Day 1</button>
+              <button class="conf-day-pill" data-day="2">Day 2</button>
+              <button class="conf-day-pill" data-day="3">Day 3</button>
+              <button class="conf-day-pill" data-day="4">Day 4</button>
+              <button class="conf-day-pill" data-day="5">Day 5</button>
+              <button class="conf-day-pill" data-day="6">Day 6</button>
+              <button class="conf-day-pill" data-day="7">Day 7</button>
+              <button class="conf-day-pill" data-day="8">Day 8</button>
+              <button class="conf-day-pill" data-day="9">Day 9</button>
+              <button class="conf-day-pill" data-day="10">Day 10</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="confStateFilterSelect" class="search-input" style="padding: 6px 12px; font-size: 0.8rem; width: auto;">
+                <option value="ALL">All India (National Overview)</option>
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Gujarat">Gujarat</option>
+                <option value="Delhi">Delhi-NCR</option>
+                <option value="West Bengal">West Bengal</option>
+                <option value="Odisha">Odisha</option>
+              </select>
+              <button id="confMapRefreshBtn" class="btn btn-sm btn-primary">🔄 Sync Live</button>
+            </div>
+          </div>
+
+          <!-- Summary counters -->
+          <div class="dash-overview-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, 1fr);">
+            <div class="glass-card stat-card" style="border-left: 4px solid #10b981;">
+              <span class="stat-label">High Confidence Regions (&gt;=75%)</span>
+              <div class="stat-value-group">
+                <span class="stat-value" id="confHighCount" style="color: #10b981;">Loading...</span>
+              </div>
+              <span class="stat-footer">High NWP multi-model consensus</span>
+            </div>
+            <div class="glass-card stat-card" style="border-left: 4px solid #f59e0b;">
+              <span class="stat-label">Moderate Confidence Regions (55–74%)</span>
+              <div class="stat-value-group">
+                <span class="stat-value" id="confModCount" style="color: #f59e0b;">Loading...</span>
+              </div>
+              <span class="stat-footer">Boundary-layer convective variance</span>
+            </div>
+            <div class="glass-card stat-card" style="border-left: 4px solid #ef4444;">
+              <span class="stat-label">Bust-Prone Low Confidence (&lt;55%)</span>
+              <div class="stat-value-group">
+                <span class="stat-value" id="confLowCount" style="color: #ef4444;">Loading...</span>
+              </div>
+              <span class="stat-footer">High lead decay &amp; rapid run drift</span>
+            </div>
+          </div>
+
+          <!-- GIS Map Container -->
+          <div class="conf-map-frame">
+            <div id="confidenceMapContainer"></div>
+
+            <!-- Legend Overlay -->
+            <div class="conf-map-legend-overlay">
+              <h5>Forecast Confidence Scale</h5>
+              <div class="conf-legend-steps">
+                <div class="conf-legend-item"><span class="conf-color-swatch" style="background: #059669;"></span> 90–100% (Dark Green - High Trust)</div>
+                <div class="conf-legend-item"><span class="conf-color-swatch" style="background: #10b981;"></span> 75–89% (Green - Good Confidence)</div>
+                <div class="conf-legend-item"><span class="conf-color-swatch" style="background: #f59e0b;"></span> 60–74% (Yellow - Moderate Confidence)</div>
+                <div class="conf-legend-item"><span class="conf-color-swatch" style="background: #f97316;"></span> 40–59% (Orange - Low Confidence)</div>
+                <div class="conf-legend-item"><span class="conf-color-swatch" style="background: #ef4444;"></span> 0–39% (Red - High Bust Risk)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             SIH FEATURE 2: DAY 1 TO DAY 10 ML PREDICTION
+             ================================================================= -->
+        <div class="page-view" id="page-daywise">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>📅</span> Day 1 to Day 10 Independent ML Predictions</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">Independent calibrated machine learning probabilities evaluated for each medium-range lead day</p>
+            </div>
+            <span class="badge badge-neutral" id="daywiseLocationHeader">Vijayawada</span>
+          </div>
+
+          <div class="daywise-grid" id="daywiseCardsGrid">
+            <!-- Rendered by daywiseForecast.js -->
+          </div>
+        </div>
+
+        <!-- =================================================================
+             SIH FEATURE 3: FORECAST UNCERTAINTY ENGINE
+             ================================================================= -->
+        <div class="page-view" id="page-uncertainty">
+          <div class="section-header" style="margin-bottom: 16px;">
+            <div>
+              <h3><span>📉</span> Forecast Uncertainty &amp; Variability Engine</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">Atmospheric uncertainty quantified from temperature variance, rainfall gradients, pressure tendencies, and run drift</p>
+            </div>
+            <span class="badge badge-neutral" id="uncLocationHeader">Vijayawada</span>
+          </div>
+
+          <!-- Automated Dynamic Insight -->
+          <div class="unc-insight-banner">
+            <span class="badge-icon">🧠</span>
+            <p id="uncInsightBannerText">Synthesizing meteorological variance and run-to-run drift across lead days...</p>
+          </div>
+
+          <!-- 5 KPI Cards -->
+          <div class="unc-kpi-grid">
+            <div class="glass-card stat-card">
+              <span class="stat-label">Highest Confidence Day</span>
+              <span class="stat-value" id="uncKpiHighestConf" style="color: #10b981;">--</span>
+              <span class="stat-footer">Peak model consensus</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Lowest Confidence Day</span>
+              <span class="stat-value" id="uncKpiLowestConf" style="color: #ef4444;">--</span>
+              <span class="stat-footer">Maximum bust probability</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Max Uncertainty Day</span>
+              <span class="stat-value" id="uncKpiMaxUnc" style="color: #f59e0b;">--</span>
+              <span class="stat-footer">Atmospheric volatility peak</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Average Confidence</span>
+              <span class="stat-value" id="uncKpiAvgConf" style="color: var(--accent-cyan);">--</span>
+              <span class="stat-footer">10-day mean trust score</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Average Model Drift</span>
+              <span class="stat-value" id="uncKpiAvgDrift" style="color: #38bdf8;">--</span>
+              <span class="stat-footer">Run-to-run mean shift</span>
+            </div>
+          </div>
+
+          <!-- Dual Axis Chart Card -->
+          <div class="glass-card" style="padding: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 16px;">10-Day Forecast Confidence vs. Uncertainty &amp; Model Drift</h4>
+            <div style="position: relative; height: 380px; width: 100%;">
+              <canvas id="uncertaintyDualAxisChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             SIH FEATURE 4: MODEL RELIABILITY & CALIBRATION
+             ================================================================= -->
+        <div class="page-view" id="page-calibration">
+          <div class="section-header" style="margin-bottom: 16px;">
+            <div>
+              <h3><span>🔬</span> Model Reliability &amp; Probability Calibration</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">MoES / NCMRWF Scientific Evaluator Dashboard — Calibration curves, ROC-AUC, Brier score, and confusion matrix</p>
+            </div>
+            <span class="badge badge-neutral" id="calModelNameTag">Calibrated Ensemble</span>
+          </div>
+
+          <!-- 6 KPI Metric Cards -->
+          <div class="cal-kpi-grid">
+            <div class="glass-card stat-card">
+              <span class="stat-label">Classification Accuracy</span>
+              <span class="stat-value" id="calKpiAccuracy" style="color: var(--accent-cyan);">--</span>
+              <span class="stat-footer">Chronological test set</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Precision</span>
+              <span class="stat-value" id="calKpiPrecision" style="color: #10b981;">--</span>
+              <span class="stat-footer">Bust detection fidelity</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Recall (Sensitivity)</span>
+              <span class="stat-value" id="calKpiRecall" style="color: #38bdf8;">--</span>
+              <span class="stat-footer">Bust events captured</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">F1-Score</span>
+              <span class="stat-value" id="calKpiF1" style="color: #f59e0b;">--</span>
+              <span class="stat-footer">Harmonic precision/recall</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">ROC-AUC Score</span>
+              <span class="stat-value" id="calKpiAuc" style="color: #6366f1;">--</span>
+              <span class="stat-footer">Discriminative power</span>
+            </div>
+            <div class="glass-card stat-card">
+              <span class="stat-label">Brier Calibration Score</span>
+              <span class="stat-value" id="calKpiBrier" style="color: #ec4899;">--</span>
+              <span class="stat-footer">Lower = Tighter calibration</span>
+            </div>
+          </div>
+
+          <!-- Calibration Curve & ROC Curve Side by Side -->
+          <div class="cal-chart-grid">
+            <div class="glass-card" style="padding: 20px;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px;">Reliability Calibration Curve (Predicted vs. Observed)</h4>
+              <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="calibrationCurveChart"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-card" style="padding: 20px;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px;">Receiver Operating Characteristic (ROC Curve)</h4>
+              <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="rocCurveChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confusion Matrix Heatmap & Interpretation -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="glass-card" style="padding: 20px;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 14px;">Confusion Matrix Heatmap (Decision Threshold = 0.50)</h4>
+              <div class="cm-heatmap-container">
+                <table class="cm-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Predicted Safe</th>
+                      <th>Predicted Bust</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th style="font-size: 0.75rem;">Actual Safe</th>
+                      <td class="cm-cell-tn">TN: <span id="cmValTN">--</span></td>
+                      <td class="cm-cell-fp">FP: <span id="cmValFP">--</span></td>
+                    </tr>
+                    <tr>
+                      <th style="font-size: 0.75rem;">Actual Bust</th>
+                      <td class="cm-cell-fn">FN: <span id="cmValFN">--</span></td>
+                      <td class="cm-cell-tp">TP: <span id="cmValTP">--</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column; justify-content: center;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px; color: var(--accent-cyan);">Automatic Scientific Interpretation</h4>
+              <p id="calibrationInterpretationText" style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.6; margin: 0;">
+                Evaluating calibrated probabilistic metrics...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             SIH FEATURE 5: EXPLAINABLE FORECAST BUST ANALYSIS (SHAP)
+             ================================================================= -->
+        <div class="page-view" id="page-explain">
+          <div class="section-header" style="margin-bottom: 16px;">
+            <div>
+              <h3><span>🧠</span> Why is this Forecast Unreliable? (Explainable AI)</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">Meteorological feature contributions, SHAP uncertainty weights, and operational recommendations</p>
+            </div>
+            <span class="badge badge-neutral" id="explainLocationHeader">Vijayawada (Day 6)</span>
+          </div>
+
+          <div class="conf-map-header-bar" style="margin-bottom: 20px;">
+            <div class="conf-day-selector-group">
+              <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Analyze Lead Day:</span>
+              <button class="explain-day-pill" data-day="1">Day 1</button>
+              <button class="explain-day-pill" data-day="2">Day 2</button>
+              <button class="explain-day-pill" data-day="3">Day 3</button>
+              <button class="explain-day-pill" data-day="4">Day 4</button>
+              <button class="explain-day-pill" data-day="5">Day 5</button>
+              <button class="explain-day-pill active" data-day="6">Day 6</button>
+              <button class="explain-day-pill" data-day="7">Day 7</button>
+              <button class="explain-day-pill" data-day="8">Day 8</button>
+              <button class="explain-day-pill" data-day="9">Day 9</button>
+              <button class="explain-day-pill" data-day="10">Day 10</button>
+            </div>
+            <span id="explainRiskLevelBadge" class="badge badge-high">High Bust Risk</span>
+          </div>
+
+          <!-- Section A & B: Gauge & Animated Bust Indicator -->
+          <div class="explain-hero-grid">
+            <div class="glass-card gauge-card">
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Confidence Gauge</h4>
+              <div class="circular-gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 100 100">
+                  <circle class="gauge-bg-circle" cx="50" cy="50" r="45"></circle>
+                  <circle id="explainGaugePath" class="gauge-progress-circle" cx="50" cy="50" r="45"></circle>
+                </svg>
+                <div class="gauge-center-text">
+                  <span id="explainGaugeValue" class="gauge-score-value">--%</span>
+                  <span class="gauge-score-label">Trust Score</span>
+                </div>
+              </div>
+              <div style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8;">
+                Bust Probability: <strong id="explainBustVal" style="color: #ef4444; font-size: 1.1rem; font-family: var(--font-mono);">--%</strong>
+              </div>
+            </div>
+
+            <!-- Section C: SHAP Contribution Chart -->
+            <div class="glass-card" style="padding: 20px;">
+              <h4 style="font-size: 0.9rem; margin-bottom: 12px;">Meteorological Feature Contributions (SHAP Weights)</h4>
+              <div style="position: relative; height: 220px; width: 100%;">
+                <canvas id="shapHorizontalBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section D: Natural Language Meteorological Summary -->
+          <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
+            <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: var(--accent-cyan);">Meteorological Diagnostic Summary</h4>
+            <p id="explainSummaryText" style="font-size: 0.9rem; color: #f8fafc; line-height: 1.6; margin: 0;">
+              Evaluating atmospheric stability parameters...
+            </p>
+          </div>
+
+          <!-- Section E: NCMRWF Operational Recommendation -->
+          <div class="explain-rec-card">
+            <h4 style="font-size: 0.9rem; margin-bottom: 8px; color: #f59e0b;">🏛️ MoES / NCMRWF Operational Guidance</h4>
+            <p id="explainRecText" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; margin: 0;">
+              Loading operational protocols...
+            </p>
+          </div>
         </div>
 
         <!-- =================================================================
@@ -1225,6 +1590,47 @@
 
   </div>
 
+  <!-- Explainability Diagnostic Modal Popup -->
+  <div id="explainabilityModal" class="explain-modal-backdrop">
+    <div class="explain-modal-dialog">
+      <div class="modal-header-row">
+        <div>
+          <h3 id="modalLocTitle" style="font-size: 1.15rem; margin: 0; color: #f8fafc;">District Explainability Diagnostic</h3>
+          <span style="font-size: 0.75rem; color: #94a3b8;">MoES / NCMRWF SHAP Uncertainty Decomposition</span>
+        </div>
+        <button id="closeExplainModalBtn" class="btn btn-sm btn-outline-neutral" style="padding: 4px 10px; font-size: 1.1rem; cursor: pointer;">✕</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div class="glass-card stat-card" style="padding: 14px;">
+          <span class="stat-label">Forecast Confidence</span>
+          <span id="modalConfGaugeVal" class="stat-value" style="color: #10b981; font-size: 1.6rem;">--%</span>
+        </div>
+        <div class="glass-card stat-card" style="padding: 14px;">
+          <span class="stat-label">Bust Probability</span>
+          <span id="modalBustVal" class="stat-value" style="color: #ef4444; font-size: 1.6rem;">--%</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <h5 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Meteorological Drivers (SHAP Attribution)</h5>
+        <div id="modalFeaturesList">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+        <strong style="font-size: 0.8rem; color: var(--accent-cyan); display: block; margin-bottom: 4px;">Meteorological Summary</strong>
+        <p id="modalSummaryText" style="font-size: 0.8rem; color: #e2e8f0; line-height: 1.5; margin: 0;"></p>
+      </div>
+
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 12px;">
+        <strong style="font-size: 0.8rem; color: #f59e0b; display: block; margin-bottom: 4px;">Operational Recommendation</strong>
+        <p id="modalRecText" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- External Libraries: Chart.js & Leaflet.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -1238,6 +1644,14 @@
   <script src="/js/drift.js"></script>
   <script src="/js/map.js"></script>
   <script src="/js/judge.js"></script>
+  
+  <!-- SIH 10/10 Dedicated Feature Scripts -->
+  <script src="/js/confidenceMap.js"></script>
+  <script src="/js/daywiseForecast.js"></script>
+  <script src="/js/uncertaintyChart.js"></script>
+  <script src="/js/calibration.js"></script>
+  <script src="/js/explainability.js"></script>
+  
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

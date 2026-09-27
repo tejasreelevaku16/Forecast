@@ -1,19 +1,21 @@
-"""
-Unit and Integration Tests for Complete SPA Navigation & 10 Dedicated Pages (SIH Upgrade)
-Tests HTTP routing for all 10 page URLs, index.html structure, and core API endpoints.
-"""
-
 import sys
 from pathlib import Path
-import requests
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-BASE_URL = "http://127.0.0.1:8000"
+from fastapi.testclient import TestClient
+from backend.main import app
+
+client = TestClient(app)
 
 PAGES = [
     "dashboard",
+    "confidence-map",
+    "daywise",
+    "uncertainty",
+    "calibration",
+    "explain",
     "live-weather",
     "forecast",
     "trust",
@@ -27,9 +29,9 @@ PAGES = [
 
 
 def test_spa_page_routes():
-    """Verify that all 10 dedicated SPA page URLs return status 200 with HTML content."""
+    """Verify that all 15 dedicated SPA page URLs return status 200 with HTML content."""
     for page in PAGES:
-        resp = requests.get(f"{BASE_URL}/{page}")
+        resp = client.get(f"/{page}")
         assert resp.status_code == 200, f"Route /{page} failed with status {resp.status_code}"
         assert "text/html" in resp.headers["content-type"]
         assert "WeatherTrust AI" in resp.text
@@ -39,14 +41,15 @@ def test_spa_page_routes():
 
 def test_html_structure_and_components():
     """Verify that index.html contains all necessary navigation, header controls, and cards."""
-    resp = requests.get(f"{BASE_URL}/")
+    resp = client.get("/")
     assert resp.status_code == 200
     html = resp.text
 
     # Sidebar & Brand
     assert 'id="sidebar"' in html
     assert 'id="hamburgerBtn"' in html
-    assert 'Know when to trust the forecast' in html
+    assert 'WeatherTrust AI' in html
+    assert 'MoES / NCMRWF' in html
 
     # All 10 navigation items
     for page in PAGES:
@@ -87,7 +90,7 @@ def test_api_endpoints_operational():
     ]
 
     for path, expected_status in endpoints:
-        r = requests.get(f"{BASE_URL}{path}")
+        r = client.get(path)
         assert r.status_code == expected_status, f"Endpoint {path} returned {r.status_code}"
     print(f"[PASS] All {len(endpoints)} core API endpoints operational.")
 
