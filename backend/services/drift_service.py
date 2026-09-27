@@ -6,8 +6,9 @@ Tracks successive numerical weather prediction (NWP) model runs for identical fu
 Calculates run-to-run drift, percentage shift, and categorizes forecast stability.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+
 import config
 
 
@@ -21,6 +22,7 @@ def calculate_drift_metrics(
     """
     Computes absolute and relative run-to-run drift and determines stability level.
     """
+
     delta = current_val - previous_val
     abs_delta = abs(delta)
 
@@ -63,13 +65,17 @@ def calculate_drift_metrics(
         "stability_level": stability,
         "drift_level": drift_level,
         "explanation": (
-            f"Forecast for Day {target_lead_day} shifted by {delta:+.1f} {unit} ({pct_change:+}% change). "
+            f"Forecast for Day {target_lead_day} shifted by "
+            f"{delta:+.1f} {unit} ({pct_change:+}% change). "
             f"Stability is {stability}."
         )
     }
 
 
-<<<<<<< HEAD
+# ---------------------------------------------------------------------------
+# Location-specific drift registry
+# ---------------------------------------------------------------------------
+
 LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
     "krishna": {
         "location": "Krishna District",
@@ -83,12 +89,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 55.0,
         "stability": "LOW",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 25.0, "predicted_temp_c": 32.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 35.0, "predicted_temp_c": 31.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 55.0, "predicted_temp_c": 30.0},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 80.0, "predicted_temp_c": 28.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 25.0,
+                "predicted_temp_c": 32.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 35.0,
+                "predicted_temp_c": 31.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 55.0,
+                "predicted_temp_c": 30.0
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 80.0,
+                "predicted_temp_c": 28.5
+            },
         ]
     },
+
     "vijayawada": {
         "location": "Vijayawada",
         "district": "NTR",
@@ -101,12 +124,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 27.0,
         "stability": "LOW",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 18.0, "predicted_temp_c": 33.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 25.0, "predicted_temp_c": 32.0},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 36.0, "predicted_temp_c": 31.0},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 45.0, "predicted_temp_c": 29.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 18.0,
+                "predicted_temp_c": 33.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 25.0,
+                "predicted_temp_c": 32.0
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 36.0,
+                "predicted_temp_c": 31.0
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 45.0,
+                "predicted_temp_c": 29.5
+            },
         ]
     },
+
     "visakhapatnam": {
         "location": "Visakhapatnam",
         "district": "Visakhapatnam",
@@ -119,12 +159,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 32.0,
         "stability": "LOW",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 20.0, "predicted_temp_c": 31.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 28.0, "predicted_temp_c": 30.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 40.0, "predicted_temp_c": 29.5},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 52.0, "predicted_temp_c": 28.0},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 20.0,
+                "predicted_temp_c": 31.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 28.0,
+                "predicted_temp_c": 30.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 40.0,
+                "predicted_temp_c": 29.5
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 52.0,
+                "predicted_temp_c": 28.0
+            },
         ]
     },
+
     "guntur": {
         "location": "Guntur",
         "district": "Guntur",
@@ -137,12 +194,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 22.0,
         "stability": "MODERATE",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 16.0, "predicted_temp_c": 33.5},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 22.0, "predicted_temp_c": 32.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 30.0, "predicted_temp_c": 31.5},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 38.0, "predicted_temp_c": 30.0},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 16.0,
+                "predicted_temp_c": 33.5
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 22.0,
+                "predicted_temp_c": 32.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 30.0,
+                "predicted_temp_c": 31.5
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 38.0,
+                "predicted_temp_c": 30.0
+            },
         ]
     },
+
     "nellore": {
         "location": "Nellore",
         "district": "Sri Potti Sriramulu Nellore",
@@ -155,12 +229,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 8.0,
         "stability": "HIGH",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 10.0, "predicted_temp_c": 34.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 12.0, "predicted_temp_c": 33.0},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 15.0, "predicted_temp_c": 32.5},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 18.0, "predicted_temp_c": 31.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 10.0,
+                "predicted_temp_c": 34.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 12.0,
+                "predicted_temp_c": 33.0
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 15.0,
+                "predicted_temp_c": 32.5
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 18.0,
+                "predicted_temp_c": 31.5
+            },
         ]
     },
+
     "hyderabad": {
         "location": "Hyderabad",
         "district": "Hyderabad",
@@ -173,12 +264,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 3.0,
         "stability": "HIGH",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 4.0, "predicted_temp_c": 30.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 5.0, "predicted_temp_c": 29.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 6.0, "predicted_temp_c": 29.0},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 7.0, "predicted_temp_c": 28.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 4.0,
+                "predicted_temp_c": 30.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 5.0,
+                "predicted_temp_c": 29.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 6.0,
+                "predicted_temp_c": 29.0
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 7.0,
+                "predicted_temp_c": 28.5
+            },
         ]
     },
+
     "bengaluru": {
         "location": "Bengaluru",
         "district": "Bengaluru Urban",
@@ -191,12 +299,29 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 2.5,
         "stability": "HIGH",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 2.0, "predicted_temp_c": 26.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 2.5, "predicted_temp_c": 25.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 3.5, "predicted_temp_c": 25.0},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 4.5, "predicted_temp_c": 24.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 2.0,
+                "predicted_temp_c": 26.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 2.5,
+                "predicted_temp_c": 25.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 3.5,
+                "predicted_temp_c": 25.0
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 4.5,
+                "predicted_temp_c": 24.5
+            },
         ]
     },
+
     "chennai": {
         "location": "Chennai",
         "district": "Chennai",
@@ -209,26 +334,58 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "drift_mm": 14.0,
         "stability": "MODERATE",
         "cycles": [
-            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 8.0, "predicted_temp_c": 33.0},
-            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 12.0, "predicted_temp_c": 32.5},
-            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 16.0, "predicted_temp_c": 31.5},
-            {"run_name": "Latest (18Z)", "predicted_rain_mm": 22.0, "predicted_temp_c": 30.5},
+            {
+                "run_name": "Cycle -18h (00Z)",
+                "predicted_rain_mm": 8.0,
+                "predicted_temp_c": 33.0
+            },
+            {
+                "run_name": "Cycle -12h (06Z)",
+                "predicted_rain_mm": 12.0,
+                "predicted_temp_c": 32.5
+            },
+            {
+                "run_name": "Cycle -06h (12Z)",
+                "predicted_rain_mm": 16.0,
+                "predicted_temp_c": 31.5
+            },
+            {
+                "run_name": "Latest (18Z)",
+                "predicted_rain_mm": 22.0,
+                "predicted_temp_c": 30.5
+            },
         ]
     },
 }
 
 
-def _match_location_key(location: str, lat: Optional[float] = None, lon: Optional[float] = None) -> Optional[str]:
-    """Resolves matching location key strictly by coordinates or specific place name."""
+# ---------------------------------------------------------------------------
+# Location matching
+# ---------------------------------------------------------------------------
+
+def _match_location_key(
+    location: str,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None
+) -> Optional[str]:
+    """
+    Resolves matching location key strictly by coordinates or specific place name.
+    """
+
     loc_clean = (location or "").lower()
 
     # Exact coordinate proximity matching (within ~0.25 deg)
     if lat is not None and lon is not None:
         try:
             f_lat, f_lon = float(lat), float(lon)
+
             for key, rec in LOCATION_DRIFT_REGISTRY.items():
-                if abs(rec["lat"] - f_lat) < 0.25 and abs(rec["lon"] - f_lon) < 0.25:
+                if (
+                    abs(rec["lat"] - f_lat) < 0.25
+                    and abs(rec["lon"] - f_lon) < 0.25
+                ):
                     return key
+
         except (ValueError, TypeError):
             pass
 
@@ -240,56 +397,25 @@ def _match_location_key(location: str, lat: Optional[float] = None, lon: Optiona
     return None
 
 
-def get_location_drift_summary(location: str = "Krishna District", lat: Optional[float] = None, lon: Optional[float] = None) -> Dict[str, Any]:
-=======
-def get_all_lead_days_drift(location: str = "Krishna District") -> Dict[int, Dict[str, Any]]:
-    """
-    Computes lead-day drift profiles for Day 1 through Day 10 based on atmospheric lead decay.
-    """
-    profile = {}
-    is_cyclonic_or_monsoon = "andhra" in location.lower() or "krishna" in location.lower() or "mumbai" in location.lower() or "odisha" in location.lower()
+# ---------------------------------------------------------------------------
+# Location drift summary
+# ---------------------------------------------------------------------------
 
-    for d in range(1, 11):
-        if d == 1:
-            drift_amount = 1.5
-        elif d == 2:
-            drift_amount = 3.0
-        elif d == 3:
-            drift_amount = 6.5
-        elif d == 4:
-            drift_amount = 12.0
-        elif d == 5:
-            drift_amount = 22.0 if is_cyclonic_or_monsoon else 15.0
-        elif d == 6:
-            drift_amount = 55.0 if "krishna" in location.lower() or "vijayawada" in location.lower() else (35.0 if is_cyclonic_or_monsoon else 20.0)
-        elif d == 7:
-            drift_amount = 45.0 if is_cyclonic_or_monsoon else 25.0
-        elif d == 8:
-            drift_amount = 58.0 if is_cyclonic_or_monsoon else 32.0
-        elif d == 9:
-            drift_amount = 62.0 if is_cyclonic_or_monsoon else 38.0
-        else:  # d == 10
-            drift_amount = 70.0 if is_cyclonic_or_monsoon else 45.0
-
-        profile[d] = {
-            "lead_day": d,
-            "drift_amount": round(drift_amount, 1),
-            "drift_level": "LOW" if drift_amount <= 10 else "MODERATE" if drift_amount <= 25 else "HIGH",
-            "stability": "HIGH" if drift_amount <= 10 else "MODERATE" if drift_amount <= 25 else "LOW"
-        }
-
-    return profile
-
-
-def get_drift_history(location: str = "Krishna District") -> List[Dict[str, Any]]:
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
+def get_location_drift_summary(
+    location: str = "Krishna District",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None
+) -> Dict[str, Any]:
     """
     Returns location-specific drift metrics.
     Ensures snapshots are strictly isolated by location_id/coordinates.
     """
+
     matched_key = _match_location_key(location, lat, lon)
+
     if matched_key and matched_key in LOCATION_DRIFT_REGISTRY:
         rec = LOCATION_DRIFT_REGISTRY[matched_key]
+
         return {
             "has_history": True,
             "location": rec["location"],
@@ -315,28 +441,160 @@ def get_drift_history(location: str = "Krishna District") -> List[Dict[str, Any]
     }
 
 
-def get_drift_history(location: str = "Krishna District", lat: Optional[float] = None, lon: Optional[float] = None) -> List[Dict[str, Any]]:
+# ---------------------------------------------------------------------------
+# Day 1–10 drift profile
+# ---------------------------------------------------------------------------
+
+def get_all_lead_days_drift(
+    location: str = "Krishna District"
+) -> Dict[int, Dict[str, Any]]:
     """
-    Provides multi-cycle drift history snapshots strictly isolated to the selected location/coordinates.
-    Krishna District snapshots never mix with Vijayawada or Visakhapatnam snapshots.
+    Computes lead-day drift profiles for Day 1 through Day 10
+    based on atmospheric lead decay.
     """
+
+    profile = {}
+
+    location_lower = location.lower()
+
+    is_cyclonic_or_monsoon = (
+        "andhra" in location_lower
+        or "krishna" in location_lower
+        or "mumbai" in location_lower
+        or "odisha" in location_lower
+    )
+
+    for d in range(1, 11):
+
+        if d == 1:
+            drift_amount = 1.5
+
+        elif d == 2:
+            drift_amount = 3.0
+
+        elif d == 3:
+            drift_amount = 6.5
+
+        elif d == 4:
+            drift_amount = 12.0
+
+        elif d == 5:
+            drift_amount = (
+                22.0 if is_cyclonic_or_monsoon else 15.0
+            )
+
+        elif d == 6:
+            drift_amount = (
+                55.0
+                if (
+                    "krishna" in location_lower
+                    or "vijayawada" in location_lower
+                )
+                else (
+                    35.0
+                    if is_cyclonic_or_monsoon
+                    else 20.0
+                )
+            )
+
+        elif d == 7:
+            drift_amount = (
+                45.0 if is_cyclonic_or_monsoon else 25.0
+            )
+
+        elif d == 8:
+            drift_amount = (
+                58.0 if is_cyclonic_or_monsoon else 32.0
+            )
+
+        elif d == 9:
+            drift_amount = (
+                62.0 if is_cyclonic_or_monsoon else 38.0
+            )
+
+        else:
+            # Day 10
+            drift_amount = (
+                70.0 if is_cyclonic_or_monsoon else 45.0
+            )
+
+        profile[d] = {
+            "lead_day": d,
+            "drift_amount": round(drift_amount, 1),
+            "drift_level": (
+                "LOW"
+                if drift_amount <= 10
+                else "MODERATE"
+                if drift_amount <= 25
+                else "HIGH"
+            ),
+            "stability": (
+                "HIGH"
+                if drift_amount <= 10
+                else "MODERATE"
+                if drift_amount <= 25
+                else "LOW"
+            )
+        }
+
+    return profile
+
+
+# ---------------------------------------------------------------------------
+# Multi-cycle drift history
+# ---------------------------------------------------------------------------
+
+def get_drift_history(
+    location: str = "Krishna District",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None
+) -> List[Dict[str, Any]]:
+    """
+    Provides multi-cycle drift history snapshots strictly isolated
+    to the selected location/coordinates.
+
+    Krishna District snapshots never mix with Vijayawada
+    or Visakhapatnam snapshots.
+    """
+
     now = datetime.now()
+
     matched_key = _match_location_key(location, lat, lon)
+
     if matched_key and matched_key in LOCATION_DRIFT_REGISTRY:
+
         rec = LOCATION_DRIFT_REGISTRY[matched_key]
+
         cycles = []
+
         cycle_offsets = [18, 12, 6, 0]
+
         for idx, item in enumerate(rec["cycles"]):
-            hours_ago = cycle_offsets[idx] if idx < len(cycle_offsets) else 0
+
+            hours_ago = (
+                cycle_offsets[idx]
+                if idx < len(cycle_offsets)
+                else 0
+            )
+
             cycles.append({
-                "cycle_time": (now - timedelta(hours=hours_ago)).strftime("%d %b %H:%M"),
+                "cycle_time": (
+                    now - timedelta(hours=hours_ago)
+                ).strftime("%d %b %H:%M"),
+
                 "run_name": item["run_name"],
+
                 "predicted_rain_mm": item["predicted_rain_mm"],
+
                 "predicted_temp_c": item["predicted_temp_c"],
+
                 "location": rec["location"],
+
                 "latitude": rec["lat"],
+
                 "longitude": rec["lon"],
             })
+
         return cycles
 
     # For any new location without prior runs
@@ -349,6 +607,9 @@ def get_drift_history(location: str = "Krishna District", lat: Optional[float] =
             "location": location,
             "latitude": float(lat) if lat is not None else None,
             "longitude": float(lon) if lon is not None else None,
-            "note": "Initial baseline cycle. Successive runs will establish drift history."
+            "note": (
+                "Initial baseline cycle. Successive runs "
+                "will establish drift history."
+            )
         }
     ]
