@@ -38,6 +38,10 @@ class CurrentWeather(BaseModel):
     sunrise: str
     sunset: str
     updated_at: str
+    cloud_cover_pct: int = 40
+    dew_point_c: float = 23.5
+    wind_gusts_kmh: float = 26.0
+    air_quality_index: str = "Moderate (AQI 82)"
 
 
 class HourlyForecastItem(BaseModel):

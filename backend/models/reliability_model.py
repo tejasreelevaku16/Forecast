@@ -46,6 +46,16 @@ class ReliabilityOverview(BaseModel):
     risk_level: str = Field(description="LOW, MODERATE, or HIGH")
     forecast_stability: str = Field(description="HIGH, MODERATE, or LOW")
     
+    # Top-level unified forecast parameters (for consistency across Dashboard, Map, etc.)
+    forecast_drift_mm: Optional[float] = Field(default=None, description="Drift in mm for focus lead day")
+    risk_label: Optional[str] = Field(default="HIGH RISK", description="Standardized label: LOW RISK, MODERATE RISK, or HIGH RISK")
+    target_date: Optional[str] = Field(default=None, description="Formatted target date e.g. Oct 01")
+    forecast_run: Optional[str] = Field(default="00Z GFS Cycle", description="NWP model initialization run")
+    rainfall_mm: Optional[float] = Field(default=None, description="Predicted rainfall in mm")
+    temperature_c: Optional[float] = Field(default=None, description="Predicted temperature in °C")
+    precipitation_probability_pct: Optional[int] = Field(default=None, description="Precipitation probability in %")
+    last_updated: Optional[str] = Field(default="Today, 6:30 PM", description="Last observation or cycle update timestamp")
+
     # Explainable "Why?" bullets
     reasons: List[ExplainabilityFactor]
     

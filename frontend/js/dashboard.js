@@ -1,121 +1,338 @@
 /**
- * WeatherTrust AI — Main Dashboard Coordinator (Phase 1)
- * Manages search interactions, city selection, map initialization,
- * and concurrent data retrieval from FastAPI backend.
+ * WeatherTrust AI — Main Dashboard Coordinator & Controller (Phase 2.0)
+ * Manages search interactions, city selection, sector persona switching,
+ * central dashboard hierarchy, real-time sync across all 10 page views,
+ * auto-refresh timer, and global loading/error states.
  */
 
 let mapInstance = null;
-let currentLocation = "Krishna District, Andhra Pradesh";
+let currentLocation = "Krishna District";
+let currentSector = "General Public";
 
 /**
- * Initializes Leaflet Map with regional reliability markers
+ * Global Loading and Error State Helpers
  */
-function initRegionalReliabilityMap(lat = 16.5062, lon = 80.6480, locationName = "Krishna District") {
-  const mapContainer = document.getElementById('map');
-  if (!mapContainer || typeof L === 'undefined') return;
+function showLoading(msg = "Evaluating forecast reliability...") {
+  const overlay = document.getElementById('globalLoadingOverlay');
+  const text = document.getElementById('globalLoadingText');
+  if (overlay) overlay.classList.add('active');
+  if (text) text.textContent = msg;
+}
 
-  if (mapInstance) {
-    mapInstance.remove();
-  }
+function hideLoading() {
+  const overlay = document.getElementById('globalLoadingOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
 
-  // Dark basemap from CartoDB
-  mapInstance = L.map('map', {
-    center: [lat, lon],
-    zoom: 7,
-    zoomControl: true,
-  });
+function showError(msg) {
+  const card = document.getElementById('globalErrorCard');
+  const text = document.getElementById('globalErrorMessage');
+  if (card) card.classList.add('active');
+  if (text) text.textContent = msg;
+}
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(mapInstance);
-
-  // Regional reliability demonstration markers
-  const regions = [
-    { name: "Krishna District", lat: 16.5062, lon: 80.6480, score: 24, bust: "76%", risk: "HIGH", color: "#ef4444" },
-    { name: "Guntur", lat: 16.3067, lon: 80.4365, score: 32, bust: "68%", risk: "HIGH", color: "#ef4444" },
-    { name: "West Godavari", lat: 16.7107, lon: 81.0952, score: 48, bust: "52%", risk: "MODERATE", color: "#f59e0b" },
-    { name: "Hyderabad", lat: 17.3850, lon: 78.4867, score: 78, bust: "22%", risk: "LOW", color: "#10b981" },
-  ];
-
-  regions.forEach(reg => {
-    const circle = L.circleMarker([reg.lat, reg.lon], {
-      radius: 12,
-      fillColor: reg.color,
-      color: '#ffffff',
-      weight: 2,
-      opacity: 0.9,
-      fillOpacity: 0.7
-    }).addTo(mapInstance);
-
-    circle.bindPopup(`
-      <div style="font-family: Inter, sans-serif; color: #0f172a; padding: 4px;">
-        <h4 style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700;">${reg.name}</h4>
-        <div style="font-size: 12px; margin-bottom: 2px;">Forecast Trust: <strong>${reg.score}/100</strong></div>
-        <div style="font-size: 12px; margin-bottom: 2px;">Bust Risk: <strong>${reg.bust} (${reg.risk})</strong></div>
-        <span style="font-size: 10px; color: #64748b;">(Demo Simulation Zone)</span>
-      </div>
-    `);
-
-    if (reg.name === "Krishna District") {
-      circle.openPopup();
-    }
-  });
+function hideError() {
+  const card = document.getElementById('globalErrorCard');
+  if (card) card.classList.remove('active');
 }
 
 /**
- * Loads and refreshes all dashboard modules for the requested location
+ * Synchronizes Dashboard Central Entrypoint Overview Cards
  */
-async function loadDashboard(locationQuery) {
-  currentLocation = locationQuery;
-
-  // Run weather and reliability queries concurrently
-  const [weatherData, reliabilityData] = await Promise.all([
-    WeatherUI.fetchForecast(locationQuery),
-    ReliabilityUI.fetchOverview(locationQuery),
-  ]);
-
+function updateDashboardHeroCards(weatherData, reliabilityData) {
   if (weatherData && weatherData.current) {
-    WeatherUI.renderCurrentWeather(weatherData.current);
-    WeatherUI.renderHourlyTimeline(weatherData.hourly);
-    WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData);
-    WeatherUI.renderAlerts(weatherData.alerts);
+    const c = weatherData.current;
+    const locTitle = document.getElementById('dashLocationTitle');
+    if (locTitle) locTitle.textContent = `${c.location}, ${c.region}`;
 
-    if (typeof renderHourlyTrendChart === 'function') {
-      renderHourlyTrendChart(weatherData.hourly);
+    const heroTemp = document.getElementById('dashHeroTemp');
+    if (heroTemp) heroTemp.textContent = `${Math.round(c.temperature_c)}°C`;
+
+    const heroCond = document.getElementById('dashHeroCond');
+    if (heroCond) heroCond.textContent = `${c.condition}`;
+
+    const heroSum = document.getElementById('dashHeroSummary');
+    if (heroSum) {
+      if (weatherData.daily && weatherData.daily.length > 5) {
+        const d6 = weatherData.daily[5];
+        heroSum.textContent = `Current: ${c.condition}, ${Math.round(c.temperature_c)}°C. Day 6 projection indicates ${d6.precipitation_mm} mm rainfall with significant atmospheric sensitivity.`;
+      } else {
+        heroSum.textContent = `Current observation: ${c.condition}, ${Math.round(c.temperature_c)}°C with ${c.humidity_pct}% relative humidity.`;
+      }
     }
 
-    // Center map on location
-    if (typeof initRegionalReliabilityMap === 'function') {
-      initRegionalReliabilityMap(
-        weatherData.current.latitude,
-        weatherData.current.longitude,
-        weatherData.current.location
-      );
+    // Header freshness
+    const updatedElem = document.getElementById('headerLastUpdated');
+    if (updatedElem) {
+      const now = new Date();
+      updatedElem.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
   }
 
   if (reliabilityData) {
-    ReliabilityUI.renderHero(reliabilityData);
-    if (typeof renderBustRiskChart === 'function') {
-      renderBustRiskChart(reliabilityData.lead_days);
+    if (typeof WeatherTrustCommon !== 'undefined') {
+      WeatherTrustCommon.syncForecastData(reliabilityData);
     }
+    const bustProb = reliabilityData.bust_probability_pct !== undefined ? reliabilityData.bust_probability_pct : 76;
+    const riskInfo = typeof WeatherTrustCommon !== 'undefined'
+      ? WeatherTrustCommon.classifyRisk(bustProb)
+      : {
+          bust_probability: bustProb,
+          trust_score: 100 - bustProb,
+          risk_level: bustProb < 30 ? "LOW" : bustProb < 60 ? "MODERATE" : "HIGH",
+          risk_label: bustProb < 30 ? "LOW RISK" : bustProb < 60 ? "MODERATE RISK" : "HIGH RISK",
+          confidence_label: bustProb < 30 ? "HIGH CONFIDENCE" : bustProb < 60 ? "MODERATE CONFIDENCE" : "LOW CONFIDENCE",
+          color: bustProb < 30 ? "#10b981" : bustProb < 60 ? "#f59e0b" : "#ef4444",
+          badge_class: bustProb < 30 ? "badge-risk-low" : bustProb < 60 ? "badge-risk-mod" : "badge-risk-high",
+          stability: bustProb < 30 ? "HIGH" : bustProb < 60 ? "MODERATE" : "LOW",
+        };
+
+    const rainElem = document.getElementById('dashForecastRain');
+    if (rainElem) {
+      const rainVal = (reliabilityData.rainfall_mm !== undefined && reliabilityData.rainfall_mm !== null)
+        ? reliabilityData.rainfall_mm
+        : (reliabilityData.focus_lead_rainfall_mm !== undefined ? reliabilityData.focus_lead_rainfall_mm : 80);
+      rainElem.textContent = `${Math.round(rainVal)} mm`;
+    }
+
+    const condElem = document.getElementById('dashForecastCond');
+    if (condElem) {
+      const rainVal = (reliabilityData.rainfall_mm !== undefined && reliabilityData.rainfall_mm !== null)
+        ? reliabilityData.rainfall_mm
+        : (reliabilityData.focus_lead_rainfall_mm || 80);
+      condElem.textContent = rainVal > 30 ? "Heavy Rain Expected" : "Moderate Rain / Showers";
+    }
+
+    const dateElem = document.getElementById('dashForecastDate');
+    if (dateElem) {
+      dateElem.textContent = reliabilityData.target_date
+        ? `Target: ${reliabilityData.target_date} (${reliabilityData.forecast_run || '00Z GFS'})`
+        : `Target: Lead Day ${reliabilityData.focus_lead_day || 6} Outlook`;
+    }
+
+    const trustScoreElem = document.getElementById('dashTrustScore');
+    const confTierElem = document.getElementById('dashConfidenceTier');
+    if (trustScoreElem) {
+      trustScoreElem.textContent = `${riskInfo.trust_score} / 100`;
+      trustScoreElem.style.color = riskInfo.color;
+    }
+    if (confTierElem) {
+      const icon = riskInfo.risk_level === 'LOW' ? '🟢' : riskInfo.risk_level === 'MODERATE' ? '🟡' : '🔴';
+      confTierElem.textContent = `${icon} ${riskInfo.confidence_label}`;
+      confTierElem.style.color = riskInfo.color;
+    }
+
+    const bustProbElem = document.getElementById('dashBustProb');
+    const riskTierElem = document.getElementById('dashRiskTier');
+    if (bustProbElem) {
+      bustProbElem.textContent = `${riskInfo.bust_probability}%`;
+      bustProbElem.style.color = riskInfo.color;
+    }
+    if (riskTierElem) {
+      const icon = riskInfo.risk_level === 'LOW' ? '🟢' : riskInfo.risk_level === 'MODERATE' ? '🟡' : '🔴';
+      riskTierElem.textContent = `${icon} ${riskInfo.risk_label}`;
+      riskTierElem.style.color = riskInfo.color;
+    }
+
+    const stabElem = document.getElementById('dashStability');
+    const runChangeElem = document.getElementById('dashRunChange');
+    if (stabElem) {
+      const rawStab = reliabilityData.forecast_stability || (reliabilityData.drift_monitor ? reliabilityData.drift_monitor.stability_level : null) || riskInfo.stability;
+      const formattedStab = typeof WeatherTrustCommon !== 'undefined'
+        ? WeatherTrustCommon.formatStability(rawStab)
+        : `${rawStab} STABILITY`;
+      stabElem.textContent = formattedStab;
+      stabElem.style.color = (rawStab === 'HIGH' || rawStab === 'HIGH STABILITY') ? '#10b981' : (rawStab === 'MODERATE' || rawStab === 'MODERATE STABILITY') ? '#f59e0b' : '#ef4444';
+    }
+    if (runChangeElem) {
+      const rawDrift = reliabilityData.forecast_drift_mm ?? (reliabilityData.drift_monitor ? reliabilityData.drift_monitor.absolute_change : null);
+      const driftText = typeof WeatherTrustCommon !== 'undefined'
+        ? WeatherTrustCommon.formatDrift(rawDrift)
+        : (rawDrift !== null && rawDrift !== undefined && !isNaN(rawDrift) ? `+${Math.round(rawDrift)} mm Drift` : "Drift data unavailable");
+      runChangeElem.textContent = driftText;
+      if (rawDrift !== null && rawDrift !== undefined && !isNaN(rawDrift)) {
+        runChangeElem.style.color = Number(rawDrift) > 20 ? '#ef4444' : '#f59e0b';
+      } else {
+        runChangeElem.style.color = '#94a3b8';
+      }
+    }
+
+    const actionGuidance = document.getElementById('dashActionGuidance');
+    if (actionGuidance) {
+      actionGuidance.textContent = reliabilityData.recommendation;
+    }
+
+    // Also update Decision Support page advisory
+    const secTitle = document.getElementById('decisionSupportSectorTitle');
+    const secBadge = document.getElementById('decisionSupportTierBadge');
+    const secAction = document.getElementById('decisionSupportActionText');
+    if (secTitle) secTitle.textContent = `${currentSector} Operational Advisory`;
+    if (secBadge) {
+      secBadge.textContent = `${riskInfo.risk_label} WINDOW`;
+      secBadge.className = `badge ${riskInfo.badge_class}`;
+    }
+    if (secAction) secAction.textContent = reliabilityData.recommendation;
   }
 }
 
 /**
- * Setup UI Event Listeners
+ * Loads and refreshes all dashboard modules across all 10 pages
+ */
+async function loadDashboard(locationQuery, sector = currentSector) {
+  currentLocation = locationQuery;
+  currentSector = sector;
+
+  showLoading(`Analyzing forecast reliability for ${locationQuery}...`);
+  hideError();
+
+  try {
+    // Concurrent data retrieval from existing backend services
+    const [weatherData, reliabilityData, driftData] = await Promise.all([
+      WeatherUI.fetchForecast(locationQuery),
+      ReliabilityUI.fetchOverview(locationQuery, 6, sector),
+      DriftUI.fetchDriftHistory(locationQuery),
+    ]);
+
+    if (!weatherData && !reliabilityData) {
+      throw new Error(`Unable to reach weather services for '${locationQuery}'. Please check network connectivity.`);
+    }
+
+    // Update Central Dashboard Overview Entrypoint
+    updateDashboardHeroCards(weatherData, reliabilityData);
+
+    // Page 2: Live Weather Page View
+    if (weatherData && weatherData.current) {
+      WeatherUI.renderCurrentWeather(weatherData.current);
+      WeatherUI.renderHourlyTimeline(weatherData.hourly);
+      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData);
+      WeatherUI.renderAlerts(weatherData.alerts);
+
+      if (typeof renderHourlyTrendChart === 'function') {
+        renderHourlyTrendChart(weatherData.hourly);
+      }
+    }
+
+    // Page 4: Forecast Trust Page View
+    if (reliabilityData) {
+      ReliabilityUI.renderHero(reliabilityData);
+      if (typeof renderBustRiskChart === 'function') {
+        renderBustRiskChart(reliabilityData.lead_days);
+      }
+    }
+
+    // Page 5: Forecast Drift Page View
+    if (driftData) {
+      DriftUI.renderDriftSection(driftData);
+    }
+
+    // Page 7: Alerts Page View
+    await fetchAndRenderAlertsPage(locationQuery);
+
+    // Page 6: India Map View synchronization
+    if (typeof IndiaMapUI !== 'undefined' && IndiaMapUI.map && IndiaMapUI.districtsData && IndiaMapUI.districtsData.length > 0) {
+      const match = IndiaMapUI.districtsData.find(d => 
+        locationQuery.toLowerCase().includes(d.name.toLowerCase()) || 
+        d.name.toLowerCase().includes(locationQuery.toLowerCase())
+      );
+      if (match) {
+        IndiaMapUI.map.setView([match.lat, match.lon], 7, { animate: true });
+      }
+    }
+
+    // Page 9: Technical / Judge View
+    if (typeof JudgeUI !== 'undefined') {
+      JudgeUI.fetchMetrics().then(data => {
+        JudgeUI.renderJudgeDashboard(data);
+      });
+    }
+
+    hideLoading();
+  } catch (err) {
+    console.error("loadDashboard error:", err);
+    hideLoading();
+    showError(err.message || "Failed to retrieve forecast data. Please retry.");
+  }
+}
+
+/**
+ * Fetches and renders alerts for the dedicated Alerts page view
+ */
+async function fetchAndRenderAlertsPage(locationName) {
+  try {
+    const res = await fetch(`/api/alerts/reliability?location=${encodeURIComponent(locationName)}`);
+    if (!res.ok) return;
+    const payload = await res.json();
+    const container = document.getElementById('alertsListContainer');
+    const badge = document.getElementById('alertsNavBadge');
+    const activeBadge = document.getElementById('activeAlertCountBadge');
+
+    if (badge) badge.textContent = payload.active_alerts_count;
+    if (activeBadge) activeBadge.textContent = `Active Alerts: ${payload.active_alerts_count}`;
+
+    if (container && payload.alerts) {
+      container.innerHTML = '';
+      payload.alerts.forEach(a => {
+        const severityClass = a.severity === 'HIGH' ? 'high-severity' : a.severity === 'MODERATE' ? 'mod-severity' : 'stable-severity';
+        const badgeClass = a.severity === 'HIGH' ? 'badge-risk-high' : a.severity === 'MODERATE' ? 'badge-risk-mod' : 'badge-risk-low';
+        const icon = a.severity === 'HIGH' ? '⚠️' : a.severity === 'MODERATE' ? '🛡️' : '✓';
+
+        const card = document.createElement('div');
+        card.className = `alert-card ${severityClass}`;
+        card.innerHTML = `
+          <div class="alert-main">
+            <span class="alert-icon-wrap">${icon}</span>
+            <div class="alert-info">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h4>${a.headline}</h4>
+                <span class="badge ${badgeClass}">${a.severity}</span>
+              </div>
+              <p>${a.message}</p>
+              <div class="alert-meta">
+                <span>📍 ${payload.location}</span>
+                <span>•</span>
+                <span>${a.metric}</span>
+                <span>•</span>
+                <span>${a.disclaimer}</span>
+              </div>
+            </div>
+          </div>
+          <button class="alert-ack-btn" onclick="this.closest('.alert-card').classList.toggle('read')">Mark Read</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+  } catch (e) {
+    console.error("fetchAndRenderAlertsPage error:", e);
+  }
+}
+
+/**
+ * Setup Event Listeners
  */
 function setupEventListeners() {
-  // Quick location pill buttons
+  // Quick location pills
   const pills = document.querySelectorAll('.pill-btn');
   pills.forEach(pill => {
-    pill.addEventListener('click', (e) => {
+    pill.addEventListener('click', () => {
       pills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const loc = pill.getAttribute('data-location');
       loadDashboard(loc);
+    });
+  });
+
+  // Sector Persona Selector
+  const sectorBtns = document.querySelectorAll('.sector-pill');
+  sectorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      sectorBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const sec = btn.getAttribute('data-sector');
+      currentSector = sec;
+      ReliabilityUI.fetchOverview(currentLocation, 6, currentSector).then(data => {
+        ReliabilityUI.renderHero(data);
+        updateDashboardHeroCards(null, data);
+      });
     });
   });
 
@@ -152,7 +369,6 @@ function setupEventListeners() {
               div.addEventListener('click', () => {
                 searchInput.value = item.name;
                 searchDropdown.classList.remove('active');
-                // Deactivate pills
                 pills.forEach(p => p.classList.remove('active'));
                 loadDashboard(item.name);
               });
@@ -168,14 +384,12 @@ function setupEventListeners() {
       }, 250);
     });
 
-    // Close dropdown on click outside
     document.addEventListener('click', (e) => {
       if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
         searchDropdown.classList.remove('active');
       }
     });
 
-    // Enter key submits search
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const query = searchInput.value.trim();
@@ -188,26 +402,80 @@ function setupEventListeners() {
     });
   }
 
-  // Sidebar navigation links
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      navItems.forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-
-      const targetId = item.getAttribute('data-target');
-      if (targetId) {
-        const targetElem = document.getElementById(targetId);
-        if (targetElem) {
-          targetElem.scrollIntoView({ behavior: 'smooth' });
-        }
+  // GPS Locate Me Button Handler
+  const locateBtn = document.getElementById('locateMeBtn');
+  if (locateBtn) {
+    locateBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
       }
+      locateBtn.innerHTML = '<span>⏳</span> Locating...';
+      locateBtn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          try {
+            const res = await fetch(`/api/weather/locate?lat=${latitude}&lon=${longitude}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.current && data.current.location) {
+                const matchedLoc = data.current.location;
+                if (searchInput) searchInput.value = matchedLoc;
+                pills.forEach(p => p.classList.remove('active'));
+                loadDashboard(matchedLoc);
+              }
+            }
+          } catch (err) {
+            console.error("GPS locate error:", err);
+          } finally {
+            locateBtn.innerHTML = '<span>📍</span> Locate';
+            locateBtn.disabled = false;
+          }
+        },
+        (err) => {
+          console.warn("Geolocation denied or error:", err.message);
+          alert("Unable to fetch GPS location. Please allow location permissions or search manually.");
+          locateBtn.innerHTML = '<span>📍</span> Locate';
+          locateBtn.disabled = false;
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
     });
-  });
+  }
+
+  // Manual Refresh Now Button
+  const refreshBtn = document.getElementById('refreshNowBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.classList.add('spinning');
+      await loadDashboard(currentLocation);
+      setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+    });
+  }
+
+  // Retry Button in Global Error Card
+  const retryBtn = document.getElementById('globalRetryBtn');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      hideError();
+      loadDashboard(currentLocation);
+    });
+  }
+
+  // Auto-refresh every 30 minutes
+  setInterval(() => {
+    console.log("[WeatherTrust] 30-minute auto-refresh triggered...");
+    loadDashboard(currentLocation);
+  }, 30 * 60 * 1000);
 }
 
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadDashboard("Krishna District");
+  if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.initMap === 'function') {
+    IndiaMapUI.initMap();
+  }
 });

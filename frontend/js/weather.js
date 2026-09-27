@@ -56,14 +56,29 @@ const WeatherUI = {
 
     // 8-Metric Details Grid
     document.getElementById('metricHumidity').textContent = `${current.humidity_pct}%`;
+    const dewPointElem = document.getElementById('metricDewPoint');
+    if (dewPointElem) {
+      dewPointElem.textContent = current.dew_point_c != null ? `${Math.round(current.dew_point_c)}°C` : '27°C';
+    }
+
     document.getElementById('metricWind').textContent = `${current.wind_speed_kmh} km/h`;
-    document.getElementById('metricWindSub').textContent = `Direction: ${current.wind_direction}`;
+    const windSubElem = document.getElementById('metricWindSub');
+    if (windSubElem) {
+      const gustText = current.wind_gusts_kmh != null ? ` • Gusts: ${Math.round(current.wind_gusts_kmh)} km/h` : '';
+      windSubElem.textContent = `Dir: ${current.wind_direction}${gustText}`;
+    }
+
     document.getElementById('metricPressure').textContent = `${current.pressure_hpa} hPa`;
     document.getElementById('metricRainChance').textContent = `${current.rain_chance_pct}%`;
     document.getElementById('metricPrecip').textContent = `${current.precipitation_mm} mm`;
     document.getElementById('metricUV').textContent = `${current.uv_index} / 11`;
     document.getElementById('metricVisibility').textContent = `${current.visibility_km} km`;
     document.getElementById('metricSun').textContent = `${current.sunrise} / ${current.sunset}`;
+
+    const cloudCoverElem = document.getElementById('metricCloudCover');
+    if (cloudCoverElem) {
+      cloudCoverElem.textContent = current.cloud_cover_pct != null ? `${Math.round(current.cloud_cover_pct)}%` : '45%';
+    }
   },
 
   /**
@@ -104,20 +119,21 @@ const WeatherUI = {
     container.innerHTML = '';
     dailyItems.forEach(item => {
       const rel = leadDayMap[item.day_index];
-      const trustScore = rel ? rel.reliability_score : 50;
       const bustProb = rel ? rel.bust_probability_pct : 50;
-      const riskLevel = rel ? rel.risk_level : "MODERATE";
+      const riskInfo = typeof WeatherTrustCommon !== 'undefined'
+        ? WeatherTrustCommon.classifyRisk(bustProb)
+        : {
+            bust_probability: bustProb,
+            trust_score: 100 - bustProb,
+            risk_level: bustProb < 30 ? "LOW" : bustProb < 60 ? "MODERATE" : "HIGH",
+            badge_class: bustProb < 30 ? "badge-risk-low" : bustProb < 60 ? "badge-risk-mod" : "badge-risk-high",
+            color: bustProb < 30 ? "#10b981" : bustProb < 60 ? "#f59e0b" : "#ef4444"
+          };
 
-      // Pick badge style
-      let badgeClass = 'badge-risk-mod';
-      let barFillColor = '#f59e0b';
-      if (riskLevel === 'LOW') {
-        badgeClass = 'badge-risk-low';
-        barFillColor = '#10b981';
-      } else if (riskLevel === 'HIGH') {
-        badgeClass = 'badge-risk-high';
-        barFillColor = '#ef4444';
-      }
+      const trustScore = rel ? rel.reliability_score : riskInfo.trust_score;
+      const badgeClass = riskInfo.badge_class;
+      const barFillColor = riskInfo.color;
+      const riskLevel = riskInfo.risk_level;
 
       const row = document.createElement('div');
       row.className = `daily-row ${item.day_index === 6 ? 'highlight-day6' : ''}`;

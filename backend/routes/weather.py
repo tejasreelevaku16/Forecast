@@ -59,3 +59,32 @@ def search_city(q: str = Query(..., min_length=1, description="Search term")):
 def consolidated_forecast(location: str = Query("Krishna District", description="Location name or query")):
     """Returns consolidated weather payload (current, hourly, daily, alerts) for optimal dashboard loading."""
     return get_full_forecast_response(location)
+
+
+@router.get("/locate", response_model=WeatherForecastResponse, summary="Locate User GPS Weather")
+def locate_weather(
+    lat: float = Query(..., description="Latitude from GPS"),
+    lon: float = Query(..., description="Longitude from GPS"),
+):
+    """Resolves GPS coordinates to nearest Indian district and returns live weather tracking data."""
+    from backend.services.weather_service import reverse_geocode, fetch_live_forecast, _sample_fallback
+    geo = reverse_geocode(lat, lon)
+    try:
+        return fetch_live_forecast(lat, lon, geo["name"], geo["region"], geo["country"])
+    except Exception:
+        return _sample_fallback(geo["name"], geo)
+
+
+@router.get("/common", summary="Get Unified Common Forecast & Reliability Data")
+def common_forecast(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lead_day: int = Query(6, description="Lead day: 1 to 10"),
+    sector: str = Query("General Public", description="User persona")
+):
+    """
+    Returns single common forecast data source covering Location + Target Date + Forecast Run,
+    ensuring 100% consistent values across Dashboard, Map, Forecast, Trust, Drift, Alerts, and Decision Support.
+    """
+    from backend.services.common_forecast_service import get_common_forecast_data
+    return get_common_forecast_data(location=location, lead_day=lead_day, sector=sector)
+

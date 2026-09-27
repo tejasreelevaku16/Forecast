@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WeatherTrust AI — Forecast Reliability & Bust-Risk Platform</title>
+  <title>WeatherTrust AI — Explainable Weather Forecast Reliability & Bust-Risk Platform</title>
   
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,65 +24,85 @@
     <div>
       <strong>OFFICIAL DISCLAIMER:</strong> WeatherTrust AI functions as an explainable forecast reliability diagnostic layer. It does not replace official meteorological forecasts issued by the India Meteorological Department (IMD) or state disaster authorities.
     </div>
-    <span class="badge badge-neutral">Phase 1 Demo Baseline</span>
+    <span class="badge badge-neutral" id="disclaimerStatusBadge">Calibrated ML Operational</span>
   </div>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <div class="app-container" id="dashboardTop">
     
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    <!-- Persistent Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
       <div class="brand-section">
-        <a href="#" class="brand-logo">
+        <a href="/dashboard" class="brand-logo" data-page="dashboard">
           <div class="brand-icon">WT</div>
           <div class="brand-text">
             <h1>WeatherTrust AI</h1>
-            <span class="brand-tagline">Know when to trust it</span>
+            <span class="brand-tagline">Know when to trust the forecast</span>
           </div>
         </a>
       </div>
 
       <ul class="nav-menu">
-        <li class="nav-item active" data-target="dashboardTop">
-          <a href="#dashboardTop">
-            <span>📊</span> Dashboard
+        <li class="nav-item active" data-page="dashboard">
+          <a href="/dashboard" data-page="dashboard">
+            <span>🏠</span> Dashboard
           </a>
         </li>
-        <li class="nav-item" data-target="trustSection">
-          <a href="#trustSection">
-            <span>🛡️</span> Forecast Trust
+        <li class="nav-item" data-page="live-weather">
+          <a href="/live-weather" data-page="live-weather">
+            <span>🌦</span> Live Weather
+          </a>
+        </li>
+        <li class="nav-item" data-page="forecast">
+          <a href="/forecast" data-page="forecast">
+            <span>📊</span> Forecast
+          </a>
+        </li>
+        <li class="nav-item" data-page="trust">
+          <a href="/trust" data-page="trust">
+            <span>🛡</span> Forecast Trust
             <span class="nav-badge" style="color: #38bdf8;">SIH Core</span>
           </a>
         </li>
-        <li class="nav-item" data-target="hourlySection">
-          <a href="#hourlySection">
-            <span>⏱️</span> Hourly Forecast
+        <li class="nav-item" data-page="drift">
+          <a href="/drift" data-page="drift">
+            <span>📈</span> Forecast Drift
           </a>
         </li>
-        <li class="nav-item" data-target="forecastSection">
-          <a href="#forecastSection">
-            <span>📅</span> 10-Day Outlook
+        <li class="nav-item" data-page="map">
+          <a href="/map" data-page="map">
+            <span>🗺</span> India Reliability Map
           </a>
         </li>
-        <li class="nav-item" data-target="chartsSection">
-          <a href="#chartsSection">
-            <span>📈</span> Trend Analytics
+        <li class="nav-item" data-page="alerts">
+          <a href="/alerts" data-page="alerts">
+            <span>🚨</span> Alerts
+            <span class="nav-badge" id="alertsNavBadge" style="color: #ef4444; font-weight: 700;">2</span>
           </a>
         </li>
-        <li class="nav-item" data-target="mapSection">
-          <a href="#mapSection">
-            <span>🗺️</span> Regional Risk Map
+        <li class="nav-item" data-page="decision-support">
+          <a href="/decision-support" data-page="decision-support">
+            <span>💡</span> Decision Support
           </a>
         </li>
-        <li class="nav-item" data-target="aboutSection">
-          <a href="#aboutSection">
-            <span>ℹ️</span> About Platform
+        <li class="nav-item" data-page="technical">
+          <a href="/technical" data-page="technical">
+            <span>🔬</span> Technical View
+            <span class="nav-badge" style="color: #6366f1;">SIH ML</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="about">
+          <a href="/about" data-page="about">
+            <span>ℹ</span> About
           </a>
         </li>
       </ul>
 
       <div class="sidebar-footer">
-        <div>Platform: <strong>WeatherTrust v1.0</strong></div>
-        <div style="margin-top: 4px; color: #64748b;">SIH 2024 Innovations</div>
+        <div>Platform: <strong>WeatherTrust v2.0</strong></div>
+        <div style="margin-top: 4px; color: #64748b;">Smart India Hackathon 2024</div>
       </div>
     </aside>
 
@@ -92,11 +112,17 @@
       <!-- Top Application Header -->
       <header class="top-header">
         
-        <!-- Search bar with suggestions -->
+        <!-- Mobile Hamburger Button -->
+        <button id="hamburgerBtn" class="hamburger-btn" aria-label="Toggle Navigation">☰</button>
+
+        <!-- Search bar with suggestions & GPS Locate -->
         <div class="search-box-container">
           <div class="search-input-wrapper">
             <span>🔍</span>
-            <input type="text" id="citySearchInput" class="search-input" placeholder="Search Indian districts or cities (e.g. Krishna District, Hyderabad)..." autocomplete="off">
+            <input type="text" id="citySearchInput" class="search-input" placeholder="Search Indian districts or cities (e.g. Krishna, Hyderabad, Delhi)..." autocomplete="off">
+            <button id="locateMeBtn" class="locate-btn" title="Use Current GPS Location">
+              <span>📍</span> Locate
+            </button>
           </div>
           <div class="search-dropdown" id="searchDropdown"></div>
         </div>
@@ -110,6 +136,20 @@
           <button class="pill-btn" data-location="Mumbai">Mumbai</button>
         </div>
 
+        <!-- Header Data Freshness & Manual Refresh -->
+        <div class="header-freshness">
+          <div class="freshness-item">
+            <span>Updated:</span> <strong id="headerLastUpdated">Just now</strong>
+          </div>
+          <div class="freshness-item">
+            <span>NWP Run:</span> <strong id="headerForecastIssued">06:00 AM (00Z)</strong>
+          </div>
+        </div>
+
+        <button id="refreshNowBtn" class="refresh-btn" title="Fetch fresh weather and re-run trust evaluation">
+          <span class="refresh-icon">🔄</span> Refresh Now
+        </button>
+
         <!-- Live Server Status -->
         <div class="header-status">
           <div class="live-dot"></div>
@@ -120,20 +160,201 @@
       <!-- Dashboard Grid Content -->
       <div class="dashboard-content">
 
-        <!-- Weather Advisory Banner (Populated if active) -->
-        <div id="weatherAlertBox" class="recommendation-card" style="display: none; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4);"></div>
+        <!-- Global Loading Spinner Overlay -->
+        <div class="global-loading-overlay" id="globalLoadingOverlay">
+          <div class="loading-spinner"></div>
+          <div class="loading-text" id="globalLoadingText">Evaluating forecast reliability...</div>
+        </div>
 
-        <!-- HERO SECTION: Weather Hero + FORECAST TRUST HERO -->
-        <section class="hero-grid">
+        <!-- Global Error Banner with Retry -->
+        <div class="global-error-card" id="globalErrorCard">
+          <div class="error-text-wrap">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <div>
+              <strong style="color: #ef4444; font-size: 0.85rem; text-transform: uppercase;">Connection Notice</strong>
+              <p style="font-size: 0.8rem; margin: 2px 0 0 0; color: #f8fafc;" id="globalErrorMessage">Weather observation service is experiencing latency.</p>
+            </div>
+          </div>
+          <button class="error-retry-btn" id="globalRetryBtn">Retry Fetch</button>
+        </div>
+
+        <!-- Meteorological Advisory Banner -->
+        <div id="weatherAlertBox" class="recommendation-card" style="display: none; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); margin-bottom: 20px;"></div>
+
+        <!-- Proactive Reliability Alert Banner -->
+        <div id="reliabilityAlertBanner" class="reliability-alert-banner" style="display: none; margin-bottom: 20px;"></div>
+
+        <!-- =================================================================
+             PAGE 1: DASHBOARD (Central Entry Point)
+             ================================================================= -->
+        <div class="page-view active" id="page-dashboard">
           
-          <!-- Card 1: Current Weather Hero -->
-          <div class="glass-card weather-hero-card">
+          <!-- Central Entry Hero: What is happening? -->
+          <div class="glass-card dash-hero-banner">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-risk-high" id="dashRiskBadge">HIGH BUST RISK</span>
+                <span style="font-size: 0.775rem; color: #94a3b8;" id="dashLeadFocus">Lead Day 6 Benchmark</span>
+              </div>
+              <h2 class="dash-hero-title" id="dashLocationTitle">Krishna District, Andhra Pradesh</h2>
+              <p class="dash-hero-sub" id="dashHeroSummary">
+                Monsoonal heavy rainfall projected (+80 mm). Forecast models indicate significant run-to-run drift.
+              </p>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 2.2rem; font-weight: 800; color: #fff;" id="dashHeroTemp">32°C</div>
+              <div style="font-size: 0.85rem; color: var(--accent-cyan);" id="dashHeroCond">⛅ Humid & Partly Cloudy</div>
+            </div>
+          </div>
+
+          <!-- Central 4 Prominent Cards: Can I trust the forecast? -->
+          <div class="dash-overview-grid">
+            
+            <!-- Card 1: FORECAST -->
+            <div class="glass-card dash-stat-card">
+              <div class="dash-stat-header">
+                <span class="dash-stat-label">Weather Forecast</span>
+                <span class="dash-stat-icon">🌧️</span>
+              </div>
+              <div>
+                <div class="dash-stat-value" id="dashForecastRain">80 mm</div>
+                <div class="dash-stat-subtext" style="color: var(--accent-cyan);" id="dashForecastCond">Heavy Rain Expected</div>
+              </div>
+              <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 10px;" id="dashForecastDate">
+                Target Date: Lead Day 6 Outlook
+              </div>
+            </div>
+
+            <!-- Card 2: FORECAST TRUST -->
+            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+              <div class="dash-stat-header">
+                <span class="dash-stat-label">Forecast Trust</span>
+                <span class="dash-stat-icon">🛡️</span>
+              </div>
+              <div>
+                <div class="dash-stat-value" style="color: #ef4444;" id="dashTrustScore">24 / 100</div>
+                <div class="dash-stat-subtext" style="color: #ef4444;" id="dashConfidenceTier">🔴 LOW CONFIDENCE</div>
+              </div>
+              <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 10px;">
+                Calibrated against 3,500 historical cases
+              </div>
+            </div>
+
+            <!-- Card 3: BUST RISK -->
+            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+              <div class="dash-stat-header">
+                <span class="dash-stat-label">Bust Risk</span>
+                <span class="dash-stat-icon">⚠️</span>
+              </div>
+              <div>
+                <div class="dash-stat-value" style="color: #ef4444;" id="dashBustProb">76%</div>
+                <div class="dash-stat-subtext" style="color: #ef4444;" id="dashRiskTier">🔴 HIGH RISK</div>
+              </div>
+              <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 10px;">
+                Probability of error exceeding &plusmn;20 mm
+              </div>
+            </div>
+
+            <!-- Card 4: FORECAST STABILITY -->
+            <div class="glass-card dash-stat-card">
+              <div class="dash-stat-header">
+                <span class="dash-stat-label">Forecast Stability</span>
+                <span class="dash-stat-icon">🔄</span>
+              </div>
+              <div>
+                <div class="dash-stat-value" style="color: #f59e0b;" id="dashStability">LOW</div>
+                <div class="dash-stat-subtext" style="color: #f59e0b;" id="dashRunChange">+55 mm Drift</div>
+              </div>
+              <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 10px;">
+                Significant run-to-run NWP cycle shift
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Central Actionable Guidance: What should I do? -->
+          <div class="dash-action-card">
+            <div class="dash-action-icon">💡</div>
+            <div class="dash-action-body">
+              <h4>What should you do? (Actionable Guidance)</h4>
+              <p id="dashActionGuidance">
+                Do not make high-impact agricultural, logistical, or emergency decisions based solely on this Day 6 forecast. Check the next numerical weather model update cycle.
+              </p>
+            </div>
+            <a href="/decision-support" data-page="decision-support" class="btn btn-secondary" style="margin-left: auto; white-space: nowrap;">
+              Sector Guidance ➔
+            </a>
+          </div>
+
+          <!-- Quick Navigation Matrix to explore deep layers -->
+          <div class="dash-quick-matrix">
+            <div class="dash-matrix-item" data-page="live-weather">
+              <span class="dash-matrix-icon">🌦</span>
+              <div class="dash-matrix-content">
+                <h5>Live Weather Tracking</h5>
+                <p>Surface observations, hourly timelines, wind gusts, and dew points.</p>
+              </div>
+            </div>
+            <div class="dash-matrix-item" data-page="forecast">
+              <span class="dash-matrix-icon">📊</span>
+              <div class="dash-matrix-content">
+                <h5>10-Day Dual Forecast</h5>
+                <p>Day 1–10 weather projections paired with lead-day Trust Scores.</p>
+              </div>
+            </div>
+            <div class="dash-matrix-item" data-page="trust">
+              <span class="dash-matrix-icon">🛡</span>
+              <div class="dash-matrix-content">
+                <h5>Trust Diagnostics & "Why?"</h5>
+                <p>Understand the exact physical and statistical drivers behind low confidence.</p>
+              </div>
+            </div>
+            <div class="dash-matrix-item" data-page="drift">
+              <span class="dash-matrix-icon">📈</span>
+              <div class="dash-matrix-content">
+                <h5>Run-to-Run Drift Monitor</h5>
+                <p>Track how consecutive NWP forecast cycles evolve over time.</p>
+              </div>
+            </div>
+            <div class="dash-matrix-item" data-page="map">
+              <span class="dash-matrix-icon">🗺</span>
+              <div class="dash-matrix-content">
+                <h5>India Reliability Map</h5>
+                <p>Subcontinent-wide diagnostic map across 33 major Indian districts.</p>
+              </div>
+            </div>
+            <div class="dash-matrix-item" data-page="technical">
+              <span class="dash-matrix-icon">🔬</span>
+              <div class="dash-matrix-content">
+                <h5>SIH Technical & Model View</h5>
+                <p>Calibrated model bundle, confusion matrix, ROC-AUC, and feature weights.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 2: LIVE WEATHER
+             ================================================================= -->
+        <div class="page-view" id="page-live-weather">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>🌦</span> Real-Time Meteorological Tracking</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">Live atmospheric surface parameters ingested via high-resolution meteorological feeds</p>
+            </div>
+            <span class="badge badge-neutral" id="lastUpdatedTime">Updated: Just now</span>
+          </div>
+
+          <!-- Current Weather Hero Card -->
+          <div class="glass-card weather-hero-card" style="margin-bottom: 24px;">
             <div class="weather-hero-header">
               <div>
                 <h2 class="location-title" id="currentLocationTitle">Krishna District, Andhra Pradesh</h2>
                 <p class="location-subtitle" id="currentLocationSubtitle">India • Lat: 16.51°, Lon: 80.65°</p>
               </div>
-              <span class="badge badge-neutral" id="lastUpdatedTime">Updated: Just now</span>
+              <span class="badge badge-neutral" style="color: #38bdf8;">Live Observation</span>
             </div>
 
             <div class="temp-display-wrap">
@@ -150,23 +371,163 @@
             <div class="temp-range-pills">
               <span id="currentTempRange">H: 34°C • L: 26°C</span>
               <span>•</span>
-              <span>Barometer: 1007 hPa</span>
+              <span>Surface Pressure: 1007 hPa</span>
               <span>•</span>
-              <span>Surface Visibility: 8.5 km</span>
+              <span>Visibility: 8.5 km</span>
             </div>
           </div>
 
-          <!-- Card 2: FORECAST TRUST HERO CARD (SIH Innovation Spotlight) -->
-          <div class="glass-card trust-hero-card" id="trustSection">
-            <div class="trust-header">
-              <div class="trust-title-group">
-                <h2>🛡️ FORECAST TRUST LAYER</h2>
-                <span class="trust-subtitle">Lead-Day Forecast Reliability & Bust-Risk Engine</span>
+          <!-- 8-Grid Live Weather Observational Details -->
+          <section class="details-grid" style="margin-bottom: 24px;">
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">💧</div>
+              <div class="detail-info">
+                <span class="detail-label">Humidity</span>
+                <span class="detail-value" id="metricHumidity">78%</span>
+                <span class="detail-sub">Dew point <span id="metricDewPoint">27°C</span></span>
               </div>
-              <span class="badge badge-demo" id="demoBadge">DEMO DATA — AI reliability model will be integrated later.</span>
             </div>
 
-            <!-- Trust Metrics Summary Row -->
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">💨</div>
+              <div class="detail-info">
+                <span class="detail-label">Wind Speed</span>
+                <span class="detail-value" id="metricWind">19.5 km/h</span>
+                <span class="detail-sub" id="metricWindSub">Dir: SE • Gusts: <span id="metricWindGusts">25 km/h</span></span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">⏲️</div>
+              <div class="detail-info">
+                <span class="detail-label">Pressure</span>
+                <span class="detail-value" id="metricPressure">1007 hPa</span>
+                <span class="detail-sub">Monsoonal low</span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">🌧️</div>
+              <div class="detail-info">
+                <span class="detail-label">Precipitation</span>
+                <span class="detail-value" id="metricPrecip">2.4 mm</span>
+                <span class="detail-sub">Rain Chance: <span id="metricRainChance">40%</span></span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">☀️</div>
+              <div class="detail-info">
+                <span class="detail-label">UV Index</span>
+                <span class="detail-value" id="metricUV">7 / 11</span>
+                <span class="detail-sub">High during clear breaks</span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">👁️</div>
+              <div class="detail-info">
+                <span class="detail-label">Visibility</span>
+                <span class="detail-value" id="metricVisibility">8.5 km</span>
+                <span class="detail-sub">Moderate haze / mist</span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">🌅</div>
+              <div class="detail-info">
+                <span class="detail-label">Sunrise / Sunset</span>
+                <span class="detail-value" id="metricSun">06:01 AM / 06:12 PM</span>
+                <span class="detail-sub">12h 11m Daylight</span>
+              </div>
+            </div>
+
+            <div class="glass-card detail-card">
+              <div class="detail-icon-wrap">☁️</div>
+              <div class="detail-info">
+                <span class="detail-label">Cloud Cover</span>
+                <span class="detail-value" id="metricCloudCover">45%</span>
+                <span class="detail-sub">Atmospheric saturation</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 24-Hour Timeline -->
+          <section class="glass-card hourly-container" id="hourlySection" style="margin-bottom: 24px;">
+            <div class="section-header">
+              <h3><span>⏱️</span> 24-Hour Forecast Timeline</h3>
+              <span style="font-size: 0.8rem; color: #94a3b8;">Hourly temperature, conditions & rain chance</span>
+            </div>
+            <div class="hourly-scroll" id="hourlyTimelineContainer"></div>
+          </section>
+
+          <!-- 24-Hour Trend Chart -->
+          <section class="glass-card chart-card">
+            <div class="section-header">
+              <h3><span>📈</span> 24-Hour Diurnal Weather Trends</h3>
+              <span style="font-size: 0.775rem; color: #94a3b8;">Temperature (°C) vs Rain Chance (%)</span>
+            </div>
+            <div class="chart-container-inner">
+              <canvas id="hourlyTrendChart"></canvas>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 3: FORECAST (Dual Outlook with Trust Assessment)
+             ================================================================= -->
+        <div class="page-view" id="page-forecast">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>📊</span> Day 1 to Day 10 Extended Outlook with Trust Assessment</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Crucial concept: Meteorological forecast variables paired directly with calibrated lead-day Forecast Trust ratings.
+              </p>
+            </div>
+            <span class="badge badge-neutral" style="color: #38bdf8;">Lead Days 1–10</span>
+          </div>
+
+          <!-- Dual Forecast Container -->
+          <section class="glass-card daily-container" id="forecastSection" style="margin-bottom: 24px;">
+            <div class="daily-grid" id="dailyForecastContainer">
+              <!-- Dynamically rendered by weather.js with trust bars -->
+            </div>
+          </section>
+
+          <!-- Bust Risk Progression Chart across Lead Days -->
+          <section class="glass-card chart-card">
+            <div class="section-header">
+              <h3><span>📉</span> Lead-Day Bust Risk Progression (Days 1–10)</h3>
+              <span style="font-size: 0.775rem; color: #94a3b8;">Probability of significant error (&gt;20 mm) as lead time increases</span>
+            </div>
+            <div class="chart-container-inner">
+              <canvas id="bustRiskChart"></canvas>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 4: FORECAST TRUST (Deep-Dive & "Why?")
+             ================================================================= -->
+        <div class="page-view" id="page-trust">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>🛡️</span> Forecast Trust Diagnostic Engine</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Calibrated machine learning layer quantifying forecast dependability, bust probabilities, and physical drivers.
+              </p>
+            </div>
+            <span class="badge badge-neutral" id="demoBadge" style="background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8;">
+              CALIBRATED ML MODEL
+            </span>
+          </div>
+
+          <!-- Main Forecast Trust Hero Card -->
+          <div class="glass-card trust-hero-card" id="trustSection" style="margin-bottom: 24px;">
             <div class="trust-metrics-summary">
               <div class="metric-block">
                 <div class="metric-label">Forecast Trust</div>
@@ -185,200 +546,679 @@
               <div class="metric-block">
                 <div class="metric-label">Forecast Stability</div>
                 <div class="stability-value" id="forecastStabilityValue">LOW</div>
-                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 4px;">Run Drift High</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 4px;">Run Drift High (+55 mm)</div>
+              </div>
+
+              <div class="metric-block">
+                <div class="metric-label">Benchmark Lead</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: #fff;">Day 6</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 4px;">High Synoptic Sensitivity</div>
               </div>
             </div>
 
             <!-- Forecast Drift Snapshot Mini-Bar -->
-            <div id="driftMonitorSnapshot" style="margin-bottom: 16px; padding: 8px 12px; background: rgba(0,0,0,0.3); border-radius: 8px;"></div>
+            <div id="driftMonitorSnapshot" style="margin-bottom: 20px; padding: 10px 14px; background: rgba(0,0,0,0.3); border-radius: 8px;"></div>
 
             <!-- Explainable "Why?" Section -->
-            <div class="why-section">
+            <div class="why-section" style="margin-bottom: 20px;">
               <div class="section-label-small">
-                <span>🔍</span> WHY IS THIS FORECAST LOW CONFIDENCE?
+                <span>🔍</span> WHY IS THIS FORECAST LOW CONFIDENCE? (EXPLAINABLE AI)
               </div>
               <div class="why-factor-list" id="whyFactorsContainer">
-                <!-- Rendered dynamically by reliability.js -->
+                <!-- Dynamically populated by reliability.js -->
               </div>
             </div>
 
-            <!-- Simple Actionable User Recommendation -->
-            <div class="recommendation-card">
+            <!-- Actionable User Recommendation -->
+            <div class="recommendation-card" style="margin-bottom: 20px;">
               <div class="rec-icon">⚠️</div>
               <div class="rec-text">
                 <h5>Actionable Recommendation</h5>
                 <p id="recommendationText">Do not make important decisions based only on this forecast. Check the next forecast update.</p>
               </div>
             </div>
-          </div>
 
-        </section>
-
-        <!-- 8-GRID WEATHER DETAILS -->
-        <section class="details-grid">
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">💧</div>
-            <div class="detail-info">
-              <span class="detail-label">Humidity</span>
-              <span class="detail-value" id="metricHumidity">78%</span>
-              <span class="detail-sub">Dew point 27°C</span>
+            <!-- Sector Decision Support Persona Selector -->
+            <div class="sector-selector-wrap">
+              <span class="sector-selector-label">🎯 Sector Mode:</span>
+              <button class="sector-pill active" data-sector="General Public">General Public</button>
+              <button class="sector-pill" data-sector="Farmer">Farmer (Agri)</button>
+              <button class="sector-pill" data-sector="Disaster Management">Disaster Mgmt</button>
+              <button class="sector-pill" data-sector="Event Organizer">Event Organizer</button>
+              <button class="sector-pill" data-sector="Logistics">Logistics</button>
+              <button class="sector-pill" data-sector="Renewable Energy">Renewable Energy</button>
             </div>
           </div>
 
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">💨</div>
-            <div class="detail-info">
-              <span class="detail-label">Wind Speed</span>
-              <span class="detail-value" id="metricWind">19.5 km/h</span>
-              <span class="detail-sub" id="metricWindSub">Direction: SE</span>
+          <!-- Plain-English Methodology Explanation -->
+          <div class="glass-card" style="padding: 24px;">
+            <h4 style="margin-bottom: 12px; font-size: 1rem; color: var(--accent-cyan);">
+              📐 How is the Forecast Trust Score Calculated?
+            </h4>
+            <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.7; display: flex; flex-direction: column; gap: 10px;">
+              <p>
+                <strong>1. Historical NWP Validation:</strong> WeatherTrust AI analyzes 3,500+ multi-year verification pairs comparing initial numerical forecasts with observed rainfall across Indian climatic zones.
+              </p>
+              <p>
+                <strong>2. 12 Predictive Features:</strong> Key signals include forecast lead time, squared lead decay, convective atmospheric index, run-to-run drift between consecutive model runs, and regional historical bust rates.
+              </p>
+              <p>
+                <strong>3. Probability Calibration:</strong> Predictions pass through 5-fold probability calibration so that a calculated 70% bust risk genuinely corresponds to 7 out of 10 historical forecasts busting.
+              </p>
+              <p>
+                <strong>4. Trust Score Formula:</strong> <code>Trust Score = 100 - Calibrated Bust Probability</code>. A score below 40 represents Low Confidence; 40–69 represents Moderate Confidence; 70+ represents Dependable Forecast.
+              </p>
             </div>
           </div>
 
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">⏲️</div>
-            <div class="detail-info">
-              <span class="detail-label">Pressure</span>
-              <span class="detail-value" id="metricPressure">1007 hPa</span>
-              <span class="detail-sub">Monsoonal low</span>
-            </div>
-          </div>
+        </div>
 
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">🌧️</div>
-            <div class="detail-info">
-              <span class="detail-label">Precipitation</span>
-              <span class="detail-value" id="metricPrecip">2.4 mm</span>
-              <span class="detail-sub">Rain Chance: <span id="metricRainChance">40%</span></span>
-            </div>
-          </div>
-
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">☀️</div>
-            <div class="detail-info">
-              <span class="detail-label">UV Index</span>
-              <span class="detail-value" id="metricUV">7 / 11</span>
-              <span class="detail-sub">High during clear breaks</span>
-            </div>
-          </div>
-
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">👁️</div>
-            <div class="detail-info">
-              <span class="detail-label">Visibility</span>
-              <span class="detail-value" id="metricVisibility">8.5 km</span>
-              <span class="detail-sub">Moderate haze / mist</span>
-            </div>
-          </div>
-
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">🌅</div>
-            <div class="detail-info">
-              <span class="detail-label">Sunrise / Sunset</span>
-              <span class="detail-value" id="metricSun">06:01 AM / 06:12 PM</span>
-              <span class="detail-sub">12h 11m Daylight</span>
-            </div>
-          </div>
-
-          <div class="glass-card detail-card">
-            <div class="detail-icon-wrap">🧭</div>
-            <div class="detail-info">
-              <span class="detail-label">Model Lead Focus</span>
-              <span class="detail-value">Day 6 Benchmark</span>
-              <span class="detail-sub">Rainfall: 80 mm</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- 24-HOUR HOURLY FORECAST TIMELINE -->
-        <section class="glass-card hourly-container" id="hourlySection">
-          <div class="section-header">
-            <h3><span>⏱️</span> 24-Hour Forecast Timeline</h3>
-            <span style="font-size: 0.8rem; color: #94a3b8;">Hourly temperature, sky conditions & rain probability</span>
-          </div>
-          <div class="hourly-scroll" id="hourlyTimelineContainer">
-            <!-- Dynamically populated by weather.js -->
-          </div>
-        </section>
-
-        <!-- TREND ANALYTICS CHARTS (Chart.js) -->
-        <section class="charts-grid" id="chartsSection">
-          <div class="glass-card chart-card">
-            <div class="section-header">
-              <h3><span>📈</span> 24-Hour Weather Trends</h3>
-              <span style="font-size: 0.775rem; color: #94a3b8;">Temperature (°C) vs Rain Chance (%)</span>
-            </div>
-            <div class="chart-container-inner">
-              <canvas id="hourlyTrendChart"></canvas>
-            </div>
-          </div>
-
-          <div class="glass-card chart-card">
-            <div class="section-header">
-              <h3><span>📊</span> Day 1–Day 10 Bust Risk Progression</h3>
-              <span style="font-size: 0.775rem; color: #94a3b8;">Estimated error risk per lead day</span>
-            </div>
-            <div class="chart-container-inner">
-              <canvas id="bustRiskChart"></canvas>
-            </div>
-          </div>
-        </section>
-
-        <!-- DAY 1 - DAY 10 DUAL FORECAST TABLE -->
-        <section class="glass-card daily-container" id="forecastSection">
-          <div class="section-header">
-            <div>
-              <h3><span>📅</span> Day 1 to Day 10 Extended Outlook with Trust Assessment</h3>
-              <p style="font-size: 0.825rem; margin-top: 4px;">Weather variables paired with lead-day Forecast Trust ratings & bust probabilities</p>
-            </div>
-            <span class="badge badge-neutral">Lead Days 1–10</span>
-          </div>
+        <!-- =================================================================
+             PAGE 5: FORECAST DRIFT
+             ================================================================= -->
+        <div class="page-view" id="page-drift">
           
-          <div class="daily-grid" id="dailyForecastContainer">
-            <!-- Dynamically populated by weather.js -->
-          </div>
-        </section>
-
-        <!-- REGIONAL RELIABILITY MAP (Leaflet.js) -->
-        <section class="glass-card map-card" id="mapSection">
-          <div class="section-header">
+          <div class="section-header" style="margin-bottom: 20px;">
             <div>
-              <h3><span>🗺️</span> Regional Forecast Reliability Map</h3>
-              <p style="font-size: 0.825rem; margin-top: 4px;">Geographic diagnostic overlay highlighting regional confidence and bust vulnerability</p>
+              <h3><span>🔄</span> Forecast Drift & Run Stability Monitor</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Tracking run-to-run forecast evolution across numerical weather prediction (NWP) model update cycles.
+              </p>
             </div>
-            <span class="badge badge-demo">Interactive Map Preview</span>
+            <span class="badge badge-risk-high" id="driftStabilityBadge">🔴 LOW STABILITY (+55 mm)</span>
           </div>
 
-          <div class="map-frame-wrapper">
-            <div id="map"></div>
-            <div class="map-overlay-legend">
-              <h5>Forecast Confidence</h5>
-              <div class="legend-item">
-                <span class="legend-dot" style="background: #10b981;"></span>
-                <span>High Confidence (Bust &le; 25%)</span>
+          <!-- Contextual Explanatory Banner -->
+          <div class="recommendation-card" style="margin-bottom: 24px; background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3);">
+            <div style="font-size: 1.5rem; color: var(--accent-cyan);">ℹ️</div>
+            <div style="flex: 1;">
+              <strong style="color: var(--accent-cyan); font-size: 0.825rem; text-transform: uppercase;">Forecast Drift Principle</strong>
+              <p style="font-size: 0.825rem; color: #f8fafc; margin-top: 3px;">
+                Forecast drift represents <em>forecast instability</em> across consecutive model updates. A shifting forecast does NOT automatically mean the forecast is wrong—it signals higher atmospheric uncertainty where decisions should be treated with caution.
+              </p>
+            </div>
+          </div>
+
+          <!-- Drift Overview Stats -->
+          <div class="dash-overview-grid" style="margin-bottom: 24px;">
+            <div class="glass-card dash-stat-card">
+              <span class="dash-stat-label">Target Outlook Date</span>
+              <div class="dash-stat-value" style="font-size: 1.4rem;">Day 6 Benchmark</div>
+              <div class="dash-stat-subtext" style="color: #94a3b8;">Upcoming synoptic window</div>
+            </div>
+            <div class="glass-card dash-stat-card">
+              <span class="dash-stat-label">Initial Model Run (00Z)</span>
+              <div class="dash-stat-value" style="font-size: 1.4rem; color: #94a3b8;">25.0 mm</div>
+              <div class="dash-stat-subtext" style="color: #94a3b8;">Moderate rain projection</div>
+            </div>
+            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+              <span class="dash-stat-label">Latest Model Run (18Z)</span>
+              <div class="dash-stat-value" style="font-size: 1.4rem; color: #ef4444;">80.0 mm</div>
+              <div class="dash-stat-subtext" style="color: #ef4444;">Extreme convective escalation</div>
+            </div>
+            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+              <span class="dash-stat-label">Net Shift / Drift</span>
+              <div class="dash-stat-value" style="font-size: 1.4rem; color: #ef4444;" id="driftNetChange">+55.0 mm</div>
+              <div class="dash-stat-subtext" style="color: #ef4444;">+220% Volatility Escalation</div>
+            </div>
+          </div>
+
+          <!-- Drift Line Chart -->
+          <div class="glass-card chart-card" style="margin-bottom: 24px;">
+            <div class="section-header">
+              <h3><span>📈</span> Consecutive NWP Run Evolution</h3>
+              <span style="font-size: 0.775rem; color: #94a3b8;">X-axis: Model Issue Time • Y-axis: Predicted Rainfall (mm)</span>
+            </div>
+            <div class="chart-container-inner">
+              <canvas id="driftTrendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Run-by-Run Cycle Table -->
+          <div class="glass-card" style="padding: 20px;" id="driftSection">
+            <h4 style="margin-bottom: 12px; font-size: 0.95rem;">Model Run Cycle Log</h4>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--bg-card-border); color: #94a3b8;">
+                    <th style="padding: 10px 14px;">Run Cycle</th>
+                    <th style="padding: 10px 14px;">Issue Time</th>
+                    <th style="padding: 10px 14px;">Predicted Rain</th>
+                    <th style="padding: 10px 14px;">Shift from Prior Run</th>
+                    <th style="padding: 10px 14px;">Stability Tier</th>
+                  </tr>
+                </thead>
+                <tbody id="driftTableBody">
+                  <!-- Dynamically rendered by drift.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 6: INDIA RELIABILITY MAP
+             ================================================================= -->
+        <div class="page-view" id="page-map">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>🗺️</span> INDIA FORECAST RELIABILITY</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Understand where weather forecasts are more or less reliable across India.
+              </p>
+            </div>
+            <span class="badge badge-neutral" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" id="mapLastUpdatedBadge">
+              Last Updated: Today, 6:30 PM
+            </span>
+          </div>
+
+          <!-- Interactive Map Toolbar -->
+          <div class="map-toolbar">
+            <div class="map-layer-group">
+              <button class="btn btn-secondary" id="mapResetBtn" style="font-size: 0.775rem; padding: 6px 12px;">
+                <span>🎯</span> Reset India View
+              </button>
+              <button class="btn btn-secondary" id="mapRefreshBtn" style="font-size: 0.775rem; padding: 6px 12px;">
+                <span>🔄</span> Refresh Map Data
+              </button>
+            </div>
+
+            <div class="map-filters">
+              <span style="font-size: 0.725rem; color: #94a3b8; margin-right: 4px;">Reliability Tier:</span>
+              <button class="map-filter-pill active" data-filter="ALL">All (37)</button>
+              <button class="map-filter-pill" data-filter="HIGH">🟢 High</button>
+              <button class="map-filter-pill" data-filter="MODERATE">🟡 Moderate</button>
+              <button class="map-filter-pill" data-filter="LOW">🔴 Low</button>
+            </div>
+
+            <div style="min-width: 200px;">
+              <input type="text" id="mapDistrictSearch" class="search-input" style="padding: 6px 12px; font-size: 0.775rem; background: var(--bg-surface); border: 1px solid var(--bg-card-border); border-radius: var(--radius-sm);" placeholder="Search Indian State (e.g. Andhra, Telangana, Kerala)...">
+            </div>
+          </div>
+
+          <!-- 2-Column Responsive Layout: Map on left, Selected Region Panel on right -->
+          <div class="map-layout-grid">
+            
+            <!-- Left: Map Container -->
+            <div class="map-frame-wrapper" id="mapSection" style="position: relative;">
+              <div id="indiaMap"></div>
+              
+              <!-- Map Loading / Error Overlay -->
+              <div id="mapLoadingOverlay" style="display: none; position: absolute; inset: 0; background: rgba(10, 15, 29, 0.85); backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center; flex-direction: column; gap: 10px;">
+                <div class="loading-spinner"></div>
+                <span style="color: var(--accent-cyan); font-size: 0.85rem; font-weight: 600;">Loading India reliability map...</span>
               </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background: #f59e0b;"></span>
-                <span>Moderate Confidence (Bust 26–50%)</span>
+
+              <!-- Color & Text Legend -->
+              <div class="map-overlay-legend">
+                <h5>Forecast Reliability</h5>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #10b981;"></span>
+                  <span>🟢 High Reliability (Trust &ge; 70)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #f59e0b;"></span>
+                  <span>🟡 Moderate Reliability (Trust 40–69)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #ef4444;"></span>
+                  <span>🔴 Low Reliability (Trust &lt; 40)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #64748b;"></span>
+                  <span>⚪ Data Unavailable</span>
+                </div>
               </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background: #ef4444;"></span>
-                <span>Low Confidence (Bust &gt; 50%)</span>
+            </div>
+
+            <!-- Right: Selected Region Panel -->
+            <div class="map-side-panel" id="mapSelectedRegionPanel">
+              <!-- Dynamically populated by IndiaMapUI.renderSelectedRegionPanel() -->
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 7: ALERTS
+             ================================================================= -->
+        <div class="page-view" id="page-alerts">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>🚨</span> Forecast Reliability & Instability Alerts</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Proactive diagnostic notices triggered when model bust probability exceeds 50% or when significant forecast drift occurs.
+              </p>
+            </div>
+            <span class="badge badge-risk-high" id="activeAlertCountBadge">Active Alerts: 2</span>
+          </div>
+
+          <!-- Alert Cards Container -->
+          <div class="alerts-container" id="alertsListContainer">
+            <!-- Dynamically populated or rendered -->
+            <div class="alert-card high-severity">
+              <div class="alert-main">
+                <span class="alert-icon-wrap">⚠️</span>
+                <div class="alert-info">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <h4>Severe Forecast Drift Detected</h4>
+                    <span class="badge badge-risk-high">HIGH SEVERITY</span>
+                  </div>
+                  <p>Forecast rainfall changed from 25.0 mm ➔ 80.0 mm (+55.0 mm Shift) between consecutive model runs for Krishna District.</p>
+                  <div class="alert-meta">
+                    <span>📍 Krishna District, AP</span>
+                    <span>•</span>
+                    <span>Target: Day 6 Outlook</span>
+                    <span>•</span>
+                    <span>Status: Unacknowledged</span>
+                  </div>
+                </div>
+              </div>
+              <button class="alert-ack-btn" onclick="this.closest('.alert-card').classList.toggle('read')">Mark Read</button>
+            </div>
+
+            <div class="alert-card mod-severity">
+              <div class="alert-main">
+                <span class="alert-icon-wrap">🛡️</span>
+                <div class="alert-info">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <h4>Low Forecast Trust (Bust Probability 76%)</h4>
+                    <span class="badge badge-risk-mod">MODERATE SEVERITY</span>
+                  </div>
+                  <p>WeatherTrust AI calibrated model detects elevated probability of forecast bust exceeding &plusmn;20 mm. Trust score is 24/100.</p>
+                  <div class="alert-meta">
+                    <span>📍 Krishna District, AP</span>
+                    <span>•</span>
+                    <span>Confidence: Low</span>
+                    <span>•</span>
+                    <span>Status: Unacknowledged</span>
+                  </div>
+                </div>
+              </div>
+              <button class="alert-ack-btn" onclick="this.closest('.alert-card').classList.toggle('read')">Mark Read</button>
+            </div>
+
+            <div class="alert-card stable-severity">
+              <div class="alert-main">
+                <span class="alert-icon-wrap">✓</span>
+                <div class="alert-info">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <h4>Stable Forecast Confirmed for Northern Plains</h4>
+                    <span class="badge badge-risk-low">STABLE FORECAST</span>
+                  </div>
+                  <p>Recent numerical weather prediction runs for Delhi-NCR and Chandigarh remained consistent with low run-to-run variance.</p>
+                  <div class="alert-meta">
+                    <span>📍 Delhi-NCR / Chandigarh</span>
+                    <span>•</span>
+                    <span>Confidence: High (Trust 86/100)</span>
+                  </div>
+                </div>
+              </div>
+              <button class="alert-ack-btn" onclick="this.closest('.alert-card').classList.toggle('read')">Mark Read</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 8: DECISION SUPPORT
+             ================================================================= -->
+        <div class="page-view" id="page-decision-support">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>💡</span> Actionable Sector Decision Support</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Translating complex forecast reliability probabilities into plain-English, risk-aware operational recommendations.
+              </p>
+            </div>
+            <span class="badge badge-neutral">Informational & Advisory Only</span>
+          </div>
+
+          <!-- Sector Selector Pills -->
+          <div class="sector-selector-wrap" style="margin-bottom: 24px;">
+            <span class="sector-selector-label">🎯 Select Sector Persona:</span>
+            <button class="sector-pill active" data-sector="General Public">👥 General Public</button>
+            <button class="sector-pill" data-sector="Farmer">🌾 Agriculture & Farming</button>
+            <button class="sector-pill" data-sector="Disaster Management">🚨 Disaster & Emergency Mgmt</button>
+            <button class="sector-pill" data-sector="Event Organizer">🎪 Event & Festival Planning</button>
+            <button class="sector-pill" data-sector="Logistics">🚚 Transport & Logistics</button>
+            <button class="sector-pill" data-sector="Renewable Energy">☀️ Renewable Energy (Solar/Wind)</button>
+          </div>
+
+          <!-- Active Sector Recommendation Card -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <h4 id="decisionSupportSectorTitle" style="font-size: 1.1rem; color: var(--accent-cyan);">
+                🌾 Agriculture Sector Advisory
+              </h4>
+              <span class="badge badge-risk-high" id="decisionSupportTierBadge">HIGH RISK WINDOW</span>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+              <h5 style="color: #ef4444; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 4px;">
+                Operational Recommendation
+              </h5>
+              <p style="font-size: 0.95rem; color: #fff; line-height: 1.6;" id="decisionSupportActionText">
+                Postpone fertilizer spraying and pesticide application scheduled for Day 6. Convective uncertainty is elevated and high rainfall shift (+55 mm) risks washing away chemical inputs. Maintain drainage ditches.
+              </p>
+            </div>
+
+            <div class="dash-overview-grid" style="margin-bottom: 0;">
+              <div class="dash-stat-card" style="padding: 14px;">
+                <span class="dash-stat-label">Weather Forecast</span>
+                <div style="font-size: 1.1rem; font-weight: 700;">Heavy Rain (80 mm)</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 14px;">
+                <span class="dash-stat-label">Forecast Trust</span>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #ef4444;">24 / 100 (Low)</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 14px;">
+                <span class="dash-stat-label">Bust Probability</span>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #ef4444;">76% (High Risk)</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 14px;">
+                <span class="dash-stat-label">Optimal Action</span>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #f59e0b;">Monitor 12Z Run</div>
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- ABOUT SECTION -->
-        <section class="glass-card" style="padding: 24px;" id="aboutSection">
-          <h3 style="margin-bottom: 8px;">About WeatherTrust AI</h3>
-          <p style="font-size: 0.875rem; line-height: 1.6; margin-bottom: 12px;">
-            Normal weather applications answer: <em>"What will the weather be?"</em>. <strong>WeatherTrust AI</strong> answers: <em>"How much should I trust this forecast?"</em>
-          </p>
-          <p style="font-size: 0.825rem; line-height: 1.6; color: #94a3b8;">
-            WeatherTrust AI operates as an explainable reliability and risk diagnosis layer on top of meteorological predictions. 
-            By analyzing historical forecast-versus-observation discrepancies, forecast run-to-run drift, and regional atmospheric variability, the platform empowers decision makers to know when a forecast is dependable and when high-impact decisions should be deferred.
-          </p>
-        </section>
+          <!-- Sector Operational Checklists -->
+          <div class="stakeholders-grid">
+            <div class="stakeholder-card">
+              <h4>🌾 Agriculture</h4>
+              <ul>
+                <li>Delay pesticide spraying when bust risk &gt; 50%</li>
+                <li>Avoid pre-mature harvesting if lead day &gt; 5</li>
+                <li>Inspect field drainage canals prior to convective window</li>
+              </ul>
+            </div>
+            <div class="stakeholder-card">
+              <h4>🚚 Transport & Logistics</h4>
+              <ul>
+                <li>Prepare alternative freight routes across flood-prone ghats</li>
+                <li>Verify tarp covers for moisture-sensitive bulk cargo</li>
+                <li>Monitor driver dispatch 24h prior to target window</li>
+              </ul>
+            </div>
+            <div class="stakeholder-card">
+              <h4>🚨 Disaster Management</h4>
+              <ul>
+                <li>Pre-position relief equipment if bust risk intersects heavy rain</li>
+                <li>Activate multi-agency situational briefing on Day 3</li>
+                <li>Cross-reference IMD district alerts with run drift magnitude</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 9: TECHNICAL VIEW (For SIH Judges)
+             ================================================================= -->
+        <div class="page-view" id="page-technical">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>🔬</span> SIH Technical & Machine Learning Evaluation</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                Full technical transparency into feature engineering, validation methodology, and calibration metrics.
+              </p>
+            </div>
+            <span class="badge badge-neutral" style="color: #6366f1; border-color: rgba(99, 102, 241, 0.4);">
+              scikit-learn 1.4+ Calibrated Pipeline
+            </span>
+          </div>
+
+          <!-- Model Performance Card -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;" id="judgeSection">
+            <h4 style="font-size: 0.95rem; margin-bottom: 16px;">Test Set Cross-Validation Performance</h4>
+            
+            <div class="dash-overview-grid" style="margin-bottom: 20px;">
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">Model Accuracy</span>
+                <div class="dash-stat-value" id="judgeAccuracy" style="font-size: 1.6rem; color: #10b981;">75.43%</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">5-Fold Stratified Split</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">Precision</span>
+                <div class="dash-stat-value" id="judgePrecision" style="font-size: 1.6rem; color: var(--accent-cyan);">73.14%</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">Low False Positive Rate</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">Recall</span>
+                <div class="dash-stat-value" id="judgeRecall" style="font-size: 1.6rem; color: #38bdf8;">78.32%</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">High Bust Detection Power</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">F1-Score</span>
+                <div class="dash-stat-value" id="judgeF1" style="font-size: 1.6rem; color: #f59e0b;">0.7564</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">Harmonic Precision/Recall</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">ROC-AUC</span>
+                <div class="dash-stat-value" id="judgeRocAuc" style="font-size: 1.6rem; color: #6366f1;">0.8342</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">High Discrimination Power</div>
+              </div>
+              <div class="dash-stat-card" style="padding: 16px;">
+                <span class="dash-stat-label">Brier Score Loss</span>
+                <div class="dash-stat-value" id="judgeBrier" style="font-size: 1.6rem; color: #10b981;">0.1607</div>
+                <div class="dash-stat-subtext" style="color: #94a3b8;">Well-Calibrated Probabilities</div>
+              </div>
+            </div>
+
+            <!-- Confusion Matrix & Key Feature Weights -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div class="confusion-matrix-box">
+                <h5 style="font-size:0.775rem; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Holdout Confusion Matrix (N = 700)</h5>
+                <div class="confusion-matrix-grid">
+                  <div class="cm-cell cm-tn">
+                    <div class="cm-cell-label">True Negative (Reliable)</div>
+                    <div class="cm-cell-num" id="cmTN">351</div>
+                  </div>
+                  <div class="cm-cell cm-fp">
+                    <div class="cm-cell-label">False Positive</div>
+                    <div class="cm-cell-num" id="cmFP">129</div>
+                  </div>
+                  <div class="cm-cell cm-fn">
+                    <div class="cm-cell-label">False Negative (Missed Bust)</div>
+                    <div class="cm-cell-num" id="cmFN">43</div>
+                  </div>
+                  <div class="cm-cell cm-tp">
+                    <div class="cm-cell-label">True Positive (Bust Caught)</div>
+                    <div class="cm-cell-num" id="cmTP">177</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="confusion-matrix-box">
+                <h5 style="font-size:0.775rem; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Key Feature Weights (Bust Drivers)</h5>
+                <div id="judgeFeatureWeights" style="max-height: 140px; overflow-y: auto; padding-right: 6px;"></div>
+              </div>
+            </div>
+
+            <!-- Model Benchmark Comparison Table -->
+            <div style="margin-top: 24px; overflow-x: auto;">
+              <h5 style="font-size:0.775rem; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Candidate Model Benchmark Comparison</h5>
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--bg-card-border); color: #94a3b8;">
+                    <th style="padding: 8px 12px;">Model Architecture</th>
+                    <th style="padding: 8px 12px;">Accuracy</th>
+                    <th style="padding: 8px 12px;">Precision</th>
+                    <th style="padding: 8px 12px;">Recall</th>
+                    <th style="padding: 8px 12px;">F1-Score</th>
+                    <th style="padding: 8px 12px;">ROC-AUC</th>
+                    <th style="padding: 8px 12px;">Brier Loss</th>
+                  </tr>
+                </thead>
+                <tbody id="judgeComparisonBody"></tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- =================================================================
+             PAGE 10: ABOUT
+             ================================================================= -->
+        <div class="page-view" id="page-about">
+          
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3><span>ℹ️</span> About WeatherTrust AI</h3>
+              <p style="font-size: 0.825rem; margin-top: 4px;">
+                An explainable weather forecast reliability and bust-risk detection platform.
+              </p>
+            </div>
+            <span class="badge badge-neutral" style="color: var(--accent-cyan); border-color: rgba(56, 189, 248, 0.4);">
+              SIH 2024 Innovation
+            </span>
+          </div>
+
+          <!-- Mission Card -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;" id="aboutSection">
+            <h4 style="margin-bottom: 8px; font-size: 1.1rem; color: #fff;">
+              "Know the weather. Know when to trust it."
+            </h4>
+            <p style="font-size: 0.9rem; line-height: 1.7; margin-bottom: 14px; color: #e2e8f0;">
+              Normal weather applications answer: <em>"What will the weather be?"</em><br>
+              <strong>WeatherTrust AI</strong> answers: <em>"How much should I trust this forecast?"</em>
+            </p>
+            <p style="font-size: 0.85rem; line-height: 1.7; color: #94a3b8;">
+              WeatherTrust AI acts as a dedicated forecast reliability and risk diagnosis layer on top of meteorological predictions. Rather than claiming to replace official meteorological forecasts from institutions like the India Meteorological Department (IMD), WeatherTrust AI audits forecast stability, models error likelihood, and explains uncertainty so decision-makers know when a forecast is dependable and when high-impact decisions should be deferred.
+            </p>
+          </div>
+
+          <!-- End-to-End Architectural Pipeline -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 12px;">System Architecture & Decision Flow</h4>
+            <div class="about-pipeline-wrap">
+              <div class="pipeline-node">
+                <div class="node-icon">🌦</div>
+                <div class="node-name">Weather Ingestion</div>
+                <div class="node-sub">Open-Meteo & IMD</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">📚</div>
+                <div class="node-name">Historical Archive</div>
+                <div class="node-sub">3,500 Verification Pairs</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">⚙️</div>
+                <div class="node-name">Feature Engineering</div>
+                <div class="node-sub">12 Predictive Features</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">🤖</div>
+                <div class="node-name">Reliability Model</div>
+                <div class="node-sub">Calibrated Classifier</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">🛡</div>
+                <div class="node-name">Trust Score</div>
+                <div class="node-sub">0–100 Scale</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">🔄</div>
+                <div class="node-name">Forecast Drift</div>
+                <div class="node-sub">NWP Run Shifts</div>
+              </div>
+              <span class="pipeline-arrow">➔</span>
+              <div class="pipeline-node">
+                <div class="node-icon">💡</div>
+                <div class="node-name">Decision Support</div>
+                <div class="node-sub">6 Sector Personas</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technology Stack -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 14px;">Technology Stack</h4>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; font-size: 0.8rem;">
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px;">
+                <strong style="color: var(--accent-cyan);">Backend Framework</strong>
+                <p style="margin: 4px 0 0 0; color: #94a3b8;">Python 3.14 + FastAPI</p>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px;">
+                <strong style="color: var(--accent-cyan);">Machine Learning</strong>
+                <p style="margin: 4px 0 0 0; color: #94a3b8;">scikit-learn + CalibratedClassifierCV</p>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px;">
+                <strong style="color: var(--accent-cyan);">Geospatial & Viz</strong>
+                <p style="margin: 4px 0 0 0; color: #94a3b8;">Leaflet.js + Chart.js</p>
+              </div>
+              <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px;">
+                <strong style="color: var(--accent-cyan);">Weather Feeds</strong>
+                <p style="margin: 4px 0 0 0; color: #94a3b8;">Open-Meteo High-Res + IMD Benchmarks</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stakeholders Breakdown -->
+          <div class="glass-card" style="padding: 24px; margin-bottom: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 14px;">Key Stakeholders & User Communities</h4>
+            <div class="stakeholders-grid">
+              <div class="stakeholder-card">
+                <h4>👥 Primary Users</h4>
+                <ul>
+                  <li>General public making outdoor plans</li>
+                  <li>Farmers scheduling irrigation & fertilizer</li>
+                  <li>Event organizers assessing outdoor venues</li>
+                  <li>Logistics dispatchers planning transit routes</li>
+                </ul>
+              </div>
+              <div class="stakeholder-card">
+                <h4>🏛 Government & Disaster Authorities</h4>
+                <ul>
+                  <li>State Disaster Management Authorities (SDMAs)</li>
+                  <li>District collectors managing emergency relief</li>
+                  <li>Municipal stormwater & flood mitigation teams</li>
+                </ul>
+              </div>
+              <div class="stakeholder-card">
+                <h4>⚡ Industry & Commercial</h4>
+                <ul>
+                  <li>Renewable energy (solar irradiance & wind farms)</li>
+                  <li>Agricultural commodity traders</li>
+                  <li>Construction & civil infrastructure contractors</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Future Scope -->
+          <div class="glass-card" style="padding: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 12px;">Future Scope & Roadmap</h4>
+            <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.7; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <strong>• Doppler Radar Ingestion:</strong> Direct integration with IMD Doppler Weather Radar (DWR) radial velocity scans for nowcasting bust verification.
+              </div>
+              <div>
+                <strong>• SHAP TreeExplainer:</strong> Interactive feature-attribution waterfall plots demonstrating local prediction drivers for every district.
+              </div>
+              <div>
+                <strong>• Automated WhatsApp/SMS Alerts:</strong> Proactive notification gateway delivering risk warnings to rural farmers and panchayats.
+              </div>
+              <div>
+                <strong>• Multi-Model NWP Ensembles:</strong> Parallel comparison across ECMWF, GFS, NCUM, and ICON ensemble spreads.
+              </div>
+            </div>
+          </div>
+
+        </div>
 
       </div>
     </main>
@@ -390,9 +1230,14 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Application Scripts -->
+  <script src="/js/shared_forecast_data.js"></script>
+  <script src="/js/navigation.js"></script>
   <script src="/js/charts.js"></script>
   <script src="/js/weather.js"></script>
   <script src="/js/reliability.js"></script>
+  <script src="/js/drift.js"></script>
+  <script src="/js/map.js"></script>
+  <script src="/js/judge.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

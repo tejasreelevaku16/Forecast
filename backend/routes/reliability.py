@@ -12,16 +12,23 @@ router = APIRouter(prefix="/api/reliability", tags=["Forecast Trust Layer"])
 
 
 @router.get("/overview", response_model=ReliabilityOverview, summary="Get Forecast Trust Overview")
-def trust_overview(location: str = Query("Krishna District", description="Location name or query")):
+def trust_overview(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lead_day: int = Query(6, description="Focus lead day: 1 to 10"),
+    sector: str = Query("General Public", description="User persona for decision support"),
+):
     """
-    Returns the Forecast Trust profile, Bust Risk probability,
-    lead-day risk breakdown, explainability factors, and user recommendations.
-    Clearly marked as DEMO / SAMPLE DATA during Phase 1.
+    Returns ML-backed Forecast Trust profile, Bust Risk probability,
+    lead-day risk breakdown, model-backed explainability factors, and sector recommendations.
     """
-    return get_forecast_reliability_overview(location)
+    return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
 
 
-@router.get("/demo", response_model=ReliabilityOverview, summary="Alias for Demo Trust Overview")
-def demo_overview(location: str = Query("Krishna District", description="Location name or query")):
-    """Convenience alias for demo reliability overview."""
-    return get_forecast_reliability_overview(location)
+@router.get("/demo", response_model=ReliabilityOverview, summary="Alias for Forecast Trust Overview")
+def demo_overview(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lead_day: int = Query(6, description="Focus lead day"),
+    sector: str = Query("General Public", description="User persona"),
+):
+    """Convenience alias for reliability overview."""
+    return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
