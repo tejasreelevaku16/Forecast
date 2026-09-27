@@ -529,7 +529,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.init === 'function') {
     LiveTrackingUI.init();
   }
-  loadDashboard("Krishna District");
+  const activePill = document.querySelector('.pill-btn.active');
+  const initialLoc = activePill ? activePill.getAttribute('data-location') : "Delhi";
+  loadDashboard(initialLoc);
   if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.initMap === 'function') {
     IndiaMapUI.initMap();
   }

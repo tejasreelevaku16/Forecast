@@ -101,13 +101,23 @@ const AppRouter = {
     const loc = window.currentSelectedLocation || "Vijayawada";
 
     // Initialize GIS confidence map
-    if (pageSlug === "confidence-map" || pageSlug === "map") {
+    if (pageSlug === "confidence-map") {
       setTimeout(() => {
         if (typeof initConfidenceMap === "function") {
           initConfidenceMap();
         }
-        if (typeof IndiaMapUI !== "undefined" && IndiaMapUI.map) {
-          IndiaMapUI.map.invalidateSize();
+      }, 150);
+    }
+
+    // Initialize India Reliability Map
+    if (pageSlug === "map") {
+      setTimeout(() => {
+        if (typeof IndiaMapUI !== "undefined") {
+          if (!IndiaMapUI.map) {
+            IndiaMapUI.initMap();
+          } else {
+            IndiaMapUI.map.invalidateSize();
+          }
         }
       }, 150);
     }
