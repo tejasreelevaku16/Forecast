@@ -6,6 +6,21 @@
  * MoES-standard confidence color transitions, tooltips, and explainability popups.
  */
 
+const CARTO_API_KEY = "PASTE_MY_CARTO_KEY_HERE";
+
+function buildCartoTileLayer(style = "voyager") {
+  const baseUrl = `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}.png`;
+  const tileUrl = CARTO_API_KEY && CARTO_API_KEY !== "PASTE_MY_CARTO_KEY_HERE"
+    ? `${baseUrl}?key=${CARTO_API_KEY}`
+    : baseUrl;
+
+  return L.tileLayer(tileUrl, {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 19,
+    subdomains: "abcd",
+  });
+}
+
 let confidenceMapInstance = null;
 let geojsonLayer = null;
 let districtMarkersLayer = null;
@@ -45,12 +60,7 @@ async function initConfidenceMap() {
     zoomControl: true,
   });
 
-  // Dark meteorological basemap
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> | MoES / NCMRWF Forecast GIS',
-    subdomains: "abcd",
-    maxZoom: 19,
-  }).addTo(confidenceMapInstance);
+  buildCartoTileLayer('voyager').addTo(confidenceMapInstance);
 
   districtMarkersLayer = L.layerGroup().addTo(confidenceMapInstance);
 
@@ -308,6 +318,7 @@ window.openExplainabilityModal = async function (location, leadDay = 6) {
     return;
   }
 
+  modal.style.display = "flex";
   modal.classList.add("active");
   const locTitle = document.getElementById("modalLocTitle");
   if (locTitle) locTitle.textContent = `${location} — Day ${leadDay} Diagnostic`;
@@ -323,6 +334,14 @@ window.openExplainabilityModal = async function (location, leadDay = 6) {
   }
 };
 
+window.closeExplainabilityModal = function () {
+  const modal = document.getElementById("explainabilityModal");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
+};
+
 function renderExplainabilityModalContent(data) {
   const gaugeVal = document.getElementById("modalConfGaugeVal");
   const bustVal = document.getElementById("modalBustVal");
@@ -330,37 +349,56 @@ function renderExplainabilityModalContent(data) {
   const recText = document.getElementById("modalRecText");
   const featList = document.getElementById("modalFeaturesList");
 
-  if (gaugeVal) gaugeVal.textContent = `${data.confidence}%`;
-  if (bustVal) bustVal.textContent = `${data.bust_probability}%`;
-  if (summaryText) summaryText.textContent = data.summary;
-  if (recText) recText.textContent = data.recommendation;
+  const hasData = data && typeof data === 'object';
 
-  if (featList && data.top_features) {
-    featList.innerHTML = data.top_features
-      .map(
-        (f) => `
-        <div class="modal-feature-item">
-          <div class="feat-name-row">
-            <span>${f.feature}</span>
-            <span class="feat-impact-tag ${f.direction === "Negative" ? "tag-negative" : "tag-positive"}">
-              ${f.direction === "Negative" ? "▼ Reduced Trust" : "▲ Enhanced Trust"} (${Math.round(f.impact * 100)}%)
-            </span>
+  if (gaugeVal) gaugeVal.textContent = hasData && Number.isFinite(Number(data.confidence)) ? `${data.confidence}%` : "Data unavailable";
+  if (bustVal) bustVal.textContent = hasData && Number.isFinite(Number(data.bust_probability)) ? `${data.bust_probability}%` : "Data unavailable";
+  if (summaryText) summaryText.textContent = hasData && data.summary ? data.summary : "Explanation unavailable because the reliability model has not produced an explanation for this location.";
+  if (recText) recText.textContent = hasData && data.recommendation ? data.recommendation : "Risk-aware guidance is unavailable for this forecast window.";
+
+  if (featList) {
+    if (hasData && Array.isArray(data.top_features) && data.top_features.length) {
+      featList.innerHTML = data.top_features
+        .map(
+          (f) => `
+          <div class="modal-feature-item">
+            <div class="feat-name-row">
+              <span>${f.feature}</span>
+              <span class="feat-impact-tag ${f.direction === "Negative" ? "tag-negative" : "tag-positive"}">
+                ${f.direction === "Negative" ? "▼ Reduced Trust" : "▲ Enhanced Trust"} (${Math.round((f.impact || 0) * 100)}%)
+              </span>
+            </div>
+            <div class="feat-bar-track">
+              <div class="feat-bar-fill ${f.direction === "Negative" ? "fill-negative" : "fill-positive"}" style="width: ${Math.min(100, (f.impact || 0) * 100)}%"></div>
+            </div>
           </div>
-          <div class="feat-bar-track">
-            <div class="feat-bar-fill ${f.direction === "Negative" ? "fill-negative" : "fill-positive"}" style="width: ${Math.min(100, f.impact * 100)}%"></div>
-          </div>
-        </div>
-      `
-      )
-      .join("");
+        `
+        )
+        .join("");
+    } else {
+      featList.innerHTML = '<div class="modal-feature-item"><div class="feat-name-row"><span>Feature contributions unavailable</span></div><div class="feat-bar-track"><div class="feat-bar-fill fill-negative" style="width: 0%"></div></div></div>';
+    }
   }
 }
 
-// Close modal hook
+// Close modal hook & click-outside dismiss
 document.addEventListener("DOMContentLoaded", () => {
   const closeBtn = document.getElementById("closeExplainModalBtn");
   const modal = document.getElementById("explainabilityModal");
-  if (closeBtn && modal) {
-    closeBtn.addEventListener("click", () => modal.classList.remove("active"));
+  if (closeBtn) {
+    closeBtn.addEventListener("click", window.closeExplainabilityModal);
   }
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        window.closeExplainabilityModal();
+      }
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      window.closeExplainabilityModal();
+    }
+  });
 });
+

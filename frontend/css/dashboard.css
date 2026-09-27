@@ -6,6 +6,8 @@
 .app-container {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
 }
 
 /* Sidebar Navigation */
@@ -19,6 +21,8 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   z-index: 100;
   transition: width 0.3s ease;
 }
@@ -71,6 +75,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .nav-item a {
@@ -111,6 +118,7 @@
   border-top: 1px solid var(--bg-card-border);
   font-size: 0.75rem;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* Main Content Area */
@@ -119,6 +127,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -1809,7 +1820,6 @@
 }
 
 /* ==========================================================================
-<<<<<<< HEAD
    WeatherTrust AI — Indian Location Hierarchy & Live Tracking Page Styles
    ========================================================================== */
 
@@ -1825,19 +1835,10 @@
 }
 
 .hierarchy-card-header {
-=======
-   SIH 10/10 OPERATIONAL EXTENSIONS (MoES / NCMRWF Control Room Features)
-   Problem ID: 26079
-   ========================================================================== */
-
-/* --- Feature 1: Forecast Confidence Map --- */
-.conf-map-header-bar {
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-<<<<<<< HEAD
   gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 14px;
@@ -2313,7 +2314,17 @@
   }
 }
 
-=======
+/* ==========================================================================
+   SIH 10/10 OPERATIONAL EXTENSIONS (MoES / NCMRWF Control Room Features)
+   Problem ID: 26079
+   ========================================================================== */
+
+/* --- Feature 1: Forecast Confidence Map --- */
+.conf-map-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   background: var(--bg-surface);
   padding: 16px 20px;
@@ -2814,7 +2825,7 @@
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(6px);
   z-index: 2000;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   opacity: 0;
@@ -2823,6 +2834,7 @@
 }
 
 .explain-modal-backdrop.active {
+  display: flex !important;
   opacity: 1;
   pointer-events: auto;
 }
@@ -2889,7 +2901,3 @@
   .unc-kpi-grid { grid-template-columns: 1fr 1fr; }
   .cal-kpi-grid { grid-template-columns: 1fr 1fr; }
 }
-
-
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
-

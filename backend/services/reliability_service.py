@@ -253,9 +253,16 @@ def get_daywise_reliability(location: str = "Vijayawada") -> Dict[str, Any]:
     overview = get_forecast_reliability_overview(location=location, focus_lead_day=1)
     drift_profile = get_all_lead_days_drift(location)
 
+    forecast_data = get_full_forecast_response(location)
+    daily = forecast_data.daily
+
     daywise_list = []
     for item in overview.lead_days:
         d = item.lead_day
+        day_fc = daily[d - 1] if d - 1 < len(daily) else None
+        fc_rain = float(day_fc.precipitation_mm) if day_fc else 0.0
+        fc_temp = round((float(day_fc.temp_max_c) + float(day_fc.temp_min_c)) / 2.0, 1) if day_fc else 30.0
+
         drift_item = drift_profile.get(d, {})
         drift_val = float(drift_item.get("drift_amount", 2.0 + d * 1.5))
         unc_val = min(95, max(8, int(item.bust_probability_pct * 1.05)))
@@ -274,6 +281,8 @@ def get_daywise_reliability(location: str = "Vijayawada") -> Dict[str, Any]:
             "confidence": item.reliability_score,
             "bust_probability": item.bust_probability_pct,
             "risk": item.risk_level.title(),
+            "rainfall_mm": round(fc_rain, 1),
+            "temperature_c": round(fc_temp, 1),
             "forecast_drift_mm": round(drift_val, 1),
             "uncertainty_pct": unc_val,
             "shap_summary": shap_text,

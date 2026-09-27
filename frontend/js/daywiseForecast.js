@@ -10,12 +10,13 @@ async function loadDaywiseForecast(location = "Vijayawada") {
   const locLabel = document.getElementById("daywiseLocationHeader");
   if (!container) return;
 
-  container.innerHTML = `
+  const loadingMessage = `
     <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">
       <div class="loading-spinner"></div>
       <p style="margin-top: 15px;">Executing Calibrated ML Multi-Lead Inference for ${location} (Day 1–10)...</p>
     </div>
   `;
+  container.innerHTML = loadingMessage;
 
   if (locLabel) locLabel.textContent = location;
 
@@ -23,13 +24,13 @@ async function loadDaywiseForecast(location = "Vijayawada") {
     const resp = await fetch(`/api/reliability/daywise?location=${encodeURIComponent(location)}`);
     if (!resp.ok) throw new Error("Failed to fetch daywise reliability");
     const data = await resp.json();
-
-    renderDaywiseCards(data.days, location);
+    renderDaywiseCards(data && Array.isArray(data.days) ? data.days : [], location);
   } catch (err) {
     console.error("Error loading daywise forecast:", err);
     container.innerHTML = `
       <div class="alert-box alert-error" style="grid-column: 1 / -1;">
-        Failed to load Day 1–10 ML predictions. Please ensure the backend server is running.
+        <strong>Data unavailable for this location/horizon.</strong><br>
+        The Day 1–10 reliability model did not return usable forecast values for ${location}. Please retry or choose another location.
       </div>
     `;
   }
@@ -37,7 +38,17 @@ async function loadDaywiseForecast(location = "Vijayawada") {
 
 function renderDaywiseCards(days, location) {
   const container = document.getElementById("daywiseCardsGrid");
-  if (!container || !days) return;
+  if (!container) return;
+
+  if (!Array.isArray(days) || days.length === 0) {
+    container.innerHTML = `
+      <div class="alert-box alert-warning" style="grid-column: 1 / -1;">
+        <strong>Data unavailable for ${location}.</strong><br>
+        No usable Day 1–10 forecast confidence values were returned for this location and lead-time horizon.
+      </div>
+    `;
+    return;
+  }
 
   container.innerHTML = days
     .map((item) => {

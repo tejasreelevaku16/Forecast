@@ -23,45 +23,96 @@ const AppRouter = {
     "technical",
     "about",
   ],
+
+  aliases: {
+    "forecast-confidence": "confidence-map",
+    "forecast-confidence-map": "confidence-map",
+    "confidence": "confidence-map",
+    "day-wise": "daywise",
+    "day-wise-confidence": "daywise",
+    "daywise-confidence": "daywise",
+    "forecast-uncertainty": "uncertainty",
+    "model-reliability": "calibration",
+    "model-reliability-calibration": "calibration",
+    "reliability": "calibration",
+    "explainable-ai": "explain",
+    "explainable-ai-shap": "explain",
+    "shap": "explain",
+    "live-tracking": "live-weather",
+    "live": "live-weather",
+    "10-day-forecast": "forecast",
+    "ten-day-forecast": "forecast",
+    "trust-diagnostics": "trust",
+    "forecast-drift": "drift",
+    "india-map": "map",
+    "india-reliability-map": "map",
+    "early-alerts": "alerts",
+    "technical-evaluator": "technical",
+    "technical-evaluation": "technical",
+  },
+
   currentPage: "dashboard",
+
+  normalizeRoute(slug) {
+    if (!slug) return "dashboard";
+    const clean = String(slug).toLowerCase().replace(/^\/+|\/+$/g, "").trim();
+    if (this.aliases[clean]) {
+      return this.aliases[clean];
+    }
+    if (this.routes.includes(clean)) {
+      return clean === "live-tracking" ? "live-weather" : clean;
+    }
+    return "dashboard";
+  },
 
   init() {
     this.setupLinkInterception();
     this.setupHamburgerMenu();
     this.setupPopStateListener();
 
-    // Determine initial route from URL path or hash
+    const storedLocation = localStorage.getItem('weathertrust-selected-location');
+    if (storedLocation) {
+      try {
+        const parsed = JSON.parse(storedLocation);
+        if (parsed && parsed.name) {
+          window.currentSelectedLocation = parsed.name;
+        }
+      } catch (err) {
+        console.warn('[nav] invalid stored location', err);
+      }
+    }
+
     const initialRoute = this.getRouteFromUrl();
     this.navigateTo(initialRoute, false);
   },
 
   getRouteFromUrl() {
     const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
-    if (this.routes.includes(path)) {
-      return path;
+    if (path) {
+      return this.normalizeRoute(path);
     }
 
     const hash = window.location.hash.replace(/^#\/?/, "");
-    if (this.routes.includes(hash)) {
-      return hash;
+    if (hash) {
+      return this.normalizeRoute(hash);
     }
 
     return "dashboard";
   },
 
   navigateTo(pageSlug, pushHistory = true) {
-    if (!this.routes.includes(pageSlug)) {
-      pageSlug = "dashboard";
+    const target = this.normalizeRoute(pageSlug);
+    this.currentPage = target;
+    const selectedLocation = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
+    if (selectedLocation) {
+      localStorage.setItem('weathertrust-selected-location', JSON.stringify({ name: selectedLocation }));
     }
-
-    this.currentPage = pageSlug;
-    const viewSlug = pageSlug === "live-tracking" ? "live-weather" : pageSlug;
 
     // Update active nav item in sidebar
     const navItems = document.querySelectorAll(".nav-item");
     navItems.forEach((item) => {
-      const targetPage = item.getAttribute("data-page");
-      if (targetPage === pageSlug || (targetPage === "live-weather" && pageSlug === "live-tracking")) {
+      const itemPage = this.normalizeRoute(item.getAttribute("data-page"));
+      if (itemPage === target) {
         item.classList.add("active");
       } else {
         item.classList.remove("active");
@@ -71,7 +122,7 @@ const AppRouter = {
     // Toggle active page view
     const pageViews = document.querySelectorAll(".page-view");
     pageViews.forEach((view) => {
-      if (view.id === `page-${viewSlug}`) {
+      if (view.id === `page-${target}`) {
         view.classList.add("active");
       } else {
         view.classList.remove("active");
@@ -83,7 +134,7 @@ const AppRouter = {
 
     // Update browser URL & history
     if (pushHistory) {
-      window.history.pushState({ page: pageSlug }, "", `/${pageSlug}`);
+      window.history.pushState({ page: target }, "", `/${target}`);
     }
 
     // Scroll to top of main content
@@ -94,13 +145,13 @@ const AppRouter = {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Handle view-specific lifecycle events
-    this.onPageActivated(pageSlug);
+    this.onPageActivated(target);
   },
 
   onPageActivated(pageSlug) {
-    const loc = window.currentSelectedLocation || "Vijayawada";
+    const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
-    // Initialize GIS confidence map
+    // Initialize GIS confidence map & India map sizing
     if (pageSlug === "confidence-map" || pageSlug === "map") {
       setTimeout(() => {
         if (typeof initConfidenceMap === "function") {
@@ -130,6 +181,18 @@ const AppRouter = {
     // Trigger Explainable AI (SHAP)
     if (pageSlug === "explain" && typeof loadExplainabilityData === "function") {
       loadExplainabilityData(loc, 6);
+    }
+
+    // Synchronize Live Tracking page location hierarchy
+    if (pageSlug === "live-weather" && typeof LiveTrackingUI !== "undefined" && typeof LiveTrackingUI.findAndSelectLocation === "function") {
+      LiveTrackingUI.findAndSelectLocation(loc);
+    }
+
+    // Trigger Technical Evaluation (Judge) metrics
+    if (pageSlug === "technical" && typeof JudgeUI !== "undefined" && typeof JudgeUI.fetchMetrics === "function") {
+      JudgeUI.fetchMetrics().then((data) => {
+        JudgeUI.renderJudgeDashboard(data);
+      });
     }
 
     // Redraw charts when view changes

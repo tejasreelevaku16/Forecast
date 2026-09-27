@@ -8,20 +8,6 @@ from fastapi.testclient import TestClient
 from backend.main import app
 
 client = TestClient(app)
-
-from backend.main import app
-from fastapi.testclient import TestClient
-_test_client = TestClient(app)
-
-def _get(url):
-    try:
-        return requests.get(url, timeout=0.5)
-    except Exception:
-        path = url.replace(BASE_URL, "")
-        if not path:
-            path = "/"
-        return _test_client.get(path)
-
 PAGES = [
     "dashboard",
     "confidence-map",
@@ -44,11 +30,7 @@ PAGES = [
 def test_spa_page_routes():
     """Verify that all 15 dedicated SPA page URLs return status 200 with HTML content."""
     for page in PAGES:
-<<<<<<< HEAD
-        resp = _get(f"{BASE_URL}/{page}")
-=======
         resp = client.get(f"/{page}")
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
         assert resp.status_code == 200, f"Route /{page} failed with status {resp.status_code}"
         assert "text/html" in resp.headers["content-type"]
         assert "WeatherTrust AI" in resp.text
@@ -58,11 +40,7 @@ def test_spa_page_routes():
 
 def test_html_structure_and_components():
     """Verify that index.html contains all necessary navigation, header controls, and cards."""
-<<<<<<< HEAD
-    resp = _get(f"{BASE_URL}/")
-=======
     resp = client.get("/")
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
     assert resp.status_code == 200
     html = resp.text
 
@@ -97,6 +75,31 @@ def test_html_structure_and_components():
     print("[PASS] HTML structure and core UI components verified.")
 
 
+def test_route_aliases_return_200():
+    """Verify that user-facing aliases return 200 with HTML."""
+    aliases = [
+        "forecast-confidence",
+        "day-wise-confidence",
+        "forecast-uncertainty",
+        "model-reliability",
+        "explainable-ai",
+        "live-tracking",
+        "10-day-forecast",
+        "trust-diagnostics",
+        "forecast-drift",
+        "india-map",
+        "early-alerts",
+        "technical-evaluation",
+        "technical-evaluator",
+    ]
+    for alias in aliases:
+        resp = client.get(f"/{alias}")
+        assert resp.status_code == 200, f"Alias /{alias} failed with status {resp.status_code}"
+        assert "text/html" in resp.headers["content-type"]
+        assert "WeatherTrust AI" in resp.text
+    print(f"[PASS] All {len(aliases)} route aliases returned status 200 with valid HTML.")
+ 
+ 
 def test_api_endpoints_operational():
     """Verify all underlying REST API endpoints continue functioning smoothly."""
     endpoints = [
@@ -111,13 +114,11 @@ def test_api_endpoints_operational():
     ]
 
     for path, expected_status in endpoints:
-<<<<<<< HEAD
-        r = _get(f"{BASE_URL}{path}")
-=======
         r = client.get(path)
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
         assert r.status_code == expected_status, f"Endpoint {path} returned {r.status_code}"
     print(f"[PASS] All {len(endpoints)} core API endpoints operational.")
+
+
 
 
 if __name__ == "__main__":

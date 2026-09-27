@@ -154,6 +154,23 @@ const LiveTrackingUI = {
     }
   },
 
+  findAndSelectLocation(query) {
+    if (!query || !this.hierarchy) return null;
+    const clean = String(query).split(',')[0].trim().toLowerCase();
+    for (const [state, places] of Object.entries(this.hierarchy)) {
+      const match = places.find(p => 
+        p.place.toLowerCase() === clean || 
+        (p.district && p.district.toLowerCase() === clean) ||
+        clean.includes(p.place.toLowerCase())
+      );
+      if (match) {
+        this.selectLocation(state, match.place, false);
+        return match;
+      }
+    }
+    return null;
+  },
+
   updateBreadcrumbs() {
     const crumbState = document.getElementById("crumbStateText");
     const crumbPlace = document.getElementById("crumbPlaceText");

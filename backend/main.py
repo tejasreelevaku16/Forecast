@@ -19,6 +19,8 @@ from backend.routes.drift import router as drift_router
 from backend.routes.alerts import router as alerts_router
 from backend.routes.judge import router as judge_router
 from backend.routes.map import router as map_router
+from backend.routes.explain import router as explain_router
+from backend.routes.locations import router as locations_router
 
 from backend.services.weather_service import get_current_weather, get_full_forecast_response
 from backend.services.reliability_service import get_forecast_reliability_overview
@@ -46,6 +48,8 @@ app.include_router(drift_router)
 app.include_router(alerts_router)
 app.include_router(judge_router)
 app.include_router(map_router)
+app.include_router(explain_router)
+app.include_router(locations_router)
 
 
 @app.get("/api/health", tags=["System"])
@@ -105,63 +109,48 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 PAGES = [
     "dashboard",
     "confidence-map",
+    "forecast-confidence",
+    "forecast-confidence-map",
     "daywise",
+    "day-wise",
+    "day-wise-confidence",
     "uncertainty",
+    "forecast-uncertainty",
     "calibration",
+    "model-reliability",
+    "model-reliability-calibration",
     "explain",
+    "explainable-ai",
     "live-weather",
+    "live-tracking",
     "forecast",
+    "10-day-forecast",
     "trust",
+    "trust-diagnostics",
     "drift",
+    "forecast-drift",
     "map",
+    "india-map",
+    "india-reliability-map",
     "alerts",
+    "early-alerts",
     "decision-support",
     "technical",
+    "technical-evaluation",
+    "technical-evaluator",
     "about",
 ]
 
 if FRONTEND_DIR.exists():
     index_html = str(FRONTEND_DIR / "index.html")
 
-    @app.get("/dashboard", include_in_schema=False)
-    async def page_dashboard():
-        return FileResponse(index_html)
+    def _make_page_handler():
+        async def _page_handler():
+            return FileResponse(index_html)
+        return _page_handler
 
-    @app.get("/live-weather", include_in_schema=False)
-    async def page_live_weather():
-        return FileResponse(index_html)
-
-    @app.get("/forecast", include_in_schema=False)
-    async def page_forecast():
-        return FileResponse(index_html)
-
-    @app.get("/trust", include_in_schema=False)
-    async def page_trust():
-        return FileResponse(index_html)
-
-    @app.get("/drift", include_in_schema=False)
-    async def page_drift():
-        return FileResponse(index_html)
-
-    @app.get("/map", include_in_schema=False)
-    async def page_map():
-        return FileResponse(index_html)
-
-    @app.get("/alerts", include_in_schema=False)
-    async def page_alerts():
-        return FileResponse(index_html)
-
-    @app.get("/decision-support", include_in_schema=False)
-    async def page_decision_support():
-        return FileResponse(index_html)
-
-    @app.get("/technical", include_in_schema=False)
-    async def page_technical():
-        return FileResponse(index_html)
-
-    @app.get("/about", include_in_schema=False)
-    async def page_about():
-        return FileResponse(index_html)
+    for page in PAGES:
+        app.add_api_route(f"/{page}", _make_page_handler(), methods=["GET"], include_in_schema=False)
 
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
 

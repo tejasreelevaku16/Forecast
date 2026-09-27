@@ -74,6 +74,7 @@ SUPPORTED_SECTORS: List[str] = [
 # Live Weather API Settings (Open-Meteo: free, accurate, zero secret leakage)
 OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_GEOCODING_URL: str = "https://geocoding-api.open-meteo.com/v1/search"
+CARTO_API_KEY: str = "PASTE_MY_CARTO_KEY_HERE"
 API_TIMEOUT_SECONDS: int = 6
 
 # Forecast Bust Definition Criteria (NCMRWF / IMD Medium-Range Verification Standards)

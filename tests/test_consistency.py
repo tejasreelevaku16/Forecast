@@ -24,12 +24,7 @@ from backend.services.common_forecast_service import get_common_forecast_data
 from backend.services.reliability_service import get_forecast_reliability_overview
 from backend.services.india_map_service import get_all_india_states_map
 
-<<<<<<< HEAD
 BASE_URL = "http://127.0.0.1:8000"
-
-from backend.main import app
-from fastapi.testclient import TestClient
-_test_client = TestClient(app)
 
 def _get(url):
     try:
@@ -38,10 +33,7 @@ def _get(url):
         path = url.replace(BASE_URL, "")
         if not path:
             path = "/"
-        return _test_client.get(path)
-
-=======
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
+        return client.get(path)
 
 def test_centralized_risk_classifier():
     """Verify exact thresholds and guarantees in risk_classifier.py."""
@@ -118,11 +110,7 @@ def test_forecast_data_consistency():
 
 def test_api_common_forecast_endpoint():
     """Verify GET /api/weather/common returns the unified forecast model."""
-<<<<<<< HEAD
-    resp = _get(f"{BASE_URL}/api/weather/common?location=Krishna%20District&lead_day=6")
-=======
     resp = client.get("/api/weather/common?location=Krishna%20District&lead_day=6")
->>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
     assert resp.status_code == 200
     data = resp.json()
 

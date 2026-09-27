@@ -23,32 +23,31 @@ async function loadExplainabilityData(location = "Vijayawada", leadDay = 6) {
     if (!resp.ok) throw new Error("Failed to load explainability data");
     const data = await resp.json();
 
-    // Section A & B: Confidence Gauge & Bust Probability
-    renderGaugeAndBustIndicators(data.confidence, data.bust_probability, data.risk);
+    if (!data || !data.top_features) {
+      throw new Error("No explanation payload returned");
+    }
 
-    // Section C: SHAP Contribution Chart
-    renderShapChart(data.top_features);
+    renderGaugeAndBustIndicators(data.confidence ?? null, data.bust_probability ?? null, data.risk ?? "unknown");
+    renderShapChart(Array.isArray(data.top_features) ? data.top_features : []);
 
-    // Section D: Meteorological Explanation Summary
     const summaryEl = document.getElementById("explainSummaryText");
-    if (summaryEl) summaryEl.textContent = data.summary;
+    if (summaryEl) summaryEl.textContent = data.summary || "Explanation unavailable because the reliability model has not produced an explanation for this location.";
 
-    // Section E: Operational Recommendations
     const recEl = document.getElementById("explainRecText");
     const riskBadge = document.getElementById("explainRiskLevelBadge");
-    if (recEl) recEl.textContent = data.recommendation;
+    if (recEl) recEl.textContent = data.recommendation || "Risk-aware guidance is unavailable for this forecast window.";
     if (riskBadge) {
-      riskBadge.textContent = `${data.risk} Bust Risk`;
+      const riskText = (data.risk || "Unknown").toString();
+      riskBadge.textContent = `${riskText} Bust Risk`;
       riskBadge.className = `badge ${
-        data.risk.toLowerCase() === "low"
+        riskText.toLowerCase() === "low"
           ? "badge-low"
-          : data.risk.toLowerCase() === "moderate"
+          : riskText.toLowerCase() === "moderate"
           ? "badge-moderate"
           : "badge-high"
       }`;
     }
 
-    // Lead day selector pills sync
     const pills = document.querySelectorAll(".explain-day-pill");
     pills.forEach((p) => {
       const d = parseInt(p.getAttribute("data-day") || "6", 10);
@@ -56,6 +55,20 @@ async function loadExplainabilityData(location = "Vijayawada", leadDay = 6) {
     });
   } catch (err) {
     console.error("Error loading explainability diagnostics:", err);
+    const summaryEl = document.getElementById("explainSummaryText");
+    const recEl = document.getElementById("explainRecText");
+    const confValEl = document.getElementById("explainGaugeValue");
+    const bustValEl = document.getElementById("explainBustVal");
+    if (summaryEl) summaryEl.textContent = "Explanation unavailable because the reliability model has not produced an explanation for this location.";
+    if (recEl) recEl.textContent = "Risk-aware guidance is unavailable for this forecast window.";
+    if (confValEl) confValEl.textContent = "Data unavailable";
+    if (bustValEl) bustValEl.textContent = "Data unavailable";
+    renderShapChart([]);
+    const riskBadge = document.getElementById("explainRiskLevelBadge");
+    if (riskBadge) {
+      riskBadge.textContent = 'DATA UNAVAILABLE';
+      riskBadge.className = 'badge badge-neutral';
+    }
   }
 }
 
@@ -64,24 +77,43 @@ function renderGaugeAndBustIndicators(confidence, bustProb, risk) {
   const bustValEl = document.getElementById("explainBustVal");
   const gaugeSvgPath = document.getElementById("explainGaugePath");
 
-  if (confValEl) confValEl.textContent = `${confidence}%`;
-  if (bustValEl) bustValEl.textContent = `${bustProb}%`;
+  const safeConfidence = Number.isFinite(Number(confidence)) ? Number(confidence) : 0;
+  const safeBust = Number.isFinite(Number(bustProb)) ? Number(bustProb) : 0;
 
-  // Animate circular SVG stroke dasharray (Perimeter = 2 * PI * 45 = ~282.7)
+  if (confValEl) confValEl.textContent = Number.isFinite(Number(confidence)) ? `${safeConfidence}%` : "Data unavailable";
+  if (bustValEl) bustValEl.textContent = Number.isFinite(Number(bustProb)) ? `${safeBust}%` : "Data unavailable";
+
   if (gaugeSvgPath) {
     const perimeter = 282.7;
-    const offset = perimeter - (confidence / 100) * perimeter;
+    const normalized = Number.isFinite(Number(confidence)) ? Math.max(0, Math.min(100, safeConfidence)) : 0;
+    const offset = perimeter - (normalized / 100) * perimeter;
     gaugeSvgPath.style.strokeDashoffset = offset;
 
     const strokeColor =
-      confidence >= 75 ? "#10b981" : confidence >= 55 ? "#f59e0b" : "#ef4444";
+      normalized >= 75 ? "#10b981" : normalized >= 55 ? "#f59e0b" : "#ef4444";
     gaugeSvgPath.style.stroke = strokeColor;
   }
 }
 
 function renderShapChart(features) {
   const canvas = document.getElementById("shapHorizontalBarChart");
-  if (!canvas || !features) return;
+  if (!canvas) return;
+
+  if (!Array.isArray(features) || features.length === 0) {
+    const ctx = canvas.getContext("2d");
+    if (shapChartInstance) shapChartInstance.destroy();
+    shapChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: { labels: ["Unavailable"], datasets: [{ data: [0], backgroundColor: ["rgba(148, 163, 184, 0.35)"] }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+    return;
+  }
 
   const ctx = canvas.getContext("2d");
   if (shapChartInstance) {

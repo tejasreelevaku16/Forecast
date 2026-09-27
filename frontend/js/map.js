@@ -11,6 +11,21 @@
  * 6. Full synchronization with Dashboard and Live Tracking.
  */
 
+const CARTO_API_KEY = "PASTE_MY_CARTO_KEY_HERE";
+
+function buildCartoTileLayer(style = "voyager") {
+  const baseUrl = `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}.png`;
+  const tileUrl = CARTO_API_KEY && CARTO_API_KEY !== "PASTE_MY_CARTO_KEY_HERE"
+    ? `${baseUrl}?key=${CARTO_API_KEY}`
+    : baseUrl;
+
+  return L.tileLayer(tileUrl, {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 19,
+    subdomains: "abcd",
+  });
+}
+
 const IndiaMapUI = {
   map: null,
   geoJsonLayer: null,
@@ -66,11 +81,7 @@ const IndiaMapUI = {
         maxBoundsViscosity: 1.0,
       });
 
-      // Standard OpenStreetMap tiles - guaranteed unwatermarked
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors | WeatherTrust AI',
-        maxZoom: 18,
-      }).addTo(this.map);
+      buildCartoTileLayer('voyager').addTo(this.map);
 
       this.setupControls();
 
