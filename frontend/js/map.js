@@ -40,29 +40,33 @@ const IndiaMapUI = {
   stateLayersMap: {},
   searchDebounceTimer: null,
 
-  // Full subcontinental bounds for India
-  indiaBounds: [
-    [6.5, 68.0],
-    [37.5, 97.5]
-  ],
-
   /**
    * Fits the complete India boundary comfortably within the map container
    */
   fitIndiaBounds(animate = false) {
-    if (!this.map) return;
-    this.map.invalidateSize(true);
-    let bounds = null;
-    if (this.geoJsonLayer && typeof this.geoJsonLayer.getBounds === 'function') {
-      const gBounds = this.geoJsonLayer.getBounds();
-      if (gBounds && gBounds.isValid()) {
-        bounds = gBounds;
-      }
+    if (!this.map || !this.geoJsonLayer || typeof this.geoJsonLayer.getBounds !== 'function') return;
+    const bounds = this.geoJsonLayer.getBounds();
+    if (!bounds || !bounds.isValid()) return;
+
+    if (!this.indiaBoundsLogged && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      const northEast = bounds.getNorthEast();
+      const southWest = bounds.getSouthWest();
+      console.info('India GeoJSON bounds:', {
+        north: northEast.lat,
+        south: southWest.lat,
+        east: northEast.lng,
+        west: southWest.lng,
+      });
+      this.indiaBoundsLogged = true;
     }
-    if (!bounds) {
-      bounds = L.latLngBounds([[6.5, 68.0], [37.5, 97.5]]);
-    }
-    this.map.fitBounds(bounds, { padding: [16, 16], maxZoom: 6, animate: animate });
+
+    this.map.invalidateSize({ pan: false });
+    this.map.fitBounds(bounds, {
+      paddingTopLeft: [24, 24],
+      paddingBottomRight: [24, 24],
+      maxZoom: 5,
+      animate,
+    });
   },
 
   /**
@@ -130,6 +134,9 @@ const IndiaMapUI = {
       this.renderGeoJsonLayer();
       this.hideMapLoading();
 
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      this.fitIndiaBounds(false);
+
       // Synchronize with currently active location if set, without zooming in to preserve India view
       const activeLoc = (typeof WeatherTrustCommon !== 'undefined' && WeatherTrustCommon.currentLocation && WeatherTrustCommon.currentLocation.latitude && WeatherTrustCommon.currentLocation.longitude)
         ? {
@@ -151,7 +158,6 @@ const IndiaMapUI = {
             longitude: 81.1389,
           };
       await this.selectLocation(activeLoc, false);
-      this.fitIndiaBounds(false);
     } catch (err) {
       console.error("India Map Initialization Error:", err);
       this.showMapError("India map could not be loaded. Please retry.", "general");
@@ -309,6 +315,9 @@ const IndiaMapUI = {
                 color: data.color || '#38bdf8'
               };
         }
+        const regionBadge = data && typeof WeatherTrustInsightsUI !== 'undefined'
+          ? WeatherTrustInsightsUI.badgeInfo(riskInfo.trust_score)
+          : null;
 
         // Single Region Reliability Card Popup
         // Enforces: Exactly ONE active popup at a time.
@@ -322,6 +331,7 @@ const IndiaMapUI = {
                 ${data ? (riskInfo.risk_display || data.bust_risk || "Monitored") : "Unavailable"}
               </span>
             </div>
+            ${regionBadge ? `<span class="badge reliability-badge ${regionBadge.className}">${regionBadge.label}</span>` : ''}
             <div style="font-size: 0.725rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
               Regional Reliability Overview
             </div>
@@ -355,6 +365,7 @@ const IndiaMapUI = {
         // Simple transient hover tooltip showing only state name (does NOT stick or pile up)
         layer.bindTooltip(stateName, {
           sticky: false,
+          permanent: false,
           direction: 'top',
           className: 'leaflet-state-hover-hint',
           opacity: 0.9,
@@ -389,7 +400,6 @@ const IndiaMapUI = {
       }
     }).addTo(this.map);
 
-    this.fitIndiaBounds(false);
   },
 
   /**
@@ -435,6 +445,10 @@ const IndiaMapUI = {
   selectState(stateName, zoomTo = false) {
     this.selectedState = stateName;
     const defaultPlace = this.resolveDefaultPlaceForState(stateName);
+    if (typeof loadDashboard === 'function') {
+      loadDashboard(defaultPlace, typeof currentSector !== 'undefined' ? currentSector : 'General Public');
+      return;
+    }
     this.selectLocation(defaultPlace, zoomTo);
   },
 
@@ -456,7 +470,7 @@ const IndiaMapUI = {
         currentLocation = loc.place;
       }
       if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.selectLocation === 'function') {
-        LiveTrackingUI.selectLocation(loc.state, loc.place, false);
+        LiveTrackingUI.selectLocation(loc.state, loc.place, false, loc);
       }
     } catch (e) {
       console.warn("Storage sync note:", e);
@@ -574,22 +588,19 @@ const IndiaMapUI = {
     if (!panel) return;
 
     const states = Object.values(this.statesData || {});
-    const totalCount = states.length || 36;
-    let highCount = 0;
-    let modCount = 0;
-    let lowCount = 0;
-    let totalTrust = 0;
-
-    states.forEach(s => {
-      const bust = s.bust_probability ?? s.bust_risk_pct ?? 40;
-      const trust = s.trust_score ?? (100 - bust);
-      totalTrust += trust;
-      if (bust > 50) lowCount++;
-      else if (bust > 30) modCount++;
-      else highCount++;
-    });
-
-    const avgTrust = states.length ? Math.round(totalTrust / states.length) : 62;
+    const scoredStates = states.map(state => {
+      const bust = state.bust_probability ?? state.bust_risk_pct;
+      const score = state.trust_score ?? (bust === undefined || bust === null ? null : 100 - Number(bust));
+      return score === null || !Number.isFinite(Number(score)) ? null : Number(score);
+    }).filter(score => score !== null);
+    const totalCount = scoredStates.length;
+    const avgTrust = totalCount ? Math.round(scoredStates.reduce((total, trust) => total + trust, 0) / totalCount) : null;
+    const lowCount = scoredStates.filter(score => score < 50).length;
+    const highCount = scoredStates.filter(score => score >= 80).length;
+    const modCount = scoredStates.filter(score => score >= 50 && score < 80).length;
+    const nationalBadge = avgTrust === null || typeof WeatherTrustInsightsUI === 'undefined'
+      ? { label: 'Unavailable', className: 'badge-neutral' }
+      : WeatherTrustInsightsUI.badgeInfo(avgTrust);
     const currentDay = this.currentDay || 6;
 
     panel.innerHTML = `
@@ -608,8 +619,8 @@ const IndiaMapUI = {
         <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(56, 189, 248, 0.2); padding: 14px; border-radius: 8px;">
           <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">National Reliability Score</div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
-            <div style="font-size:1.8rem; font-weight:800; color:#38bdf8;">${avgTrust} <span style="font-size:0.9rem; color:#94a3b8;">/ 100</span></div>
-            <span class="badge ${avgTrust >= 65 ? 'badge-risk-low' : 'badge-risk-mod'}">${avgTrust >= 65 ? 'MODERATE-HIGH TRUST' : 'MODERATE RISK'}</span>
+            <div style="font-size:1.8rem; font-weight:800; color:#38bdf8;">${avgTrust === null ? 'Unavailable' : `${avgTrust} <span style="font-size:0.9rem; color:#94a3b8;">/ 100</span>`}</div>
+            <span class="badge ${nationalBadge.className}">${nationalBadge.label}</span>
           </div>
           <p style="font-size:0.75rem; color:#94a3b8; margin: 6px 0 0 0; line-height: 1.4;">
             Calculated across ${totalCount} States &amp; Union Territories for Lead Day ${currentDay}.
@@ -673,11 +684,11 @@ const IndiaMapUI = {
     const targetDayForecast = daily.length > dayIdx ? daily[dayIdx] : null;
 
     // Regional (State) Reliability
-    let stateTrust = 65;
-    let stateBust = 35;
-    let stateRiskLabel = "MODERATE RISK";
-    let stateRiskColor = "#f59e0b";
-    let stateBadgeClass = "badge-risk-mod";
+    let stateTrust = null;
+    let stateBust = null;
+    let stateRiskLabel = "DATA UNAVAILABLE";
+    let stateRiskColor = "#94a3b8";
+    let stateBadgeClass = "badge-neutral";
 
     if (stateRelData) {
       stateBust = stateRelData.bust_probability ?? 50;
@@ -690,25 +701,29 @@ const IndiaMapUI = {
       }
     }
 
-    // District Reliability Assessment (DO NOT FAKE: only display if calibrated data exists)
-    const isKrishna = loc.place.toLowerCase().includes("krishna");
+    const liveTrust = window.currentWeatherInsights?.weather_trust;
+    const currentSelection = window.selectedLocation;
+    const matchesSelection = currentSelection && currentSelection.place === loc.place
+      && Math.abs(Number(currentSelection.latitude) - Number(loc.latitude)) < 0.01
+      && Math.abs(Number(currentSelection.longitude) - Number(loc.longitude)) < 0.01;
     let districtRelHtml = "";
-    if (isKrishna) {
+    if (matchesSelection && liveTrust?.available && typeof WeatherTrustInsightsUI !== 'undefined') {
+      const districtBadge = WeatherTrustInsightsUI.badgeInfo(liveTrust.score);
       districtRelHtml = `
-        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); padding: 8px 12px; border-radius: 6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 6px;">
           <div>
-            <span style="font-size:0.775rem; color:#fca5a5; font-weight:700;">${loc.place} Reliability:</span>
-            <div style="font-size:0.7rem; color:#94a3b8;">Calibrated Coastal Benchmark (Day ${leadDay})</div>
+            <span style="font-size:0.775rem; color:#cbd5e1; font-weight:700;">${loc.place} Weather Trust:</span>
+            <div style="font-size:0.7rem; color:#94a3b8;">Live forecast feature score</div>
           </div>
-          <strong style="font-size:1.15rem; color:#ef4444;">24 / 100 <span style="font-size:0.75rem;">(76% Bust Risk)</span></strong>
+          <div style="text-align:right;"><strong style="font-size:1.05rem; color:#f8fafc;">${liveTrust.score} / 100</strong><br><span class="badge reliability-badge ${districtBadge.className}">${districtBadge.label}</span></div>
         </div>
       `;
     } else {
       districtRelHtml = `
         <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); padding: 8px 12px; border-radius: 6px;">
           <div>
-            <span style="font-size:0.775rem; color:#cbd5e1; font-weight:600;">${loc.place} Reliability:</span>
-            <div style="font-size:0.7rem; color:#64748b;">Pending local station calibration</div>
+            <span style="font-size:0.775rem; color:#cbd5e1; font-weight:600;">${loc.place} Weather Trust:</span>
+            <div style="font-size:0.7rem; color:#64748b;">Waiting for forecast inputs</div>
           </div>
           <span style="font-size:0.775rem; color:#94a3b8; font-style:italic;">Data unavailable</span>
         </div>
@@ -797,7 +812,7 @@ const IndiaMapUI = {
         <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:0.75rem; color:#94a3b8;">Regional Reliability (${loc.state}):</span>
-            <strong style="font-size:0.95rem; color:${stateRiskColor};">${stateTrust} / 100 <span style="font-size:0.75rem;">(${stateRiskLabel})</span></strong>
+            <strong style="font-size:0.95rem; color:${stateRiskColor};">${stateTrust === null ? "Unavailable" : `${stateTrust} / 100`} <span style="font-size:0.75rem;">(${stateRiskLabel})</span></strong>
           </div>
           ${districtRelHtml}
         </div>
@@ -1017,10 +1032,16 @@ const IndiaMapUI = {
           if (firstItem && firstItem.dataset.loc) {
             try {
               const loc = JSON.parse(firstItem.dataset.loc);
-              this.selectLocation(loc, true);
+              if (typeof loadDashboard === 'function') {
+                loadDashboard(loc, typeof currentSector !== 'undefined' ? currentSector : 'General Public');
+              } else {
+                this.selectLocation(loc, true);
+              }
               searchInput.value = `${loc.place}, ${loc.state}`;
               if (dropdown) dropdown.classList.remove('active');
-            } catch (err) {}
+            } catch (err) {
+              console.warn('[IndiaMapUI] Could not select searched location:', err);
+            }
           }
         }
       });
@@ -1034,7 +1055,7 @@ const IndiaMapUI = {
 
     window.addEventListener('resize', () => {
       if (this.map && document.getElementById('indiaMap') && document.getElementById('page-map')?.classList.contains('active')) {
-        this.map.invalidateSize();
+        requestAnimationFrame(() => this.fitIndiaBounds(false));
       }
     });
   },
@@ -1066,7 +1087,11 @@ const IndiaMapUI = {
       `;
 
       item.addEventListener('click', () => {
-        this.selectLocation(loc, true);
+        if (typeof loadDashboard === 'function') {
+          loadDashboard(loc, typeof currentSector !== 'undefined' ? currentSector : 'General Public');
+        } else {
+          this.selectLocation(loc, true);
+        }
         searchInput.value = `${loc.place}, ${loc.state}`;
         dropdown.classList.remove('active');
       });

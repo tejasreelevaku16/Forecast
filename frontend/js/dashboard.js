@@ -120,6 +120,7 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
   const confTierElem = document.getElementById('dashConfidenceTier');
   const bustProbElem = document.getElementById('dashBustProb');
   const riskTierElem = document.getElementById('dashRiskTier');
+  const riskBadgeElem = document.getElementById('dashRiskBadge');
   const stabElem = document.getElementById('dashStability');
   const runChangeElem = document.getElementById('dashRunChange');
   const actionGuidance = document.getElementById('dashActionGuidance');
@@ -181,6 +182,10 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       riskTierElem.textContent = `${icon} ${riskInfo.risk_label}`;
       riskTierElem.style.color = riskInfo.color;
     }
+    if (riskBadgeElem) {
+      riskBadgeElem.textContent = riskInfo.risk_label;
+      riskBadgeElem.className = `badge ${riskInfo.badge_class}`;
+    }
 
     if (stabElem) {
       const rawStab = reliabilityData.forecast_stability || (reliabilityData.drift_monitor ? reliabilityData.drift_monitor.stability_level : null) || riskInfo.stability;
@@ -240,6 +245,10 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       riskTierElem.textContent = `⚪ DATA UNAVAILABLE`;
       riskTierElem.style.color = '#94a3b8';
     }
+    if (riskBadgeElem) {
+      riskBadgeElem.textContent = 'DATA UNAVAILABLE';
+      riskBadgeElem.className = 'badge badge-neutral';
+    }
     if (stabElem) {
       stabElem.textContent = `DATA UNAVAILABLE`;
       stabElem.style.color = '#94a3b8';
@@ -257,26 +266,86 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
 /**
  * Loads and refreshes all dashboard modules across all 10 pages
  */
-async function loadDashboard(locationQuery, sector = currentSector, lat = null, lon = null, state = null) {
+function normalizeLocationSelection(location, lat = null, lon = null, state = null) {
+  const source = location && typeof location === 'object'
+    ? location
+    : { name: String(location || ''), place: String(location || ''), latitude: lat, longitude: lon, state };
+  const place = source.place || source.name || source.city || '';
+  const rawRegion = source.state || state || source.region || '';
+  const regionParts = String(rawRegion).split(',').map(part => part.trim()).filter(Boolean);
+  const stateName = source.state && !String(source.state).includes(',')
+    ? source.state
+    : regionParts[regionParts.length - 1] || '';
+  const district = source.district || (regionParts.length > 1 ? regionParts[0] : place);
+  const latitude = source.latitude ?? source.lat ?? lat;
+  const longitude = source.longitude ?? source.lon ?? lon;
+  const validLatitude = latitude !== null && latitude !== undefined && Number.isFinite(Number(latitude)) ? Number(latitude) : null;
+  const validLongitude = longitude !== null && longitude !== undefined && Number.isFinite(Number(longitude)) ? Number(longitude) : null;
+  const city = source.city || source.name || place;
+  const country = source.country || 'India';
+
+  return {
+    location_id: source.location_id || source.locationId || source.unique_id || null,
+    unique_id: source.unique_id || source.location_id || source.locationId || null,
+    name: place,
+    displayName: source.displayName || source.display_name || [city, district && district !== city ? district : '', stateName, country].filter(Boolean).join(', '),
+    city,
+    place,
+    district,
+    state: stateName,
+    state_code: source.state_code || '',
+    latitude: validLatitude,
+    longitude: validLongitude,
+    country,
+  };
+}
+
+async function searchLocationResults(query) {
+  const response = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`);
+  if (!response.ok) throw new Error(`Location search returned HTTP ${response.status}`);
+  const results = await response.json();
+  return Array.isArray(results) ? results.map(result => normalizeLocationSelection(result)) : [];
+}
+
+function selectSearchResult(result) {
+  const location = normalizeLocationSelection(result);
+  if (!location.place || location.latitude === null || location.longitude === null) {
+    showError(`Location "${location.displayName || location.place || 'Selected location'}" does not have usable coordinates.`);
+    return;
+  }
+
+  const searchInput = document.getElementById('citySearchInput');
+  const searchDropdown = document.getElementById('searchDropdown');
+  if (searchInput) searchInput.value = location.displayName;
+  if (searchDropdown) searchDropdown.classList.remove('active');
+  loadDashboard(location);
+}
+
+async function loadDashboard(locationInput, sector = currentSector, lat = null, lon = null, state = null) {
+  const reliabilityUi = typeof window !== 'undefined' ? window.ReliabilityUI : undefined;
+  const selectedLocation = normalizeLocationSelection(locationInput, lat, lon, state);
+  const locationQuery = selectedLocation.place;
+  lat = selectedLocation.latitude;
+  lon = selectedLocation.longitude;
+  state = selectedLocation.state;
   currentLocation = locationQuery;
   currentSector = sector;
+  window.selectedLocation = selectedLocation;
+  window.currentWeatherInsights = null;
+  if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.renderAll(null);
 
   if (typeof WeatherTrustCommon !== 'undefined') {
-    WeatherTrustCommon.setLocation({
-      name: locationQuery,
-      place: locationQuery,
-      district: locationQuery,
-      state: state || '',
-      latitude: lat,
-      longitude: lon,
-      country: 'India'
-    });
+    WeatherTrustCommon.setLocation(selectedLocation);
+  }
+  if (selectedLocation.latitude !== null && selectedLocation.longitude !== null && typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.selectLocation === 'function') {
+    LiveTrackingUI.selectLocation(state, locationQuery, false, selectedLocation);
   }
 
   // Clear previous location rendering immediately to prevent data leakage
   WeatherUI.renderCurrentWeather(null, locationQuery);
   WeatherUI.renderHourlyTimeline([]);
   WeatherUI.renderDailyForecast([], null);
+  if (typeof ReliabilityUI !== 'undefined' && typeof ReliabilityUI.renderHero === 'function') ReliabilityUI.renderHero(null);
   updateDashboardHeroCards(null, null);
 
   showLoading(`Analyzing forecast reliability for ${locationQuery}...`);
@@ -289,23 +358,31 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
       ReliabilityUI.fetchOverview(locationQuery, 6, sector, lat, lon, state),
       DriftUI.fetchDriftHistory(locationQuery, lat, lon),
     ]);
+    const insightsData = typeof WeatherTrustInsightsUI !== 'undefined'
+      ? await WeatherTrustInsightsUI.fetchInsights(weatherData, reliabilityData, reliabilityData?.focus_lead_day || 6)
+      : null;
+    window.currentWeatherInsights = insightsData;
+    if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.renderAll(insightsData);
 
     // Resolve exact coordinates and state dynamically from returned weather data
     const resolvedLat = (lat !== null && !isNaN(lat)) ? Number(lat) : (weatherData && weatherData.current ? Number(weatherData.current.latitude) : null);
     const resolvedLon = (lon !== null && !isNaN(lon)) ? Number(lon) : (weatherData && weatherData.current ? Number(weatherData.current.longitude) : null);
-    const resolvedState = state || (weatherData && weatherData.current ? weatherData.current.region : '');
-    const resolvedDistrict = (weatherData && weatherData.current && weatherData.current.district) ? weatherData.current.district : locationQuery;
+    const resolvedState = selectedLocation.state || (weatherData && weatherData.current ? weatherData.current.region : '');
+    const resolvedDistrict = selectedLocation.district || (weatherData && weatherData.current && weatherData.current.district) || locationQuery;
+    const resolvedLocation = normalizeLocationSelection({
+      ...selectedLocation,
+      district: resolvedDistrict,
+      state: resolvedState,
+      latitude: resolvedLat,
+      longitude: resolvedLon,
+    });
 
     if (typeof WeatherTrustCommon !== 'undefined') {
-      WeatherTrustCommon.setLocation({
-        name: locationQuery,
-        place: locationQuery,
-        district: resolvedDistrict,
-        state: resolvedState,
-        latitude: resolvedLat,
-        longitude: resolvedLon,
-        country: 'India'
-      });
+      WeatherTrustCommon.setLocation(resolvedLocation);
+    }
+    window.selectedLocation = resolvedLocation;
+    if (resolvedLocation.latitude !== null && resolvedLocation.longitude !== null && typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.selectLocation === 'function') {
+      LiveTrackingUI.selectLocation(resolvedLocation.state, resolvedLocation.place, false, resolvedLocation);
     }
 
     // Update Central Dashboard Overview Entrypoint
@@ -320,7 +397,7 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
     if (weatherData && weatherData.available !== false && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
       WeatherUI.renderHourlyTimeline(weatherData.hourly);
-      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData);
+      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData, insightsData);
       WeatherUI.renderAlerts(weatherData.alerts);
 
       if (typeof renderHourlyTrendChart === 'function') {
@@ -335,12 +412,12 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
 
     // Live Tracking Unified Sections (Daily Forecast, Drift, History, Reliability)
     if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.renderLiveTrackingSections === 'function') {
-      LiveTrackingUI.renderLiveTrackingSections(weatherData, reliabilityData, driftData);
+      LiveTrackingUI.renderLiveTrackingSections(weatherData, reliabilityData, driftData, insightsData);
     }
 
     // Page 4: Forecast Trust Page View
-    if (reliabilityData) {
-      ReliabilityUI.renderHero(reliabilityData);
+    if (reliabilityData && reliabilityUi && typeof reliabilityUi.renderHero === 'function') {
+      reliabilityUi.renderHero(reliabilityData);
       if (typeof renderBustRiskChart === 'function' && reliabilityData.available !== false) {
         renderBustRiskChart(reliabilityData.lead_days);
       }
@@ -359,8 +436,10 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
       if (resolvedLat !== null && resolvedLon !== null && !isNaN(resolvedLat) && !isNaN(resolvedLon)) {
         const locObj = {
           place: locationQuery,
+          city: resolvedLocation.city,
           district: resolvedDistrict,
           state: resolvedState || 'India',
+          state_code: resolvedLocation.state_code,
           country: 'India',
           latitude: Number(resolvedLat),
           longitude: Number(resolvedLon)
@@ -469,10 +548,13 @@ function setupEventListeners() {
       btn.classList.add('active');
       const sec = btn.getAttribute('data-sector');
       currentSector = sec;
-      ReliabilityUI.fetchOverview(currentLocation, 6, currentSector).then(data => {
-        ReliabilityUI.renderHero(data);
-        updateDashboardHeroCards(null, data);
-      });
+      const reliabilityUi = typeof window !== 'undefined' ? window.ReliabilityUI : undefined;
+      if (reliabilityUi && typeof reliabilityUi.fetchOverview === 'function') {
+        reliabilityUi.fetchOverview(currentLocation, 6, currentSector).then(data => {
+          reliabilityUi.renderHero(data);
+          updateDashboardHeroCards(null, data);
+        });
+      }
     });
   });
 
@@ -485,48 +567,41 @@ function setupEventListeners() {
     searchInput.addEventListener('input', (e) => {
       clearTimeout(debounceTimer);
       const query = e.target.value.trim();
+      searchDropdown.classList.remove('active');
+      searchDropdown.innerHTML = '';
 
       if (query.length < 2) {
-        searchDropdown.classList.remove('active');
-        searchDropdown.innerHTML = '';
         return;
       }
 
       debounceTimer = setTimeout(async () => {
         try {
-          const res = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`);
-          const results = await res.json();
+          const results = await searchLocationResults(query);
+          if (searchInput.value.trim() !== query) return;
 
           if (results.length > 0) {
             searchDropdown.innerHTML = '';
             results.forEach(item => {
               const div = document.createElement('div');
               div.className = 'search-dropdown-item';
-              div.innerHTML = `
-                <span><strong>${item.name}</strong>, ${item.region}</span>
-                <span style="font-size: 0.75rem; color: #94a3b8;">${item.country}</span>
-              `;
+              const name = document.createElement('strong');
+              name.textContent = item.displayName;
+              const badge = document.createElement('span');
+              badge.className = 'badge badge-neutral search-reliability-badge';
+              badge.textContent = 'Checking';
+              div.append(name, badge);
+              if (typeof WeatherTrustInsightsUI !== 'undefined') {
+                WeatherTrustInsightsUI.fetchLocationBadge(item).then(score => {
+                  if (!div.isConnected || searchInput.value.trim() !== query) return;
+                  badge.replaceWith(WeatherTrustInsightsUI.makeBadge(score.available ? score.score : null, 'search-reliability-badge'));
+                }).catch(() => {
+                  if (div.isConnected && searchInput.value.trim() === query) {
+                    badge.textContent = 'Unavailable';
+                  }
+                });
+              }
               div.addEventListener('click', () => {
-                searchInput.value = `${item.name}, ${item.region}`;
-                searchDropdown.classList.remove('active');
-                pills.forEach(p => p.classList.remove('active'));
-                const statePart = item.region ? item.region.split(',').pop().trim() : (item.state || '');
-                const locObj = {
-                  place: item.name,
-                  district: item.district || item.name,
-                  state: statePart,
-                  state_code: item.state_code || '',
-                  country: item.country || 'India',
-                  latitude: Number(item.latitude),
-                  longitude: Number(item.longitude),
-                };
-                if (typeof LiveTrackingUI !== 'undefined') {
-                  LiveTrackingUI.selectLocation(statePart, item.name, false);
-                }
-                if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
-                  IndiaMapUI.selectLocation(locObj, false);
-                }
-                loadDashboard(item.name, currentSector, item.latitude, item.longitude, item.region);
+                selectSearchResult(item);
               });
               searchDropdown.appendChild(div);
             });
@@ -535,7 +610,8 @@ function setupEventListeners() {
             searchDropdown.classList.remove('active');
           }
         } catch (err) {
-          console.error("Search failed:", err);
+          console.error("Location search failed:", err);
+          if (searchInput.value.trim() === query) showError("Location search is temporarily unavailable. Please try again.");
         }
       }, 250);
     });
@@ -552,34 +628,16 @@ function setupEventListeners() {
         if (query) {
           searchDropdown.classList.remove('active');
           try {
-            const resp = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`);
-            if (resp.ok) {
-              const matches = await resp.json();
-              if (matches && matches.length > 0) {
-                const match = matches[0];
-                pills.forEach(p => p.classList.remove('active'));
-                if (typeof LiveTrackingUI !== 'undefined') {
-                  LiveTrackingUI.selectLocation(match.state, match.place, false);
-                }
-                if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
-                  IndiaMapUI.selectLocation(match, false);
-                }
-                loadDashboard(match.place, currentSector, match.latitude, match.longitude, match.state);
-                return;
-              }
+            const matches = await searchLocationResults(query);
+            if (matches.length > 0) {
+              selectSearchResult(matches[0]);
+              return;
             }
-            const weatherSearchResp = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`);
-            if (weatherSearchResp.ok) {
-              const wMatches = await weatherSearchResp.json();
-              if (wMatches && wMatches.length > 0) {
-                const wMatch = wMatches[0];
-                pills.forEach(p => p.classList.remove('active'));
-                loadDashboard(wMatch.name, currentSector, wMatch.latitude, wMatch.longitude, wMatch.region);
-                return;
-              }
-            }
-          } catch (err) {}
-          showError(`Location "${query}" not found. Please select a valid Indian city or district.`);
+            showError(`Location "${query}" not found. Please select a valid Indian city or district.`);
+          } catch (err) {
+            console.error("Location search failed:", err);
+            showError("Location search is temporarily unavailable. Please try again.");
+          }
         }
       }
     });
@@ -657,6 +715,7 @@ function setupEventListeners() {
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.init();
   if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.init === 'function') {
     LiveTrackingUI.init();
   }

@@ -86,24 +86,21 @@ def test_forecast_data_consistency():
 
     assert ap_map is not None, "Andhra Pradesh missing from state map"
 
-    # Core values consistency: Trust Score = 24, Bust Prob = 76, Drift = 55.0 mm
-    assert common["trust_score"] == 24
-    assert common["bust_probability"] == 76
-    assert common["bust_risk"] == "HIGH RISK"
-    assert common["forecast_drift"] == 55.0
-    assert common["risk_level"] == "HIGH"
-
-    assert overview.reliability_score == 24
-    assert overview.bust_probability_pct == 76
-    assert overview.risk_level == "HIGH"
-    assert overview.forecast_drift_mm == 55.0
-    assert overview.forecast_stability == "LOW"
+    expected_risk = classify_bust_risk(overview.bust_probability_pct)
+    assert 0 <= overview.reliability_score <= 100
+    assert overview.reliability_score + overview.bust_probability_pct == 100
+    assert common["trust_score"] == overview.reliability_score
+    assert common["bust_probability"] == overview.bust_probability_pct
+    assert common["bust_risk"] == expected_risk["risk_label"]
+    assert common["risk_level"] == expected_risk["risk_level"]
+    assert common["forecast_drift"] == overview.forecast_drift_mm
+    assert overview.forecast_stability in ("HIGH", "MODERATE", "LOW", "UNKNOWN")
 
     assert 0 <= ap_map["trust_score"] <= 100
     assert 0 <= ap_map["bust_probability"] <= 100
     assert ap_map["trust_score"] + ap_map["bust_probability"] == 100
-    assert ap_map["bust_risk"] == "High Risk"
-    assert ap_map["color"] == "#ef4444"
+    assert ap_map["risk_level"] in ("LOW", "MODERATE", "HIGH")
+    assert ap_map["color"].startswith("#")
 
     print("[PASS] Forecast data consistency verified across Common, Overview, and Map services.")
 
@@ -115,14 +112,15 @@ def test_api_common_forecast_endpoint():
     data = resp.json()
 
     assert data["location"] == "Krishna District"
-    assert data["trust_score"] == 24
-    assert data["bust_probability"] == 76
-    assert data["bust_risk"] == "HIGH RISK"
-    assert data["forecast_drift"] == 55.0
-    assert data["forecast_drift_mm"] == 55.0
-    assert data["forecast_drift_str"] == "+55.0 mm Drift"
-    assert data["risk_level"] == "HIGH"
-    assert data["forecast_stability"] == "LOW"
+    assert 0 <= data["trust_score"] <= 100
+    assert data["trust_score"] + data["bust_probability"] == 100
+    risk = classify_bust_risk(data["bust_probability"])
+    assert data["bust_risk"] == risk["risk_label"]
+    assert data["risk_level"] == risk["risk_level"]
+    assert data["forecast_drift"] == data["forecast_drift_mm"]
+    if data["forecast_drift_mm"] is not None:
+        assert data["forecast_drift_str"] == f"+{data['forecast_drift_mm']:.1f} mm Drift"
+    assert data["forecast_stability"] in ("HIGH", "MODERATE", "LOW", "UNKNOWN")
     assert "GFS" in data["forecast_run"]
 
     print("[PASS] GET /api/weather/common API verified.")

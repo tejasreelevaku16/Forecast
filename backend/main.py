@@ -21,6 +21,8 @@ from backend.routes.judge import router as judge_router
 from backend.routes.map import router as map_router
 from backend.routes.explain import router as explain_router
 from backend.routes.locations import router as locations_router
+from backend.routes.insights import router as insights_router
+from backend.routes.stakeholder import router as stakeholder_router
 
 from backend.services.weather_service import get_current_weather, get_full_forecast_response
 from backend.services.reliability_service import get_forecast_reliability_overview
@@ -61,6 +63,8 @@ app.include_router(judge_router)
 app.include_router(map_router)
 app.include_router(explain_router)
 app.include_router(locations_router)
+app.include_router(insights_router)
+app.include_router(stakeholder_router)
 
 
 @app.on_event("startup")
@@ -146,6 +150,7 @@ PAGES = [
     "live-weather",
     "live-tracking",
     "forecast",
+    "forecast-replay",
     "10-day-forecast",
     "trust",
     "trust-diagnostics",
@@ -161,6 +166,14 @@ PAGES = [
     "technical-evaluation",
     "technical-evaluator",
     "about",
+    "stakeholder",
+    "stakeholder-workspace",
+    "workspace",
+    "forecaster",
+    "disaster",
+    "agriculture",
+    "public",
+    "admin",
 ]
 
 if FRONTEND_DIR.exists():

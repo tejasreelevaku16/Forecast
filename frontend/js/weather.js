@@ -176,7 +176,7 @@ const WeatherUI = {
   /**
    * Renders the Day 1 to Day 10 forecast rows, integrating lead-day reliability indicators
    */
-  renderDailyForecast(dailyItems, reliabilityData = null) {
+  renderDailyForecast(dailyItems, reliabilityData = null, insightsData = window.currentWeatherInsights) {
     const container = document.getElementById('dailyForecastContainer');
     if (!container) return;
 
@@ -210,6 +210,10 @@ const WeatherUI = {
       const badgeClass = riskInfo.badge_class;
       const barFillColor = riskInfo.color;
       const riskLevel = riskInfo.risk_level;
+      const dayTrust = insightsData?.replay?.days?.find(day => day.day === item.day_index)?.trust;
+      const trustBadge = dayTrust && dayTrust.available && typeof WeatherTrustInsightsUI !== 'undefined'
+        ? WeatherTrustInsightsUI.badgeInfo(dayTrust.score)
+        : null;
 
       const row = document.createElement('div');
       row.className = `daily-row ${item.day_index === 6 ? 'highlight-day6' : ''}`;
@@ -240,6 +244,7 @@ const WeatherUI = {
         </div>
         <div class="daily-risk-badge-col">
           <span class="badge ${badgeClass}">${riskLevel} BUST RISK (${bustProb}%)</span>
+          ${trustBadge ? `<span class="badge reliability-badge ${trustBadge.className}">${trustBadge.label}</span>` : ''}
         </div>
       `;
       container.appendChild(row);

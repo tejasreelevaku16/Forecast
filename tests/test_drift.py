@@ -78,12 +78,11 @@ def test_expanded_drift_locations():
     assert len(data["cycles"]) == 4
     assert data["cycles"][-1]["predicted_rain_mm"] == 35.0
 
-    # 4. Unregistered location fallback
+    # 4. Unregistered locations have no fabricated forecast history
     resp = client.get("/api/drift/history?location=RemoteVillage")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data["cycles"]) == 1
-    assert "note" in data["cycles"][0]
+    assert data["cycles"] == []
 
 
 if __name__ == "__main__":

@@ -2963,3 +2963,126 @@
   .unc-kpi-grid { grid-template-columns: 1fr 1fr; }
   .cal-kpi-grid { grid-template-columns: 1fr 1fr; }
 }
+
+.reliability-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.search-reliability-badge { flex: 0 0 auto; }
+
+.weather-trust-engine {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 20px 0;
+  margin-bottom: 18px;
+  border-top: 1px solid var(--bg-card-border);
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.weather-trust-gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.weather-trust-gauge {
+  --trust-score: 0%;
+  --trust-color: #64748b;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(var(--trust-color) var(--trust-score), rgba(148, 163, 184, 0.16) 0);
+  transition: background 0.55s ease;
+}
+
+.weather-trust-gauge::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+}
+
+.weather-trust-gauge.is-unavailable {
+  background: conic-gradient(rgba(148, 163, 184, 0.22) 100%, rgba(148, 163, 184, 0.22) 0);
+}
+
+.weather-trust-gauge-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.weather-trust-gauge-inner strong { color: var(--text-primary); font-size: 1.85rem; }
+.weather-trust-gauge-inner span { color: var(--text-muted); font-size: 0.75rem; }
+.weather-trust-details h4 { margin: 0 0 6px; color: var(--text-primary); font-size: 1rem; }
+.weather-trust-reason { margin: 0 0 14px; color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; }
+.weather-trust-contributions { display: grid; gap: 9px; }
+.trust-contribution-heading { display: flex; justify-content: space-between; gap: 12px; color: var(--text-secondary); font-size: 0.725rem; }
+.trust-contribution-track { height: 6px; margin-top: 4px; overflow: hidden; border-radius: 4px; background: rgba(148, 163, 184, 0.14); }
+.trust-contribution-fill { height: 100%; border-radius: inherit; transition: width 0.45s ease; }
+
+.disagreement-card { padding: 20px; margin-bottom: 24px; }
+.insight-subtitle { margin-top: 4px; color: var(--text-muted); font-size: 0.775rem; }
+.disagreement-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.disagreement-metrics > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.disagreement-metrics span, .disagreement-metrics small { color: var(--text-muted); font-size: 0.7rem; }
+.disagreement-metrics strong { color: var(--text-primary); font-size: 1.05rem; overflow-wrap: anywhere; }
+.disagreement-explanation { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--bg-card-border); color: var(--text-secondary); font-size: 0.825rem; line-height: 1.5; }
+
+.replay-page-header { margin-bottom: 18px; }
+.replay-controls { display: grid; grid-template-columns: auto minmax(120px, 1fr); align-items: center; gap: 10px 18px; padding: 16px 18px; margin-bottom: 16px; }
+.replay-controls label { color: var(--text-secondary); font-size: 0.825rem; font-weight: 700; }
+.replay-controls input { width: 100%; accent-color: var(--accent-cyan); }
+.replay-slider-labels { grid-column: 2; display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.7rem; }
+.replay-metrics-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.replay-metric { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 16px; }
+.replay-metric > span:first-child { color: var(--text-muted); font-size: 0.75rem; }
+.replay-metric strong { color: var(--text-primary); font-size: 1.15rem; overflow-wrap: anywhere; }
+.replay-value { opacity: 0.78; transform: translateY(3px); transition: opacity 0.22s ease, transform 0.22s ease; }
+.replay-value.replay-value-changed { opacity: 1; transform: translateY(0); }
+.replay-boundaries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 16px 2px; margin-top: 12px; border-top: 1px solid var(--bg-card-border); }
+.replay-boundaries > div { display: flex; flex-direction: column; gap: 5px; }
+.replay-boundaries span { color: var(--text-muted); font-size: 0.725rem; }
+.replay-boundaries strong { color: var(--text-primary); font-size: 0.9rem; }
+.replay-boundaries p { grid-column: 1 / -1; margin: 0; color: var(--text-secondary); font-size: 0.825rem; }
+.insight-empty-state { padding: 22px 16px; color: var(--text-muted); font-size: 0.85rem; }
+
+.impact-advisories-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+.impact-advisory-item { min-width: 0; padding: 16px; border: 1px solid var(--bg-card-border); border-radius: var(--radius-md); background: var(--bg-surface); }
+.impact-advisory-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.impact-advisory-heading h4 { margin: 0; color: var(--text-primary); font-size: 0.9rem; }
+.impact-advisory-impact, .impact-advisory-action { margin: 0; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
+.impact-advisory-action { margin-top: 8px; color: var(--text-primary); }
+
+@media (max-width: 900px) {
+  .disagreement-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .replay-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .weather-trust-engine { grid-template-columns: 1fr; }
+  .weather-trust-gauge { width: 132px; }
+  .disagreement-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .impact-advisories-grid { grid-template-columns: 1fr; }
+  .replay-controls { grid-template-columns: 1fr; }
+  .replay-slider-labels { grid-column: 1; }
+  .replay-boundaries { grid-template-columns: 1fr; }
+  .replay-boundaries p { grid-column: 1; }
+}

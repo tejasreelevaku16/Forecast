@@ -69,11 +69,17 @@ class DailyForecastItem(BaseModel):
     precipitation_mm: float
     humidity_pct: int
     wind_speed_kmh: float
+    pressure_hpa: Optional[float] = None
+    cloud_cover_pct: Optional[int] = None
+    wmo_code: Optional[int] = None
 
 
 class LocationSearchResult(BaseModel):
     location_id: str
     name: str
+    display_name: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
     region: str
     country: str
     latitude: float

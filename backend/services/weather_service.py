@@ -160,8 +160,8 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
         f"{config.OPEN_METEO_FORECAST_URL}?"
         f"latitude={lat}&longitude={lon}&"
         "current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,dew_point_2m,wind_gusts_10m&"
-        "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m&"
-        "daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset&"
+        "hourly=temperature_2m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation_probability,precipitation,weather_code,wind_speed_10m&"
+        "daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset&"
         "timezone=auto&forecast_days=10"
     )
 
@@ -173,6 +173,20 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
     curr_data = payload.get("current", {})
     hourly_data = payload.get("hourly", {})
     daily_data = payload.get("daily", {})
+
+    hourly_times_all = hourly_data.get("time", [])
+
+    def daily_hourly_values(field: str, date_value: str) -> List[float]:
+        values = hourly_data.get(field, [])
+        day_values = []
+        for index, timestamp in enumerate(hourly_times_all):
+            if timestamp[:10] != date_value or index >= len(values) or values[index] is None:
+                continue
+            try:
+                day_values.append(float(values[index]))
+            except (TypeError, ValueError):
+                continue
+        return day_values
 
     cond_text, cond_icon = _wmo_to_condition(curr_data.get("weather_code", 2))
     wmo_code = curr_data.get("weather_code", 2)
@@ -251,6 +265,7 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
     d_rain_sum = daily_data.get("precipitation_sum", [])[:10]
     d_rain_prob = daily_data.get("precipitation_probability_max", [])[:10]
     d_codes = daily_data.get("weather_code", [])[:10]
+    d_wind_max = daily_data.get("wind_speed_10m_max", [])[:10]
 
     for lead_day in range(1, len(d_times) + 1):
         idx = lead_day - 1
@@ -260,12 +275,16 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
         date_str = dt_obj.strftime("%b %d")
         c_text, c_icon = _wmo_to_condition(d_codes[idx] if idx < len(d_codes) else 2)
 
-        # Retain Day 6 benchmark (80mm) if querying Krishna District for SIH demonstration consistency
         rain_sum = float(d_rain_sum[idx]) if idx < len(d_rain_sum) else 0.0
-        if "krishna" in location_name.lower() and lead_day == 6:
-            rain_sum = 80.0
-            c_text = "Heavy Monsoonal Downpour"
-            c_icon = "cloud-rain-heavy"
+        humidity_values = daily_hourly_values("relative_humidity_2m", date_raw)
+        pressure_values = daily_hourly_values("pressure_msl", date_raw)
+        cloud_values = daily_hourly_values("cloud_cover", date_raw)
+        wind_values = daily_hourly_values("wind_speed_10m", date_raw)
+        if not humidity_values or not pressure_values or not cloud_values:
+            raise ValueError(f"Open-Meteo did not provide hourly humidity, pressure, or cloud cover for {date_raw}")
+        wind_max = float(d_wind_max[idx]) if idx < len(d_wind_max) and d_wind_max[idx] is not None else (max(wind_values) if wind_values else None)
+        if wind_max is None:
+            raise ValueError(f"Open-Meteo did not provide wind speed for {date_raw}")
 
         daily_items.append(
             DailyForecastItem(
@@ -278,8 +297,11 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
                 temp_max_c=float(d_max[idx]) if idx < len(d_max) else 32.0,
                 rain_chance_pct=int(d_rain_prob[idx]) if idx < len(d_rain_prob) else 40,
                 precipitation_mm=rain_sum,
-                humidity_pct=75,
-                wind_speed_kmh=18.0,
+                humidity_pct=round(sum(humidity_values) / len(humidity_values)),
+                wind_speed_kmh=wind_max,
+                pressure_hpa=round(sum(pressure_values) / len(pressure_values), 1),
+                cloud_cover_pct=round(sum(cloud_values) / len(cloud_values)),
+                wmo_code=int(d_codes[idx]) if idx < len(d_codes) and d_codes[idx] is not None else None,
             )
         )
 
@@ -482,6 +504,9 @@ def search_locations(query: str) -> List[LocationSearchResult]:
                 LocationSearchResult(
                     location_id=f"in-{loc['state_code'].lower()}-{loc['place'].lower().replace(' ', '-')}",
                     name=loc["place"],
+                    display_name=loc.get("display_name"),
+                    city=loc["place"],
+                    state=loc["state"],
                     region=reg_display,
                     country="India",
                     latitude=float(loc["latitude"]),
@@ -502,12 +527,17 @@ def search_locations(query: str) -> List[LocationSearchResult]:
             for r in data.get("results", []):
                 r_name = r.get("name")
                 if not any(item.name.lower() == r_name.lower() for item in results):
+                    region = r.get("admin1", "Region")
+                    country = r.get("country", "India")
                     results.append(
                         LocationSearchResult(
                             location_id=str(r.get("id", r_name)),
                             name=r_name,
-                            region=r.get("admin1", "Region"),
-                            country=r.get("country", "India"),
+                            display_name=", ".join(part for part in (r_name, region, country) if part),
+                            city=r_name,
+                            state=region,
+                            region=region,
+                            country=country,
                             latitude=float(r.get("latitude")),
                             longitude=float(r.get("longitude")),
                         )
@@ -518,11 +548,16 @@ def search_locations(query: str) -> List[LocationSearchResult]:
     # 3. Include matching preset locations if not already present
     for loc in config.SUPPORTED_LOCATIONS:
         if q.lower() in loc.lower() and not any(r.name.lower() in loc.lower() for r in results):
+            name = loc.split(",")[0].strip()
+            region = loc.split(",", 1)[1].strip() if "," in loc else "India"
             results.append(
                 LocationSearchResult(
                     location_id=loc.lower().replace(" ", "_"),
-                    name=loc.split(",")[0],
-                    region=loc.split(",")[1].strip() if "," in loc else "India",
+                    name=name,
+                    display_name=f"{name}, {region}, India",
+                    city=name,
+                    state=region,
+                    region=region,
                     country="India",
                     latitude=16.5062 if "krishna" in loc.lower() else 17.3850,
                     longitude=80.6480 if "krishna" in loc.lower() else 78.4867,

@@ -89,6 +89,27 @@ def test_api_endpoints_return_unavailable_for_invalid_location():
     assert m_data["available"] is False
 
 
+def test_weather_search_preserves_normalized_location_metadata(monkeypatch):
+    from backend.services import weather_service
+
+    class GeocodingUnavailable:
+        status_code = 503
+
+    monkeypatch.setattr(weather_service, "_safe_get", lambda *args, **kwargs: GeocodingUnavailable())
+    response = client.get("/api/weather/search?q=Alappuzha")
+
+    assert response.status_code == 200
+    result = response.json()[0]
+    assert result["location_id"] == "in-kl-alappuzha"
+    assert result["name"] == result["city"] == "Alappuzha"
+    assert result["display_name"] == "Alappuzha, Alappuzha, Kerala, India"
+    assert result["district"] == "Alappuzha"
+    assert result["state"] == "Kerala"
+    assert result["region"] == "Alappuzha, Kerala"
+    assert result["latitude"] == 9.4981
+    assert result["longitude"] == 76.3388
+
+
 def test_valid_location_resolution_and_isolation():
     """Valid locations must resolve to their own exact coordinates and metadata."""
     # Krishna District

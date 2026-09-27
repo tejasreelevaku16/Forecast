@@ -49,6 +49,9 @@ PAGES_MAP = {
     "technical": "page-technical",
     "technical-evaluation": "page-technical",
     "about": "page-about",
+    "stakeholder": "page-stakeholder",
+    "stakeholder-workspace": "page-stakeholder",
+    "workspace": "page-stakeholder",
 }
 
 
@@ -84,7 +87,7 @@ def test_html_modal_isolation_and_css_cleanliness():
     assert ".explain-modal-backdrop {" in css_content
     assert "display: none;" in css_content
 
-    # Check each of the 15 page views are siblings
+    # Check each of the 16 page views are siblings
     class PageViewChecker(HTMLParser):
         def __init__(self):
             super().__init__()
@@ -108,10 +111,10 @@ def test_html_modal_isolation_and_css_cleanliness():
     checker = PageViewChecker()
     checker.feed(html_content)
 
-    assert len(checker.page_views) == 15, f"Expected 15 .page-view containers, found {len(checker.page_views)}"
+    assert len(checker.page_views) == 17, f"Expected 17 .page-view containers, found {len(checker.page_views)}"
     depths = set(depth for _, depth in checker.page_views)
     assert len(depths) == 1, f"All page-view containers must be at the same DOM depth! Found depths: {depths}"
-    print(f"[PASS] HTML and CSS isolation verified: 15 independent page containers at DOM depth {depths.pop()}.")
+    print(f"[PASS] HTML and CSS isolation verified: 17 independent page containers at DOM depth {depths.pop()}.")
 
 
 def test_bhopal_location_weather_and_diagnostics():

@@ -4,7 +4,7 @@
  * proactive alerts, and sector-based decision recommendations from FastAPI backend.
  */
 
-const ReliabilityUI = {
+window.ReliabilityUI = window.ReliabilityUI || {
   currentSector: "General Public",
   currentLeadDay: 6,
 
@@ -142,8 +142,6 @@ const ReliabilityUI = {
         };
 
     // Reliability Score & Confidence Label
-    const scoreElem = document.getElementById('trustScoreValue');
-    const labelElem = document.getElementById('confidenceLabel');
     if (scoreElem && labelElem) {
       scoreElem.textContent = `${riskInfo.trust_score} / 100`;
       labelElem.textContent = riskInfo.confidence_label;
@@ -156,8 +154,6 @@ const ReliabilityUI = {
     }
 
     // Bust Probability
-    const bustElem = document.getElementById('bustProbabilityValue');
-    const bustRiskLevelElem = document.getElementById('bustRiskLevelBadge');
     if (bustElem) {
       bustElem.textContent = `${riskInfo.bust_probability}%`;
     }
@@ -167,7 +163,6 @@ const ReliabilityUI = {
     }
 
     // Stability
-    const stabElem = document.getElementById('forecastStabilityValue');
     if (stabElem) {
       const stab = data.forecast_stability || riskInfo.stability;
       stabElem.textContent = stab;
@@ -175,7 +170,6 @@ const ReliabilityUI = {
     }
 
     // Drift Monitor Mini-Banner
-    const driftWrap = document.getElementById('driftMonitorSnapshot');
     if (driftWrap) {
       const dm = data.drift_monitor;
       if (dm && dm.absolute_change !== undefined && dm.absolute_change !== null) {
@@ -197,7 +191,6 @@ const ReliabilityUI = {
     }
 
     // Explainable "Why?" list (Model-derived)
-    const whyList = document.getElementById('whyFactorsContainer');
     if (whyList && data.reasons) {
       whyList.innerHTML = '';
       data.reasons.forEach(factor => {
@@ -219,7 +212,6 @@ const ReliabilityUI = {
     }
 
     // User Recommendation Box
-    const recTextElem = document.getElementById('recommendationText');
     if (recTextElem) {
       recTextElem.textContent = data.recommendation;
     }

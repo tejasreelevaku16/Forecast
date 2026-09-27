@@ -10,6 +10,8 @@ const WeatherTrustCommon = {
   // Authoritative single location state across all pages
   currentLocation: {
     name: "Krishna District",
+    displayName: "Krishna District, Andhra Pradesh, India",
+    city: "Krishna District",
     place: "Krishna District",
     district: "Krishna District",
     state: "Andhra Pradesh",
@@ -29,19 +31,24 @@ const WeatherTrustCommon = {
 
     this.currentLocation = {
       name: name,
+      displayName: locObj.displayName || locObj.display_name || name,
+      city: locObj.city || locObj.place || name,
       place: locObj.place || name,
       district: locObj.district || locObj.name || name,
       state: locObj.state || locObj.region || "",
+      state_code: locObj.state_code || "",
       latitude: lat,
       longitude: lon,
       country: locObj.country || "India",
-      unique_id: locObj.unique_id || (lat !== null && lon !== null ? `${name}_${lat.toFixed(3)}_${lon.toFixed(3)}` : name)
+      location_id: locObj.location_id || locObj.locationId || locObj.unique_id || (lat !== null && lon !== null ? `${name}_${lat.toFixed(3)}_${lon.toFixed(3)}` : name),
+      unique_id: locObj.unique_id || locObj.location_id || locObj.locationId || (lat !== null && lon !== null ? `${name}_${lat.toFixed(3)}_${lon.toFixed(3)}` : name)
     };
     try {
       localStorage.setItem('weathertrust-authoritative-location', JSON.stringify(this.currentLocation));
       window.currentSelectedLocation = name;
-      if (lat !== null) window.currentSelectedLat = lat;
-      if (lon !== null) window.currentSelectedLon = lon;
+      window.currentSelectedLat = lat;
+      window.currentSelectedLon = lon;
+      window.selectedLocation = this.currentLocation;
       window.dispatchEvent(new CustomEvent("weathertrust:locationChanged", { detail: this.currentLocation }));
     } catch (e) {}
   },

@@ -15,6 +15,7 @@ const AppRouter = {
     "live-weather",
     "live-tracking",
     "forecast",
+    "forecast-replay",
     "trust",
     "drift",
     "map",
@@ -22,6 +23,7 @@ const AppRouter = {
     "decision-support",
     "technical",
     "about",
+    "stakeholder",
   ],
 
   aliases: {
@@ -49,6 +51,13 @@ const AppRouter = {
     "early-alerts": "alerts",
     "technical-evaluator": "technical",
     "technical-evaluation": "technical",
+    "stakeholder-workspace": "stakeholder",
+    "workspace": "stakeholder",
+    "forecaster": "stakeholder",
+    "disaster": "stakeholder",
+    "agriculture": "stakeholder",
+    "public": "stakeholder",
+    "admin": "stakeholder",
   },
 
   currentPage: "dashboard",
@@ -215,11 +224,28 @@ const AppRouter = {
       });
     }
 
+    if (pageSlug === "forecast-replay" && typeof WeatherTrustInsightsUI !== "undefined") {
+      WeatherTrustInsightsUI.renderReplay(window.currentWeatherInsights);
+    }
+
+    if (pageSlug === "decision-support" && typeof WeatherTrustInsightsUI !== "undefined") {
+      WeatherTrustInsightsUI.renderAdvisories(window.currentWeatherInsights);
+    }
+
     // Trigger Technical Evaluation (Judge) metrics
     if (pageSlug === "technical" && typeof JudgeUI !== "undefined" && typeof JudgeUI.fetchMetrics === "function") {
       JudgeUI.fetchMetrics().then((data) => {
         JudgeUI.renderJudgeDashboard(data);
       });
+    }
+
+    // Trigger Stakeholder Workspace
+    if (pageSlug === "stakeholder") {
+      setTimeout(() => {
+        if (typeof window.initStakeholderWorkspace === "function") {
+          window.initStakeholderWorkspace();
+        }
+      }, 150);
     }
 
     // Redraw charts when view changes

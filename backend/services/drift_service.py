@@ -749,19 +749,4 @@ def get_drift_history(
 
         return cycles
 
-    # For any new location without prior runs
-    return [
-        {
-            "cycle_time": now.strftime("%d %b %H:%M"),
-            "run_name": "Current Cycle (18Z)",
-            "predicted_rain_mm": 0.0,
-            "predicted_temp_c": 30.0,
-            "location": location,
-            "latitude": float(lat) if lat is not None else None,
-            "longitude": float(lon) if lon is not None else None,
-            "note": (
-                "Initial baseline cycle. Successive runs "
-                "will establish drift history."
-            )
-        }
-    ]
+    return []

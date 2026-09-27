@@ -5,7 +5,7 @@
  * Ensures 100% consistency across Live Weather, Hourly, 10-Day, Drift, History, Reliability, and Alerts.
  */
 
-const LiveTrackingUI = {
+window.LiveTrackingUI = window.LiveTrackingUI || {
   hierarchy: {},
   currentState: "Andhra Pradesh",
   currentPlace: "Vijayawada",
@@ -115,7 +115,7 @@ const LiveTrackingUI = {
     }
   },
 
-  selectLocation(stateName, placeName, triggerLoad = true) {
+  selectLocation(stateName, placeName, triggerLoad = true, locationData = null) {
     const stateSelect = document.getElementById("stateSelect");
     const placeSelect = document.getElementById("placeSelect");
 
@@ -130,7 +130,14 @@ const LiveTrackingUI = {
     const places = this.hierarchy[stateName] || [];
     const match = places.find(p => p.place.toLowerCase() === (placeName || "").toLowerCase());
 
-    if (match) {
+    if (locationData) {
+      this.currentPlace = locationData.place;
+      this.currentDistrict = locationData.district || "";
+      this.currentLat = locationData.latitude;
+      this.currentLon = locationData.longitude;
+      this.currentStateCode = locationData.state_code || "";
+      if (placeSelect) placeSelect.value = match ? match.place : "";
+    } else if (match) {
       this.currentPlace = match.place;
       this.currentDistrict = match.district || "";
       this.currentLat = match.latitude;
@@ -211,7 +218,17 @@ const LiveTrackingUI = {
 
     // Invoke global loadDashboard
     if (typeof loadDashboard === "function") {
-      loadDashboard(locQuery, currentSector, this.currentLat, this.currentLon, this.currentState);
+      loadDashboard({
+        name: this.currentPlace,
+        place: this.currentPlace,
+        city: this.currentPlace,
+        district: this.currentDistrict,
+        state: this.currentState,
+        state_code: this.currentStateCode,
+        latitude: this.currentLat,
+        longitude: this.currentLon,
+        country: "India",
+      }, currentSector);
     }
   },
 
@@ -358,8 +375,8 @@ const LiveTrackingUI = {
    * 3. Forecast History
    * 4. Forecast Reliability
    */
-  renderLiveTrackingSections(weatherData, reliabilityData, driftData) {
-    this.renderLiveDailyForecast(weatherData ? weatherData.daily : null, reliabilityData);
+  renderLiveTrackingSections(weatherData, reliabilityData, driftData, insightsData = window.currentWeatherInsights) {
+    this.renderLiveDailyForecast(weatherData ? weatherData.daily : null, reliabilityData, insightsData);
     this.renderLiveDrift(reliabilityData, driftData);
     this.renderLiveHistory(driftData);
     this.renderLiveReliability(reliabilityData);
@@ -368,7 +385,7 @@ const LiveTrackingUI = {
   /**
    * Renders Day 1 to Day 10 forecast specifically for the Live Tracking page
    */
-  renderLiveDailyForecast(dailyItems, reliabilityData) {
+  renderLiveDailyForecast(dailyItems, reliabilityData, insightsData = window.currentWeatherInsights) {
     const container = document.getElementById("liveDailyForecastContainer");
     if (!container || !dailyItems) return;
 
@@ -397,6 +414,10 @@ const LiveTrackingUI = {
       const badgeClass = riskInfo.badge_class;
       const barFillColor = riskInfo.color;
       const riskLevel = riskInfo.risk_level;
+      const dayTrust = insightsData?.replay?.days?.find(day => day.day === item.day_index)?.trust;
+      const trustBadge = dayTrust && dayTrust.available && typeof WeatherTrustInsightsUI !== "undefined"
+        ? WeatherTrustInsightsUI.badgeInfo(dayTrust.score)
+        : null;
       const iconMarkup = typeof WeatherUI !== "undefined" ? WeatherUI.getIconMarkup(item.condition_icon) : "⛅";
 
       const row = document.createElement("div");
@@ -428,6 +449,7 @@ const LiveTrackingUI = {
         </div>
         <div class="daily-risk-badge-col">
           <span class="badge ${badgeClass}">${riskLevel} BUST RISK (${bustProb}%)</span>
+          ${trustBadge ? `<span class="badge reliability-badge ${trustBadge.className}">${trustBadge.label}</span>` : ''}
         </div>
       `;
       container.appendChild(row);
@@ -446,10 +468,10 @@ const LiveTrackingUI = {
     const changeElem = document.getElementById("liveDriftChange");
     const stabilityElem = document.getElementById("liveDriftStability");
 
-    let prevVal = 20.0;
-    let latestVal = 58.0;
-    let driftChange = 38.0;
-    let stability = "LOW";
+    let prevVal = null;
+    let latestVal = null;
+    let driftChange = null;
+    let stability = "INSUFFICIENT DATA";
 
     if (driftData && driftData.cycles && driftData.cycles.length >= 2) {
       const len = driftData.cycles.length;
@@ -457,11 +479,19 @@ const LiveTrackingUI = {
       latestVal = driftData.cycles[len - 1].predicted_rain_mm;
       driftChange = latestVal - prevVal;
       stability = Math.abs(driftChange) > 25.0 ? "LOW" : Math.abs(driftChange) > 10.0 ? "MODERATE" : "HIGH";
-    } else if (reliabilityData && reliabilityData.forecast_drift_mm !== undefined) {
-      latestVal = reliabilityData.rainfall_mm || 80.0;
-      driftChange = reliabilityData.forecast_drift_mm;
-      prevVal = Math.max(0.0, latestVal - driftChange);
-      stability = reliabilityData.forecast_stability || "LOW";
+    } else {
+      const latestCycle = driftData && driftData.cycles && driftData.cycles[0];
+      if (prevElem) prevElem.textContent = "Insufficient run history";
+      if (latestElem) latestElem.textContent = latestCycle ? `${latestCycle.predicted_rain_mm} mm` : "Unavailable";
+      if (changeElem) {
+        changeElem.textContent = "No run-to-run comparison available";
+        changeElem.style.color = "#94a3b8";
+      }
+      if (stabilityElem) {
+        stabilityElem.textContent = "INSUFFICIENT DATA";
+        stabilityElem.className = "badge badge-neutral";
+      }
+      return;
     }
 
     if (prevElem) prevElem.textContent = `${Math.round(prevVal)} mm`;
@@ -487,17 +517,14 @@ const LiveTrackingUI = {
     const container = document.getElementById("liveHistoryContainer");
     if (!container) return;
 
-    let cycles = [];
-    if (driftData && driftData.cycles && driftData.cycles.length > 0) {
-      cycles = driftData.cycles;
-    } else {
-      // Realistic default progression for demonstration
-      cycles = [
-        { run_name: "Cycle -18h (00Z)", cycle_time: "Yesterday, 06:00", predicted_rain_mm: 20.0, predicted_temp_c: 32.0 },
-        { run_name: "Cycle -12h (06Z)", cycle_time: "Yesterday, 12:00", predicted_rain_mm: 32.0, predicted_temp_c: 31.0 },
-        { run_name: "Cycle -06h (12Z)", cycle_time: "Yesterday, 18:00", predicted_rain_mm: 45.0, predicted_temp_c: 29.5 },
-        { run_name: "Latest Run (18Z)", cycle_time: "Today, 00:00", predicted_rain_mm: 58.0, predicted_temp_c: 29.0 },
-      ];
+    const cycles = (driftData && Array.isArray(driftData.cycles)) ? driftData.cycles : [];
+    if (!cycles.length) {
+      container.replaceChildren();
+      const emptyState = document.createElement("p");
+      emptyState.className = "insight-empty-state";
+      emptyState.textContent = `No forecast-run snapshots are available for ${window.currentSelectedLocation || "this location"}.`;
+      container.appendChild(emptyState);
+      return;
     }
 
     container.innerHTML = "";

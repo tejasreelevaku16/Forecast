@@ -4,7 +4,7 @@ Exposes endpoints for the WeatherTrust AI reliability layer, day-wise ML predict
 uncertainty quantification, and explainability factors.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, Query
 from backend.models.reliability_model import ReliabilityOverview
 from backend.services.reliability_service import (
