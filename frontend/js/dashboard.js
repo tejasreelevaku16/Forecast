@@ -52,10 +52,25 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
     if (heroCond) heroCond.textContent = `${c.condition}`;
     
     // Synchronize scene condition elements if present
+    const sceneLoc = document.getElementById('sceneLocationTitle');
     const sceneCondCard = document.getElementById('sceneConditionCard');
     const sceneCondSub = document.getElementById('sceneConditionSubtitle');
+    const sceneTemp = document.getElementById('sceneTemperature');
+    const sceneHum = document.getElementById('sceneHumidity');
+    const sceneWind = document.getElementById('sceneWind');
+    const scenePress = document.getElementById('scenePressure');
+    const sceneConf = document.getElementById('sceneConfidence');
+
+    if (sceneLoc) sceneLoc.textContent = `${c.location}, ${c.region}`;
     if (sceneCondCard) sceneCondCard.textContent = c.condition;
     if (sceneCondSub) sceneCondSub.textContent = c.condition;
+    if (sceneTemp) sceneTemp.innerHTML = `${Math.round(c.temperature_c)}<span class="weather-card-unit">°C</span>`;
+    if (sceneHum) sceneHum.innerHTML = `${c.humidity_pct}<span class="weather-card-unit">%</span>`;
+    if (sceneWind) sceneWind.innerHTML = `${c.wind_speed_kmh}<span class="weather-card-unit"> km/h</span>`;
+    if (scenePress) scenePress.innerHTML = `${c.pressure_hpa}<span class="weather-card-unit"> hPa</span>`;
+    if (sceneConf && reliabilityData && reliabilityData.reliability_score !== undefined) {
+      sceneConf.innerHTML = `${reliabilityData.reliability_score}<span class="weather-card-unit">/100</span>`;
+    }
 
     if (heroSum) {
       if (weatherData.daily && weatherData.daily.length > 5) {
@@ -70,10 +85,23 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
     if (heroTemp) heroTemp.textContent = `--°C`;
     if (heroCond) heroCond.textContent = `Weather Unavailable`;
     
+    const sceneLoc = document.getElementById('sceneLocationTitle');
     const sceneCondCard = document.getElementById('sceneConditionCard');
     const sceneCondSub = document.getElementById('sceneConditionSubtitle');
+    const sceneTemp = document.getElementById('sceneTemperature');
+    const sceneHum = document.getElementById('sceneHumidity');
+    const sceneWind = document.getElementById('sceneWind');
+    const scenePress = document.getElementById('scenePressure');
+    const sceneConf = document.getElementById('sceneConfidence');
+
+    if (sceneLoc) sceneLoc.textContent = currentLocation;
     if (sceneCondCard) sceneCondCard.textContent = `Data unavailable`;
     if (sceneCondSub) sceneCondSub.textContent = `Weather unavailable`;
+    if (sceneTemp) sceneTemp.innerHTML = `--<span class="weather-card-unit">°C</span>`;
+    if (sceneHum) sceneHum.innerHTML = `--<span class="weather-card-unit">%</span>`;
+    if (sceneWind) sceneWind.innerHTML = `--<span class="weather-card-unit"> km/h</span>`;
+    if (scenePress) scenePress.innerHTML = `--<span class="weather-card-unit"> hPa</span>`;
+    if (sceneConf) sceneConf.innerHTML = `--<span class="weather-card-unit">/100</span>`;
 
     if (heroSum) heroSum.textContent = `Live meteorological observation is unavailable for ${currentLocation}.`;
   }

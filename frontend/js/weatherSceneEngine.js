@@ -18,6 +18,8 @@ const WeatherSceneEngine = {
   FADE_OUT_DURATION: 300,
   FADE_IN_DURATION: 500,
 
+  pendingLocation: null,
+
   /**
    * Initialize the scene engine
    */
@@ -38,9 +40,6 @@ const WeatherSceneEngine = {
       this.animator = WeatherAnimator;
       this.animator.init(this.canvas, this.ctx);
     }
-
-    // Load initial scene
-    this.loadSceneForLocation(currentLocation || 'Krishna District');
   },
 
   /**
@@ -90,11 +89,12 @@ const WeatherSceneEngine = {
    * Load scene for a specific location
    */
   async loadSceneForLocation(location, lat = null, lon = null) {
-    if (this.isTransitioning) return;
+    if (this.isTransitioning) {
+      this.pendingLocation = { location, lat, lon };
+      return;
+    }
 
     try {
-      showLoading('Loading live weather scene...');
-      
       let url = `/api/weather/scene?location=${encodeURIComponent(location)}`;
       if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
         url += `&lat=${lat}&lon=${lon}`;
@@ -118,14 +118,18 @@ const WeatherSceneEngine = {
         await this.transitionToScene(data.scene || this.getFallbackScene(), null);
         this.showFallbackNotice();
       }
-
-      hideLoading();
     } catch (error) {
       console.error('Error loading weather scene:', error);
-      hideLoading();
       // Use fallback scene
       await this.transitionToScene(this.getFallbackScene(), null);
       this.showFallbackNotice();
+    } finally {
+      this.isTransitioning = false;
+      if (this.pendingLocation) {
+        const next = this.pendingLocation;
+        this.pendingLocation = null;
+        this.loadSceneForLocation(next.location, next.lat, next.lon);
+      }
     }
   },
 
