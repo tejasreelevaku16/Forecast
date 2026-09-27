@@ -44,6 +44,7 @@ class CurrentWeather(BaseModel):
     air_quality_index: str = "Moderate (AQI 82)"
     district: Optional[str] = None
     state_code: Optional[str] = None
+    wmo_code: int = 2  # WMO weather code for scene mapping
 
 
 class HourlyForecastItem(BaseModel):

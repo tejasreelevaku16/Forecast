@@ -16,6 +16,7 @@
   <!-- Core & Dashboard Stylesheets -->
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/weatherScenes.css">
 </head>
 <body>
 
@@ -212,6 +213,58 @@
 
         <!-- Proactive Reliability Alert Banner -->
         <div id="reliabilityAlertBanner" class="reliability-alert-banner" style="display: none; margin-bottom: 20px;"></div>
+
+        <!-- =================================================================
+             LIVE WEATHER SCENE HERO (Animated Weather Experience)
+             ================================================================= -->
+        <div class="weather-scene-hero" id="weatherSceneHero">
+          <canvas id="weatherSceneCanvas"></canvas>
+          
+          <div class="weather-scene-overlay">
+            <div class="weather-scene-header">
+              <div>
+                <h2 class="weather-scene-title" id="sceneLocationTitle">Krishna District, Andhra Pradesh</h2>
+                <p class="weather-scene-subtitle" id="sceneCondition">Loading live weather...</p>
+              </div>
+              <div class="weather-scene-branding">
+                <div class="brand-logo">WeatherTrust AI</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Live Weather Scene</div>
+              </div>
+            </div>
+
+            <div class="weather-cards-grid">
+              <div class="weather-card primary">
+                <div class="weather-card-label">Temperature</div>
+                <div class="weather-card-value" id="sceneTemperature">--<span class="weather-card-unit">°C</span></div>
+              </div>
+              <div class="weather-card">
+                <div class="weather-card-label">Condition</div>
+                <div class="weather-card-value" id="sceneCondition" style="font-size: 1.1rem;">--</div>
+              </div>
+              <div class="weather-card">
+                <div class="weather-card-label">Humidity</div>
+                <div class="weather-card-value" id="sceneHumidity">--<span class="weather-card-unit">%</span></div>
+              </div>
+              <div class="weather-card">
+                <div class="weather-card-label">Wind</div>
+                <div class="weather-card-value" id="sceneWind">--<span class="weather-card-unit"> km/h</span></div>
+              </div>
+              <div class="weather-card">
+                <div class="weather-card-label">Pressure</div>
+                <div class="weather-card-value" id="scenePressure">--<span class="weather-card-unit"> hPa</span></div>
+              </div>
+              <div class="weather-card confidence">
+                <div class="weather-card-label">Forecast Confidence</div>
+                <div class="weather-card-value" id="sceneConfidence">--<span class="weather-card-unit">/100</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="sceneFallbackNotice">Live scene unavailable, showing default</div>
+          <div class="weather-scene-attribution">
+            Live weather powered by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a>
+          </div>
+        </div>
 
         <!-- =================================================================
              PAGE 1: DASHBOARD (Central Entry Point)
@@ -700,7 +753,11 @@
         </div>
 
         <!-- =================================================================
+<<<<<<< HEAD
              PAGE: LIVE WEATHER & TRACKING
+=======
+             PAGE 2: LIVE WEATHER
+>>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
              ================================================================= -->
         <div class="page-view" id="page-live-weather">
           
@@ -1822,17 +1879,27 @@
   <script src="/js/navigation.js"></script>
   <script src="/js/charts.js"></script>
   <script src="/js/weather.js"></script>
+  <script src="/js/weatherAnimator.js"></script>
+  <script src="/js/weatherSceneEngine.js"></script>
   <script src="/js/reliability.js"></script>
   <script src="/js/drift.js"></script>
   <script src="/js/map.js"></script>
   <script src="/js/judge.js"></script>
   <script src="/js/live_tracking.js"></script>
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
   <!-- SIH 10/10 Dedicated Feature Scripts -->
   <script src="/js/confidenceMap.js"></script>
   <script src="/js/daywiseForecast.js"></script>
   <script src="/js/uncertaintyChart.js"></script>
   <script src="/js/calibration.js"></script>
   <script src="/js/explainability.js"></script>
+<<<<<<< HEAD
+=======
+  
+>>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

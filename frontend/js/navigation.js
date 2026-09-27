@@ -151,14 +151,29 @@ const AppRouter = {
   onPageActivated(pageSlug) {
     const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
+<<<<<<< HEAD
     // Initialize GIS confidence map & India map sizing
     if (pageSlug === "confidence-map" || pageSlug === "map") {
+=======
+    // Initialize GIS confidence map
+    if (pageSlug === "confidence-map") {
+>>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
       setTimeout(() => {
         if (typeof initConfidenceMap === "function") {
           initConfidenceMap();
         }
-        if (typeof IndiaMapUI !== "undefined" && IndiaMapUI.map) {
-          IndiaMapUI.map.invalidateSize();
+      }, 150);
+    }
+
+    // Initialize India Reliability Map
+    if (pageSlug === "map") {
+      setTimeout(() => {
+        if (typeof IndiaMapUI !== "undefined") {
+          if (!IndiaMapUI.map) {
+            IndiaMapUI.initMap();
+          } else {
+            IndiaMapUI.map.invalidateSize();
+          }
         }
       }, 150);
     }
