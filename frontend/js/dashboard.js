@@ -255,6 +255,16 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
       });
     }
 
+    // SIH 10/10 Synchronization
+    window.currentSelectedLocation = locationQuery;
+    if (typeof loadDaywiseForecast === 'function') loadDaywiseForecast(locationQuery);
+    if (typeof loadUncertaintyView === 'function') loadUncertaintyView(locationQuery);
+    if (typeof loadCalibrationView === 'function') loadCalibrationView();
+    if (typeof loadExplainabilityData === 'function') loadExplainabilityData(locationQuery, 6);
+    if (typeof loadConfidenceMapData === 'function' && typeof currentConfidenceLeadDay !== 'undefined') {
+      loadConfidenceMapData(currentConfidenceLeadDay);
+    }
+
     hideLoading();
   } catch (err) {
     console.error("loadDashboard error:", err);

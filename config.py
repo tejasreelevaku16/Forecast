@@ -1,6 +1,8 @@
 """
-WeatherTrust AI - Configuration File (Production / Complete Phases)
-Central configuration for application settings, live weather API, ML models, and thresholds.
+WeatherTrust AI v2.0.0 — Configuration File
+Ministry of Earth Sciences (MoES) — National Centre for Medium Range Weather Forecasting (NCMRWF)
+Smart India Hackathon (SIH) — Problem ID: 26079
+Title: AI-Based Forecast Bust Detection for Medium-Range Weather Forecasts
 """
 
 from pathlib import Path
@@ -11,6 +13,9 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 RAW_DATA_PATH = DATA_DIR / "raw" / "historical_forecast_vs_actual.csv"
 PROCESSED_DATA_PATH = DATA_DIR / "processed" / "features_dataset.csv"
+CACHE_DIR = DATA_DIR / "cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 MODEL_DIR = BASE_DIR / "models"
 MODEL_PATH = MODEL_DIR / "forecast_reliability_model.pkl"
 SAMPLE_DIR = DATA_DIR / "sample"
@@ -20,27 +25,40 @@ HOST: str = "127.0.0.1"
 PORT: int = 8000
 DEBUG: bool = True
 
-# Platform Branding
+# Platform & SIH Metadata
 APP_NAME: str = "WeatherTrust AI"
-FULL_TITLE: str = "WeatherTrust AI: An Explainable Weather Forecast Reliability and Bust-Risk Detection Platform"
+FULL_TITLE: str = "WeatherTrust AI: AI-Based Forecast Bust Detection for Medium-Range Weather Forecasts"
+ORGANIZATION: str = "Ministry of Earth Sciences (MoES)"
+DEPARTMENT: str = "National Centre for Medium Range Weather Forecasting (NCMRWF)"
+PROBLEM_ID: str = "26079"
 TAGLINE: str = "Know the weather. Know when to trust it."
 VERSION: str = "2.0.0"
 IS_DEMO_MODE: bool = False
 
 # Operational Defaults
-DEFAULT_LOCATION: str = "Krishna District, Andhra Pradesh"
+DEFAULT_LOCATION: str = "Vijayawada, Andhra Pradesh"
 DEFAULT_LAT: float = 16.5062
 DEFAULT_LON: float = 80.6480
 
 SUPPORTED_LOCATIONS: List[str] = [
+    "Vijayawada, Andhra Pradesh",
     "Krishna District, Andhra Pradesh",
+    "Ongole, Andhra Pradesh",
+    "Visakhapatnam, Andhra Pradesh",
     "Hyderabad, Telangana",
     "Bengaluru, Karnataka",
-    "Delhi, NCR",
-    "Mumbai, Maharashtra",
-    "Visakhapatnam, Andhra Pradesh",
     "Chennai, Tamil Nadu",
-    "Kolkata, West Bengal"
+    "Mumbai, Maharashtra",
+    "Delhi, NCR",
+    "Kolkata, West Bengal",
+    "Pune, Maharashtra",
+    "Ahmedabad, Gujarat",
+    "Jaipur, Rajasthan",
+    "Lucknow, Uttar Pradesh",
+    "Patna, Bihar",
+    "Bhubaneswar, Odisha",
+    "Thiruvananthapuram, Kerala",
+    "Guwahati, Assam"
 ]
 
 # Supported Decision Support Sectors
@@ -58,7 +76,7 @@ OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_GEOCODING_URL: str = "https://geocoding-api.open-meteo.com/v1/search"
 API_TIMEOUT_SECONDS: int = 6
 
-# Forecast Bust Definition Criteria (Phase 6)
+# Forecast Bust Definition Criteria (NCMRWF / IMD Medium-Range Verification Standards)
 RAIN_BUST_ABSOLUTE_DIFF_MM: float = 25.0
 RAIN_BUST_RELATIVE_RATIO: float = 1.0  # 100% error when forecast >= 20mm
 RAIN_BUST_MIN_SIGNIFICANT_MM: float = 20.0
@@ -67,7 +85,7 @@ HUMIDITY_BUST_ABSOLUTE_DIFF_PCT: float = 25.0
 
 # Official Legal Disclaimer
 OFFICIAL_DISCLAIMER: str = (
-    "WeatherTrust AI is a forecast reliability & decision-support diagnostic platform. "
-    "It does NOT replace official meteorological forecasts or warnings issued by the "
-    "India Meteorological Department (IMD) or national meteorological authorities."
+    "WeatherTrust AI is a forecast reliability & decision-support diagnostic platform developed for "
+    "MoES / NCMRWF. It operates as an AI uncertainty quantification layer on top of numerical weather "
+    "prediction (NWP) models and does NOT replace official warnings issued by the India Meteorological Department (IMD)."
 )

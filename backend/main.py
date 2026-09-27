@@ -1,6 +1,7 @@
 """
-WeatherTrust AI - Main Backend Application Entrypoint (Phase 1)
-Integrates FastAPI, CORS, API routers, and serves the frontend dashboard.
+WeatherTrust AI — Main Backend Application Entrypoint
+Ministry of Earth Sciences (MoES) — National Centre for Medium Range Weather Forecasting (NCMRWF)
+SIH Problem ID: 26079: AI-Based Forecast Bust Detection for Medium-Range Weather Forecasts
 """
 
 import os
@@ -18,7 +19,6 @@ from backend.routes.drift import router as drift_router
 from backend.routes.alerts import router as alerts_router
 from backend.routes.judge import router as judge_router
 from backend.routes.map import router as map_router
-from backend.routes.locations import router as locations_router
 
 from backend.services.weather_service import get_current_weather, get_full_forecast_response
 from backend.services.reliability_service import get_forecast_reliability_overview
@@ -26,11 +26,11 @@ from backend.services.reliability_service import get_forecast_reliability_overvi
 # Initialize FastAPI App
 app = FastAPI(
     title=config.APP_NAME,
-    description=config.FULL_TITLE,
+    description=f"{config.FULL_TITLE} | {config.ORGANIZATION} — {config.DEPARTMENT}",
     version=config.VERSION,
 )
 
-# CORS middleware for local development
+# CORS middleware for local development and dashboard clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,7 +46,6 @@ app.include_router(drift_router)
 app.include_router(alerts_router)
 app.include_router(judge_router)
 app.include_router(map_router)
-app.include_router(locations_router)
 
 
 @app.get("/api/health", tags=["System"])
@@ -55,6 +54,9 @@ def health_check():
     return {
         "status": "healthy",
         "app": config.APP_NAME,
+        "organization": config.ORGANIZATION,
+        "department": config.DEPARTMENT,
+        "problem_id": config.PROBLEM_ID,
         "version": config.VERSION,
         "is_demo_mode": config.IS_DEMO_MODE,
         "tagline": config.TAGLINE,
@@ -62,19 +64,19 @@ def health_check():
 
 
 @app.get("/api/weather", tags=["Weather"])
-def api_weather(location: str = "Krishna District"):
+def api_weather(location: str = "Vijayawada"):
     """Direct endpoint: GET /api/weather returning current weather."""
     return get_current_weather(location)
 
 
 @app.get("/api/forecast", tags=["Weather"])
-def api_forecast(location: str = "Krishna District"):
+def api_forecast(location: str = "Vijayawada"):
     """Direct endpoint: GET /api/forecast returning hourly and 10-day forecasts."""
     return get_full_forecast_response(location)
 
 
 @app.get("/api/reliability", tags=["Forecast Trust Layer"])
-def api_reliability(location: str = "Krishna District", lead_day: int = 6, sector: str = "General Public"):
+def api_reliability(location: str = "Vijayawada", lead_day: int = 6, sector: str = "General Public"):
     """Direct endpoint: GET /api/reliability returning Forecast Trust metrics."""
     return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
 
@@ -102,6 +104,11 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 PAGES = [
     "dashboard",
+    "confidence-map",
+    "daywise",
+    "uncertainty",
+    "calibration",
+    "explain",
     "live-weather",
     "forecast",
     "trust",
@@ -122,10 +129,6 @@ if FRONTEND_DIR.exists():
 
     @app.get("/live-weather", include_in_schema=False)
     async def page_live_weather():
-        return FileResponse(index_html)
-
-    @app.get("/live-tracking", include_in_schema=False)
-    async def page_live_tracking():
         return FileResponse(index_html)
 
     @app.get("/forecast", include_in_schema=False)

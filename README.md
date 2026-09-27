@@ -1,82 +1,126 @@
-# WEATHERTRUST AI
-### Explainable Weather Forecast Reliability & Bust-Risk Detection Platform
+# WeatherTrust AI v2.0.0
+### AI-Based Forecast Bust Detection for Medium-Range Weather Forecasts
+**Smart India Hackathon (SIH) — Problem ID: 26079**  
+**Organization:** Ministry of Earth Sciences (MoES)  
+**Department:** National Centre for Medium Range Weather Forecasting (NCMRWF)  
+
 > *"Know the weather. Know when to trust it."*
 
 ---
 
-## 📌 Concept & Vision
+## 📌 Executive Summary
 
-Normal weather applications answer:
-> **"What will the weather be?"**
+Numerical Weather Prediction (NWP) models provide critical multi-day forecasts for disaster mitigation, agriculture, water resources, and civil logistics. However, atmospheric chaotic divergence and parameterized convective approximations cause numerical forecasts to occasionally fail significantly — an event known as a **Forecast Bust**.
 
-**WeatherTrust AI** answers:
-> **"How much should I trust this forecast?"**
+**WeatherTrust AI** functions as an operational diagnostic uncertainty and reliability quantification layer on top of real-time meteorological observations and 10-day numerical weather predictions. By combining historical forecast-error dynamics across Indian agro-climatic zones, calibrated machine learning probabilities, and domain-specific Explainable AI (SHAP), WeatherTrust AI quantifies exactly **where, when, and why** a forecast is likely to fail.
 
-The platform functions as an independent **FORECAST RELIABILITY & FORECAST TRUST LAYER** on top of weather data. It quantifies uncertainty, estimates bust risk for Day 1–Day 10 lead times, explains *why* confidence is low in simple, accessible language, and provides actionable recommendations to non-technical users.
-
-> ⚠️ **Official Meteorological Disclaimer:** WeatherTrust AI is a diagnostic reliability layer. It does **NOT** replace official meteorological forecasts or warnings issued by the India Meteorological Department (IMD) or national weather agencies.
+> ⚠️ **Official Meteorological Disclaimer:** WeatherTrust AI operates as an AI uncertainty diagnostic layer. It does **NOT** replace official meteorological forecasts or warnings issued by the India Meteorological Department (IMD) or national disaster management authorities.
 
 ---
 
-## 🚀 Phase 1 Overview
+## 🚀 Key SIH Features Implemented
 
-Phase 1 establishes the operational core and user experience using structured sample baselines (clearly marked as **DEMO / SAMPLE SIMULATION**):
+### 1. 🗺️ Dynamic Forecast Confidence Map (SIH Feature 1)
+- **Endpoint**: `GET /api/map/confidence?day=1&location=Vijayawada`
+- **Capabilities**:
+  - Interactive India GIS map using Leaflet.js with official state boundaries and district stations.
+  - Interactive **Day 1 to Day 10** lead-time selector.
+  - MoES-standard 5-tier confidence color scale:
+    - `90–100%`: Dark Green (High Trust)
+    - `75–89%`: Green (Good Confidence)
+    - `60–74%`: Yellow (Moderate Confidence)
+    - `40–59%`: Orange (Low Confidence)
+    - `0–39%`: Red (High Bust Risk)
+  - Rich interactive tooltips and click-to-open Explainable AI diagnostic panels.
 
-1. **Dashboard UI**:
-   - Modern, responsive meteorological interface with dark theme.
-   - Sidebar navigation: Dashboard, Forecast, Forecast Trust, Risk Map, Forecast Drift, Alerts, About.
-   - Location search with autocomplete and quick preset selection for Indian regions (Krishna District, AP; Hyderabad; Bengaluru; Delhi; Mumbai).
-2. **Standard Weather Platform**:
-   - Current weather conditions (Temperature, feels-like, condition icon, min/max).
-   - 8-metric weather detail grid: Humidity, Wind Speed/Direction, Pressure, Precipitation, Rain Chance, UV Index, Visibility, Sunrise/Sunset.
-   - 24-hour horizontal hourly forecast timeline.
-   - Day 1 to Day 10 extended forecast.
-3. **Forecast Trust Innovation Layer (Demo Baseline)**:
-   - **Forecast Reliability Score**: `24 / 100` (Low Confidence) for the Krishna District Day-6 benchmark.
-   - **Bust Probability**: `76%` (High Risk).
-   - **Forecast Stability**: `LOW`.
-   - **Forecast Drift Monitor**: Captures run-to-run changes (`25 mm → 80 mm (+55 mm)`).
-   - **Explainable "Why?" Section**:
-     - 🔴 *Historical forecast error is high* (Day-6 errors historically high).
-     - 🔄 *Forecast changed significantly* (+55mm shift across recent runs).
-     - 📊 *Regional variability is high* (divergent historical analogs).
-   - **Actionable User Recommendation**: *"Do not make important decisions based only on this forecast. Check the next forecast update."*
-4. **Visual Analytics**:
-   - Interactive 24-Hour Temperature vs. Rain Chance chart (Chart.js).
-   - Day 1–Day 10 Bust Probability progression chart (Chart.js).
-   - Regional reliability map with confidence markers (Leaflet.js).
+### 2. 📅 Day 1 to Day 10 Independent ML Predictions (SIH Feature 2)
+- **Endpoint**: `GET /api/reliability/daywise?location=Vijayawada`
+- **Capabilities**:
+  - Produces independent calibrated probability predictions for every lead day (Day 1 through Day 10).
+  - Outputs Confidence Score, Bust Probability, Risk Category, Model Drift, Uncertainty Percentage, and domain SHAP summaries.
+  - Rendered as 10 distinct interactive forecast cards with animated progress tracks.
+
+### 3. 📉 Forecast Uncertainty & Variability Engine (SIH Feature 3)
+- **Endpoint**: `GET /api/reliability/uncertainty?location=Vijayawada`
+- **Capabilities**:
+  - Quantifies uncertainty strictly from real forecast variability: temperature variance, rainfall gradients, pressure tendencies, moisture fluctuations, and run-to-run drift.
+  - Chart.js dual-axis graph:
+    - 🟢 **Green Line**: Forecast Confidence (%)
+    - 🔴 **Red Line**: Forecast Uncertainty (%)
+    - 🔵 **Blue Dashed Line**: Model Run Drift (mm)
+  - 5 Operational KPI Cards and dynamic natural language meteorological insight synthesis.
+
+### 4. 🔬 Model Reliability & Probability Calibration (SIH Feature 4)
+- **Endpoint**: `GET /api/judge/calibration` & `GET /api/judge/metrics`
+- **Capabilities**:
+  - Evaluator dashboard computing: Classification Accuracy, Precision, Recall, F1-Score, ROC-AUC, and Brier Score.
+  - **Reliability / Calibration Curve**: Predicted probability bins vs observed true bust frequencies.
+  - **Receiver Operating Characteristic (ROC Curve)**.
+  - **Confusion Matrix Heatmap** (TN, FP, FN, TP).
+  - Automated scientific interpretation generated directly from test set metrics.
+
+### 5. 🧠 Explainable Forecast Bust Analysis (SIH Feature 5)
+- **Endpoint**: `GET /api/explain/bust?location=Vijayawada&lead_day=6`
+- **Capabilities**:
+  - **Circular Confidence Gauge (0–100)** with animated SVG sweep.
+  - **Large Animated Bust Probability Indicator**.
+  - **SHAP Contribution Chart** with horizontal bars:
+    - 🔴 *Negative Influence (Red)*: Increases Bust Risk
+    - 🟢 *Positive Influence (Green)*: Enhances Confidence
+  - Domain meteorological feature nomenclature: *Pressure Drop, Rainfall Gradient, Humidity Instability, Wind Shear, Temperature Trend, Forecast Drift, Convective Instability, Climatological Error Prior*.
+  - Actionable NCMRWF operational decision recommendations.
 
 ---
 
-## 📂 Phase 1 File Structure
+## 🏛️ System Architecture
 
 ```
-WeatherTrustAI/
+WeatherTrust AI (NCMRWF / MoES Control Room)
 ├── backend/
-│   ├── main.py                     # FastAPI app, static mount, CORS, health endpoint
+│   ├── main.py                     # FastAPI app, SPA routing, CORS, router mounts
 │   ├── routes/
-│   │   ├── weather.py              # Weather API routes (/current, /hourly, /daily, /forecast, /search)
-│   │   └── reliability.py          # Forecast Trust routes (/overview, /demo)
+│   │   ├── weather.py              # Open-Meteo live observation & 10-day forecast endpoints
+│   │   ├── reliability.py          # /overview, /daywise (Feature 2), /uncertainty (Feature 3)
+│   │   ├── map.py                  # /api/map/confidence (Feature 1), /api/map/states
+│   │   ├── judge.py                # /api/judge/calibration (Feature 4), /api/judge/metrics
+│   │   ├── explain.py              # /api/explain/bust (Feature 5)
+│   │   ├── drift.py                # NWP cycle run-to-run drift tracking
+│   │   └── alerts.py               # Proactive early warning triggers
 │   ├── services/
-│   │   ├── weather_service.py      # Structured sample weather data provider
-│   │   └── reliability_service.py  # Demo trust score, bust risks & explainability points
+│   │   ├── weather_service.py      # Real Open-Meteo API fetcher with disk caching
+│   │   ├── historical_error_service.py # NCMRWF historical error dataset & prior engine
+│   │   ├── uncertainty_service.py  # Forecast variability & uncertainty indexer
+│   │   ├── reliability_service.py  # Calibrated ML inference & day-wise orchestrator
+│   │   ├── india_map_service.py    # Multi-day GIS map processor
+│   │   └── decision_service.py     # 6-sector persona recommendation engine
 │   └── models/
 │       ├── weather_model.py        # Pydantic schemas for weather
 │       └── reliability_model.py    # Pydantic schemas for Forecast Trust & bust risk
+├── ml/
+│   ├── generate_dataset.py         # Multi-year historical forecast-vs-actual error dataset generator
+│   ├── feature_engineering.py      # Non-leaking meteorological feature extractor
+│   ├── calibration.py              # 5-Fold Sigmoid probability calibration & ROC evaluator
+│   ├── explain.py                  # SHAP domain attribution & natural language explanation engine
+│   ├── train.py                    # Model comparison (LR vs RF vs GBDT) & serialization
+│   └── evaluate.py                 # Statistical classification metrics
 ├── frontend/
-│   ├── index.html                  # Accessible dashboard HTML5
+│   ├── index.html                  # Accessible MoES control-room dashboard
 │   ├── css/
-│   │   ├── style.css               # Design system tokens & accessible risk classes
-│   │   └── dashboard.css           # Layouts, responsive sidebar, timelines, cards
+│   │   ├── style.css               # Design system & tokens
+│   │   └── dashboard.css           # Control room layout, GIS map, cards, gauges, charts
 │   └── js/
-│       ├── charts.js               # Chart.js initialization for trends & bust risk
-│       ├── weather.js              # Weather data fetcher and DOM updater
-│       ├── reliability.js          # Forecast Trust layer renderer
-│       └── dashboard.js            # Main coordinator (search, pills, Leaflet map)
+│       ├── confidenceMap.js        # Feature 1: GIS Leaflet map & Day 1-10 selector
+│       ├── daywiseForecast.js      # Feature 2: 10 independent lead-day cards
+│       ├── uncertaintyChart.js     # Feature 3: Chart.js dual-axis graph & KPIs
+│       ├── calibration.js          # Feature 4: Evaluator calibration & ROC dashboard
+│       ├── explainability.js       # Feature 5: Circular gauge & SHAP horizontal bars
+│       ├── weather.js              # Live weather rendering
+│       ├── navigation.js           # 15-view SPA router
+│       └── dashboard.js            # Central coordinator
+├── models/
+│   └── forecast_reliability_model.pkl # Trained calibrated Random Forest model bundle
 ├── config.py                       # Global settings & constants
-├── requirements.txt                # Python dependencies
-├── .gitignore                      # Git ignore rules
-└── README.md                       # Documentation
+└── requirements.txt                # Python dependencies
 ```
 
 ---
@@ -84,45 +128,28 @@ WeatherTrustAI/
 ## 🛠️ How to Run Locally
 
 ### 1. Prerequisites
-- Python 3.10+ (or Python 3.14 via `py` on Windows)
+- Python 3.10+ (tested on Python 3.14 on Windows)
 
 ### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-*(Dependencies: `fastapi`, `uvicorn`, `pydantic`)*
 
-### 3. Start the FastAPI Server
+### 3. Run Automated SIH Verification Suite
 ```bash
-uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+py tests/test_sih_features.py
 ```
-or via the Python launcher:
+
+### 4. Start the Application Server
 ```bash
 py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 4. Access the Dashboard
-Open your browser and navigate to:
-```
-http://127.0.0.1:8000/
-```
-Interactive API documentation is also available at:
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-## 🗺️ Project Roadmap
-
-- [x] **Phase 1**: Basic Weather & Forecast Trust UI Foundation (Sample Data Baseline)
-- [ ] **Phase 2**: Real-time Weather API Integration
-- [ ] **Phase 3**: Enhanced Weather Visualizations & Radar
-- [ ] **Phase 4**: Advanced Forecast Trust UI with interactive lead-day filtering
-- [ ] **Phase 5**: Historical Forecast-vs-Actual Dataset Preparation
-- [ ] **Phase 6**: Feature Engineering (Lead time, regional variance, drift)
-- [ ] **Phase 7**: ML Classification for Bust-Risk (Baselines -> Random Forest / GBDT)
-- [ ] **Phase 8**: SHAP Explainability Engine
-- [ ] **Phase 9**: Automated Forecast Run-to-Run Drift Monitor
-- [ ] **Phase 10**: Geographic Regional Bust-Risk Choropleth Map
-- [ ] **Phase 11**: Sector-Based Decision Support (Agriculture, Disaster Relief, Logistics)
+### 5. Access the Platform
+- **Dashboard**: `http://127.0.0.1:8000/`
+- **Confidence Map**: `http://127.0.0.1:8000/confidence-map`
+- **Day-wise Predictions**: `http://127.0.0.1:8000/daywise`
+- **Forecast Uncertainty**: `http://127.0.0.1:8000/uncertainty`
+- **Model Calibration & Reliability**: `http://127.0.0.1:8000/calibration`
+- **Explainable AI (SHAP)**: `http://127.0.0.1:8000/explain`
+- **Interactive Swagger API Docs**: `http://127.0.0.1:8000/docs`

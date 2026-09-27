@@ -1,5 +1,7 @@
 """
 WeatherTrust AI — Forecast Drift Monitor Service (Phase 11)
+Ministry of Earth Sciences (MoES) — National Centre for Medium Range Weather Forecasting (NCMRWF)
+
 Tracks successive numerical weather prediction (NWP) model runs for identical future target dates.
 Calculates run-to-run drift, percentage shift, and categorizes forecast stability.
 """
@@ -67,6 +69,7 @@ def calculate_drift_metrics(
     }
 
 
+<<<<<<< HEAD
 LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
     "krishna": {
         "location": "Krishna District",
@@ -238,6 +241,48 @@ def _match_location_key(location: str, lat: Optional[float] = None, lon: Optiona
 
 
 def get_location_drift_summary(location: str = "Krishna District", lat: Optional[float] = None, lon: Optional[float] = None) -> Dict[str, Any]:
+=======
+def get_all_lead_days_drift(location: str = "Krishna District") -> Dict[int, Dict[str, Any]]:
+    """
+    Computes lead-day drift profiles for Day 1 through Day 10 based on atmospheric lead decay.
+    """
+    profile = {}
+    is_cyclonic_or_monsoon = "andhra" in location.lower() or "krishna" in location.lower() or "mumbai" in location.lower() or "odisha" in location.lower()
+
+    for d in range(1, 11):
+        if d == 1:
+            drift_amount = 1.5
+        elif d == 2:
+            drift_amount = 3.0
+        elif d == 3:
+            drift_amount = 6.5
+        elif d == 4:
+            drift_amount = 12.0
+        elif d == 5:
+            drift_amount = 22.0 if is_cyclonic_or_monsoon else 15.0
+        elif d == 6:
+            drift_amount = 55.0 if "krishna" in location.lower() or "vijayawada" in location.lower() else (35.0 if is_cyclonic_or_monsoon else 20.0)
+        elif d == 7:
+            drift_amount = 45.0 if is_cyclonic_or_monsoon else 25.0
+        elif d == 8:
+            drift_amount = 58.0 if is_cyclonic_or_monsoon else 32.0
+        elif d == 9:
+            drift_amount = 62.0 if is_cyclonic_or_monsoon else 38.0
+        else:  # d == 10
+            drift_amount = 70.0 if is_cyclonic_or_monsoon else 45.0
+
+        profile[d] = {
+            "lead_day": d,
+            "drift_amount": round(drift_amount, 1),
+            "drift_level": "LOW" if drift_amount <= 10 else "MODERATE" if drift_amount <= 25 else "HIGH",
+            "stability": "HIGH" if drift_amount <= 10 else "MODERATE" if drift_amount <= 25 else "LOW"
+        }
+
+    return profile
+
+
+def get_drift_history(location: str = "Krishna District") -> List[Dict[str, Any]]:
+>>>>>>> 76a7e6d2ce6742d517d8010a868acd5702b1d98a
     """
     Returns location-specific drift metrics.
     Ensures snapshots are strictly isolated by location_id/coordinates.
