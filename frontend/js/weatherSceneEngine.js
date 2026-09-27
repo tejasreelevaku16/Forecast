@@ -89,13 +89,17 @@ const WeatherSceneEngine = {
   /**
    * Load scene for a specific location
    */
-  async loadSceneForLocation(location) {
+  async loadSceneForLocation(location, lat = null, lon = null) {
     if (this.isTransitioning) return;
 
     try {
       showLoading('Loading live weather scene...');
       
-      const response = await fetch(`/api/weather/scene?location=${encodeURIComponent(location)}`);
+      let url = `/api/weather/scene?location=${encodeURIComponent(location)}`;
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        url += `&lat=${lat}&lon=${lon}`;
+      }
+      const response = await fetch(url);
       const data = await response.json();
 
       if (data.success && data.scene) {
@@ -108,10 +112,10 @@ const WeatherSceneEngine = {
         this.updateLocationTitle(location);
         
         // Update confidence score from existing reliability data
-        this.updateConfidenceScore(location);
+        this.updateConfidenceScore(location, lat, lon);
       } else {
         console.warn('Failed to load scene data, using fallback');
-        await this.transitionToScene(data.scene, null);
+        await this.transitionToScene(data.scene || this.getFallbackScene(), null);
         this.showFallbackNotice();
       }
 
@@ -226,7 +230,11 @@ const WeatherSceneEngine = {
     this.animateValue('sceneTemperature', weather.temperature_c, 0, '°C');
     
     // Condition
-    const condElem = document.getElementById('sceneCondition');
+    const subElem = document.getElementById('sceneConditionSubtitle');
+    if (subElem) {
+      subElem.textContent = weather.condition;
+    }
+    const condElem = document.getElementById('sceneConditionCard') || document.getElementById('sceneCondition');
     if (condElem) {
       condElem.textContent = weather.condition;
       this.pulseCard(condElem.closest('.weather-card'));
@@ -240,25 +248,33 @@ const WeatherSceneEngine = {
     
     // Pressure
     this.animateValue('scenePressure', weather.pressure_hpa, 0, ' hPa');
-    
-    // Confidence score (will be updated separately)
   },
 
   /**
    * Update confidence score from reliability service
    */
-  async updateConfidenceScore(location) {
+  async updateConfidenceScore(location, lat = null, lon = null) {
     try {
-      const response = await fetch(`/api/reliability?location=${encodeURIComponent(location)}&lead_day=1`);
+      let url = `/api/reliability?location=${encodeURIComponent(location)}&lead_day=1`;
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        url += `&lat=${lat}&lon=${lon}`;
+      }
+      const response = await fetch(url);
       const data = await response.json();
       
       const confElem = document.getElementById('sceneConfidence');
-      if (confElem && data.reliability_score !== undefined) {
-        this.animateValue('sceneConfidence', data.reliability_score, 0, '/100');
-        this.pulseCard(confElem.closest('.weather-card'));
+      if (confElem) {
+        if (data && data.available !== false && data.reliability_score !== undefined) {
+          this.animateValue('sceneConfidence', data.reliability_score, 0, '/100');
+          this.pulseCard(confElem.closest('.weather-card'));
+        } else {
+          confElem.textContent = '--/100';
+        }
       }
     } catch (error) {
       console.error('Error fetching confidence score:', error);
+      const confElem = document.getElementById('sceneConfidence');
+      if (confElem) confElem.textContent = '--/100';
     }
   },
 

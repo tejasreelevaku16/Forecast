@@ -134,14 +134,15 @@
 
 /* Header */
 .top-header {
-  height: var(--header-height);
+  min-height: var(--header-height);
+  height: auto;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--bg-card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  gap: 20px;
+  padding: 8px 24px;
+  gap: 16px;
   position: sticky;
   top: 0;
   z-index: 90;
@@ -150,7 +151,9 @@
 .search-box-container {
   position: relative;
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
+  min-width: 200px;
+  flex: 1 1 240px;
 }
 
 .search-input-wrapper {
@@ -244,6 +247,13 @@
   gap: 8px;
   overflow-x: auto;
   white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.quick-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .pill-btn {
@@ -1121,6 +1131,35 @@
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
   border-color: rgba(255, 255, 255, 0.25);
+  font-weight: 700;
+}
+
+.map-horizon-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.map-day-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-muted);
+  font-size: 0.725rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.map-day-pill:hover {
+  color: var(--text-primary);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.map-day-pill.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
   font-weight: 700;
 }
 

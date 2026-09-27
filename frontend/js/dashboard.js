@@ -50,6 +50,13 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
     if (locTitle) locTitle.textContent = `${c.location}, ${c.region}`;
     if (heroTemp) heroTemp.textContent = `${Math.round(c.temperature_c)}°C`;
     if (heroCond) heroCond.textContent = `${c.condition}`;
+    
+    // Synchronize scene condition elements if present
+    const sceneCondCard = document.getElementById('sceneConditionCard');
+    const sceneCondSub = document.getElementById('sceneConditionSubtitle');
+    if (sceneCondCard) sceneCondCard.textContent = c.condition;
+    if (sceneCondSub) sceneCondSub.textContent = c.condition;
+
     if (heroSum) {
       if (weatherData.daily && weatherData.daily.length > 5) {
         const d6 = weatherData.daily[5];
@@ -62,6 +69,12 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
     if (locTitle) locTitle.textContent = currentLocation;
     if (heroTemp) heroTemp.textContent = `--°C`;
     if (heroCond) heroCond.textContent = `Weather Unavailable`;
+    
+    const sceneCondCard = document.getElementById('sceneConditionCard');
+    const sceneCondSub = document.getElementById('sceneConditionSubtitle');
+    if (sceneCondCard) sceneCondCard.textContent = `Data unavailable`;
+    if (sceneCondSub) sceneCondSub.textContent = `Weather unavailable`;
+
     if (heroSum) heroSum.textContent = `Live meteorological observation is unavailable for ${currentLocation}.`;
   }
 
@@ -249,12 +262,30 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
       DriftUI.fetchDriftHistory(locationQuery, lat, lon),
     ]);
 
+    // Resolve exact coordinates and state dynamically from returned weather data
+    const resolvedLat = (lat !== null && !isNaN(lat)) ? Number(lat) : (weatherData && weatherData.current ? Number(weatherData.current.latitude) : null);
+    const resolvedLon = (lon !== null && !isNaN(lon)) ? Number(lon) : (weatherData && weatherData.current ? Number(weatherData.current.longitude) : null);
+    const resolvedState = state || (weatherData && weatherData.current ? weatherData.current.region : '');
+    const resolvedDistrict = (weatherData && weatherData.current && weatherData.current.district) ? weatherData.current.district : locationQuery;
+
+    if (typeof WeatherTrustCommon !== 'undefined') {
+      WeatherTrustCommon.setLocation({
+        name: locationQuery,
+        place: locationQuery,
+        district: resolvedDistrict,
+        state: resolvedState,
+        latitude: resolvedLat,
+        longitude: resolvedLon,
+        country: 'India'
+      });
+    }
+
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
 
-    // Update Weather Scene Engine (Live Weather Scene)
+    // Update Weather Scene Engine (Live Weather Scene) with exact coordinates
     if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
-      WeatherSceneEngine.loadSceneForLocation(locationQuery);
+      WeatherSceneEngine.loadSceneForLocation(locationQuery, resolvedLat, resolvedLon);
     }
 
     // Page 2: Live Weather / Live Tracking Page View
@@ -297,14 +328,14 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
 
     // Page 6: India Map View synchronization
     if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
-      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+      if (resolvedLat !== null && resolvedLon !== null && !isNaN(resolvedLat) && !isNaN(resolvedLon)) {
         const locObj = {
           place: locationQuery,
-          district: locationQuery,
-          state: state || 'Andhra Pradesh',
+          district: resolvedDistrict,
+          state: resolvedState || 'India',
           country: 'India',
-          latitude: Number(lat),
-          longitude: Number(lon)
+          latitude: Number(resolvedLat),
+          longitude: Number(resolvedLon)
         };
         IndiaMapUI.selectLocation(locObj, false);
       }
@@ -451,7 +482,7 @@ function setupEventListeners() {
                 searchInput.value = `${item.name}, ${item.region}`;
                 searchDropdown.classList.remove('active');
                 pills.forEach(p => p.classList.remove('active'));
-                const statePart = item.region ? item.region.split(',').pop().trim() : (item.state || 'Andhra Pradesh');
+                const statePart = item.region ? item.region.split(',').pop().trim() : (item.state || '');
                 const locObj = {
                   place: item.name,
                   district: item.district || item.name,

@@ -36,6 +36,7 @@ const IndiaMapUI = {
   },
   districtMarker: null,
   currentFilter: "ALL", // "ALL", "HIGH", "MODERATE", "LOW"
+  currentDay: 6, // 1 to 10
   stateLayersMap: {},
   searchDebounceTimer: null,
 
@@ -103,7 +104,7 @@ const IndiaMapUI = {
       let relDataErr = false;
 
       await Promise.all([
-        this.fetchStatesReliability().catch(e => {
+        this.fetchStatesReliability(this.currentDay).catch(e => {
           relDataErr = true;
           console.error("fetchStatesReliability failed:", e);
         }),
@@ -129,17 +130,27 @@ const IndiaMapUI = {
       this.renderGeoJsonLayer();
       this.hideMapLoading();
 
-      // Default select Krishna District, Andhra Pradesh without zooming in so entire India view is preserved
-      const defaultLoc = {
-        country: "India",
-        state: "Andhra Pradesh",
-        state_code: "AP",
-        district: "Krishna",
-        place: "Krishna District",
-        latitude: 16.1875,
-        longitude: 81.1389,
-      };
-      await this.selectLocation(defaultLoc, false);
+      // Synchronize with currently active location if set, without zooming in to preserve India view
+      const activeLoc = (typeof WeatherTrustCommon !== 'undefined' && WeatherTrustCommon.currentLocation && WeatherTrustCommon.currentLocation.latitude && WeatherTrustCommon.currentLocation.longitude)
+        ? {
+            country: WeatherTrustCommon.currentLocation.country || 'India',
+            state: WeatherTrustCommon.currentLocation.state || 'Andhra Pradesh',
+            state_code: WeatherTrustCommon.currentLocation.state_code || '',
+            district: WeatherTrustCommon.currentLocation.district || WeatherTrustCommon.currentLocation.name,
+            place: WeatherTrustCommon.currentLocation.place || WeatherTrustCommon.currentLocation.name,
+            latitude: Number(WeatherTrustCommon.currentLocation.latitude),
+            longitude: Number(WeatherTrustCommon.currentLocation.longitude),
+          }
+        : {
+            country: "India",
+            state: "Andhra Pradesh",
+            state_code: "AP",
+            district: "Krishna",
+            place: "Krishna District",
+            latitude: 16.1875,
+            longitude: 81.1389,
+          };
+      await this.selectLocation(activeLoc, false);
       this.fitIndiaBounds(false);
     } catch (err) {
       console.error("India Map Initialization Error:", err);
@@ -148,13 +159,13 @@ const IndiaMapUI = {
   },
 
   /**
-   * Fetches state-level ML reliability metrics from backend
+   * Fetches state-level ML reliability metrics from backend for specified day horizon
    */
-  async fetchStatesReliability() {
+  async fetchStatesReliability(day = (this.currentDay || 6)) {
     try {
-      const resp = await fetch('/api/map/states');
+      const resp = await fetch(`/api/map/states?day=${day}`);
       if (!resp.ok) {
-        const fallbackResp = await fetch('/api/map-data');
+        const fallbackResp = await fetch(`/api/map-data?day=${day}`);
         if (!fallbackResp.ok) throw new Error("Failed to fetch map data");
         const list = await fallbackResp.json();
         this.statesData = {};
@@ -167,6 +178,38 @@ const IndiaMapUI = {
     } catch (e) {
       console.error("fetchStatesReliability error:", e);
       throw e;
+    }
+  },
+
+  /**
+   * Updates forecast horizon day (1 to 10) and refreshes map choropleth & panel
+   */
+  async setDayHorizon(day) {
+    this.currentDay = Number(day) || 6;
+    
+    // Update active pill UI
+    const dayPills = document.querySelectorAll('.map-day-pill');
+    dayPills.forEach(p => {
+      const pDay = parseInt(p.getAttribute('data-day'), 10);
+      if (pDay === this.currentDay) {
+        p.classList.add('active');
+      } else {
+        p.classList.remove('active');
+      }
+    });
+
+    try {
+      await this.fetchStatesReliability(this.currentDay);
+      if (this.geoJsonLayer) {
+        this.geoJsonLayer.setStyle(feature => this.getStateStyle(feature));
+      }
+      if (this.selectedLocation) {
+        await this.selectLocation(this.selectedLocation, false);
+      } else {
+        this.renderIndiaOverviewPanel();
+      }
+    } catch (err) {
+      console.error("Error setting day horizon:", err);
     }
   },
 
@@ -524,6 +567,99 @@ const IndiaMapUI = {
   },
 
   /**
+   * Renders the national India overview panel when no specific place is selected
+   */
+  renderIndiaOverviewPanel() {
+    const panel = document.getElementById('mapSelectedRegionPanel');
+    if (!panel) return;
+
+    const states = Object.values(this.statesData || {});
+    const totalCount = states.length || 36;
+    let highCount = 0;
+    let modCount = 0;
+    let lowCount = 0;
+    let totalTrust = 0;
+
+    states.forEach(s => {
+      const bust = s.bust_probability ?? s.bust_risk_pct ?? 40;
+      const trust = s.trust_score ?? (100 - bust);
+      totalTrust += trust;
+      if (bust > 50) lowCount++;
+      else if (bust > 30) modCount++;
+      else highCount++;
+    });
+
+    const avgTrust = states.length ? Math.round(totalTrust / states.length) : 62;
+    const currentDay = this.currentDay || 6;
+
+    panel.innerHTML = `
+      <div style="border-bottom: 1px solid var(--bg-card-border); padding-bottom: 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 2px;">INDIA OVERVIEW</h3>
+            <span style="font-size: 0.775rem; color: #38bdf8; font-weight:600;">National NWP Reliability Index</span>
+          </div>
+          <span class="badge badge-neutral" style="color:#38bdf8; border-color: rgba(56,189,248,0.4);">Day ${currentDay} Horizon</span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top: 14px;">
+        <!-- National Average Trust Card -->
+        <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(56, 189, 248, 0.2); padding: 14px; border-radius: 8px;">
+          <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">National Reliability Score</div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
+            <div style="font-size:1.8rem; font-weight:800; color:#38bdf8;">${avgTrust} <span style="font-size:0.9rem; color:#94a3b8;">/ 100</span></div>
+            <span class="badge ${avgTrust >= 65 ? 'badge-risk-low' : 'badge-risk-mod'}">${avgTrust >= 65 ? 'MODERATE-HIGH TRUST' : 'MODERATE RISK'}</span>
+          </div>
+          <p style="font-size:0.75rem; color:#94a3b8; margin: 6px 0 0 0; line-height: 1.4;">
+            Calculated across ${totalCount} States &amp; Union Territories for Lead Day ${currentDay}.
+          </p>
+        </div>
+
+        <!-- Reliability Tier Distribution -->
+        <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:0.725rem; color:#cbd5e1; font-weight:600; margin-bottom:8px; text-transform:uppercase;">
+            Monitored Regions Tier Breakdown
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px; border-radius: 6px;">
+              <div style="font-size:1.2rem; font-weight:700; color:#10b981;">${highCount}</div>
+              <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">High Trust</div>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px; border-radius: 6px;">
+              <div style="font-size:1.2rem; font-weight:700; color:#f59e0b;">${modCount}</div>
+              <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">Moderate</div>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px; border-radius: 6px;">
+              <div style="font-size:1.2rem; font-weight:700; color:#ef4444;">${lowCount}</div>
+              <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">High Bust Risk</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guidance Card -->
+        <div style="background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.3); padding: 12px; border-radius: 8px; font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;">
+          <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">💡 Geospatial Inspection</strong>
+          Click any state boundary polygon on the map to review regional reliability, or use the search box above to track live weather and forecast drift at exact coordinates.
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Clears currently selected place/marker and switches right panel to India Overview
+   */
+  clearSelection() {
+    this.selectedLocation = null;
+    if (this.districtMarker) {
+      this.map.removeLayer(this.districtMarker);
+      this.districtMarker = null;
+    }
+    this.renderIndiaOverviewPanel();
+    this.fitIndiaBounds(true);
+  },
+
+  /**
    * Renders the location-aware right-side details panel
    */
   renderLocationDetailsPanel(loc, weatherData, driftData, stateRelData) {
@@ -532,7 +668,9 @@ const IndiaMapUI = {
 
     const curr = (weatherData && weatherData.current) ? weatherData.current : null;
     const daily = (weatherData && weatherData.daily) ? weatherData.daily : [];
-    const d6 = daily.length > 5 ? daily[5] : (daily.length > 0 ? daily[0] : null);
+    const leadDay = this.currentDay || 6;
+    const dayIdx = Math.max(0, Math.min(daily.length - 1, leadDay - 1));
+    const targetDayForecast = daily.length > dayIdx ? daily[dayIdx] : null;
 
     // Regional (State) Reliability
     let stateTrust = 65;
@@ -560,7 +698,7 @@ const IndiaMapUI = {
         <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); padding: 8px 12px; border-radius: 6px;">
           <div>
             <span style="font-size:0.775rem; color:#fca5a5; font-weight:700;">${loc.place} Reliability:</span>
-            <div style="font-size:0.7rem; color:#94a3b8;">Calibrated Coastal Benchmark (Day 6)</div>
+            <div style="font-size:0.7rem; color:#94a3b8;">Calibrated Coastal Benchmark (Day ${leadDay})</div>
           </div>
           <strong style="font-size:1.15rem; color:#ef4444;">24 / 100 <span style="font-size:0.75rem;">(76% Bust Risk)</span></strong>
         </div>
@@ -589,9 +727,9 @@ const IndiaMapUI = {
     const updatedTime = curr ? curr.updated_at : "Data Unavailable";
 
     // Forecast Projection
-    const fcDesc = d6
-      ? `Day 6 Projection: ${d6.precipitation_mm} mm rain (${d6.rain_chance_pct}% probability, ${d6.condition})`
-      : "Day 6 Outlook: Forecast data unavailable for this location";
+    const fcDesc = targetDayForecast
+      ? `Day ${leadDay} Outlook: ${targetDayForecast.precipitation_mm} mm rain (${targetDayForecast.rain_chance_pct}% probability, ${targetDayForecast.condition})`
+      : `Day ${leadDay} Outlook: Forecast data unavailable for this location`;
 
     // Forecast Drift (strictly location-isolated)
     let driftDisplay = "Not enough forecast history yet";
@@ -643,7 +781,7 @@ const IndiaMapUI = {
 
         <!-- Location-Aware Weather Forecast -->
         <div style="background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px; font-size: 0.8rem; border-left: 3px solid #38bdf8;">
-          <div style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase;">Location Forecast (Open-Meteo)</div>
+          <div style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase;">Lead Day ${leadDay} Outlook (Open-Meteo)</div>
           <div style="color: #fff; font-weight: 600; margin-top: 3px;">${fcDesc}</div>
         </div>
 
@@ -678,6 +816,9 @@ const IndiaMapUI = {
         </button>
         <button class="btn btn-secondary" style="width:100%; font-size:0.8rem; padding:8px;" onclick="IndiaMapUI.viewInLiveTracking()">
           📡 Open Live Tracking (${loc.place})
+        </button>
+        <button class="btn btn-secondary" style="width:100%; font-size:0.775rem; padding:6px; margin-top:2px;" onclick="IndiaMapUI.clearSelection()">
+          🗺️ India National Overview
         </button>
       </div>
     `;
@@ -796,10 +937,12 @@ const IndiaMapUI = {
       refreshBtn.onclick = async () => {
         refreshBtn.innerHTML = '<span>⏳</span> Refreshing...';
         try {
-          await this.fetchStatesReliability();
+          await this.fetchStatesReliability(this.currentDay);
           this.renderGeoJsonLayer();
           if (this.selectedLocation) {
             await this.selectLocation(this.selectedLocation, false);
+          } else {
+            this.renderIndiaOverviewPanel();
           }
         } catch (e) {
           console.error("Refresh map error:", e);
@@ -808,6 +951,28 @@ const IndiaMapUI = {
         }
       };
     }
+
+    const locateBtn = document.getElementById('mapLocateBtn');
+    if (locateBtn) {
+      locateBtn.onclick = () => {
+        if (this.selectedLocation && this.selectedLocation.latitude && this.selectedLocation.longitude) {
+          this.map.flyTo([Number(this.selectedLocation.latitude), Number(this.selectedLocation.longitude)], 7.5, { duration: 1 });
+          if (this.districtMarker) {
+            setTimeout(() => this.districtMarker.openPopup(), 400);
+          }
+        } else {
+          this.fitIndiaBounds(true);
+        }
+      };
+    }
+
+    const dayPills = document.querySelectorAll('.map-day-pill');
+    dayPills.forEach(pill => {
+      pill.onclick = async () => {
+        const day = parseInt(pill.getAttribute('data-day'), 10) || 6;
+        await this.setDayHorizon(day);
+      };
+    });
 
     const filterPills = document.querySelectorAll('.map-filter-pill');
     filterPills.forEach(pill => {

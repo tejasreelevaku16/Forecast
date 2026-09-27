@@ -134,7 +134,7 @@ const DriftUI = {
         }).join('');
       }
 
-      this.renderDriftChart(cycles, stabilityColor);
+      this.renderDriftChart(cycles, stabilityColor, locationName);
 
     } else {
       // Data unavailable or single cycle baseline
@@ -196,7 +196,7 @@ const DriftUI = {
         `;
       }
 
-      this.renderDriftChart(cycles, "#94a3b8");
+      this.renderDriftChart(cycles, "#94a3b8", locationName);
     }
   },
 
@@ -206,8 +206,10 @@ const DriftUI = {
     this.renderDriftSection(data);
   },
 
-  renderDriftChart(cycles, accentColor = "#38bdf8") {
+  renderDriftChart(cycles, accentColor = "#38bdf8", locationName = "Selected Location") {
     const ctx = document.getElementById('driftTrendChart');
+    const emptyState = document.getElementById('driftEmptyState');
+    const emptyTitle = document.getElementById('driftEmptyTitle');
     if (!ctx) return;
 
     if (this.driftChartInstance) {
@@ -220,52 +222,18 @@ const DriftUI = {
     }
 
     if (!cycles || cycles.length < 2) {
-      // Render baseline placeholder chart without destroying canvas
-      const baselineVal = (cycles && cycles.length === 1) ? (Number(cycles[0].predicted_rain_mm) || 0) : 0;
-      this.driftChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Cycle -18h (00Z)', 'Cycle -12h (06Z)', 'Cycle -06h (12Z)', 'Latest (18Z)'],
-          datasets: [{
-            label: cycles && cycles.length === 1 ? 'Initial Baseline Rain (mm)' : 'Baseline Threshold (mm)',
-            data: [baselineVal, baselineVal, baselineVal, baselineVal],
-            borderColor: 'rgba(148, 163, 184, 0.4)',
-            borderDash: [5, 5],
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            pointRadius: 4,
-            pointBackgroundColor: 'rgba(148, 163, 184, 0.6)',
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
-            },
-            title: {
-              display: true,
-              text: 'Collecting Consecutive NWP Model Cycles...',
-              color: '#94a3b8',
-              font: { family: 'Inter', size: 12, weight: 'normal' },
-              padding: { bottom: 10 }
-            }
-          },
-          scales: {
-            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.04)' } },
-            y: {
-              suggestedMin: 0,
-              suggestedMax: 50,
-              title: { display: true, text: 'Predicted Rain (mm)', color: '#64748b' },
-              ticks: { color: '#64748b' },
-              grid: { color: 'rgba(255,255,255,0.04)' }
-            }
-          }
+      ctx.style.display = 'none';
+      if (emptyState) {
+        emptyState.style.display = 'block';
+        if (emptyTitle) {
+          emptyTitle.textContent = `No consecutive forecast snapshots are available for ${locationName} yet.`;
         }
-      });
+      }
       return;
     }
+
+    if (emptyState) emptyState.style.display = 'none';
+    ctx.style.display = 'block';
 
     const labels = cycles.map(c => c.run_name || 'NWP Run');
     const rainData = cycles.map(c => Number(c.predicted_rain_mm) || 0);

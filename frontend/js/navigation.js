@@ -151,6 +151,15 @@ const AppRouter = {
   onPageActivated(pageSlug) {
     const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
+    // Weather Scene Animator Lifecycle (Active only on Dashboard)
+    if (typeof WeatherSceneEngine !== "undefined" && WeatherSceneEngine.animator) {
+      if (pageSlug === "dashboard") {
+        WeatherSceneEngine.animator.setPaused(false);
+      } else {
+        WeatherSceneEngine.animator.setPaused(true);
+      }
+    }
+
     // Initialize GIS confidence map
     if (pageSlug === "confidence-map") {
       setTimeout(() => {
@@ -167,7 +176,8 @@ const AppRouter = {
           if (!IndiaMapUI.map) {
             IndiaMapUI.initMap();
           } else {
-            IndiaMapUI.fitIndiaBounds();
+            IndiaMapUI.map.invalidateSize(true);
+            IndiaMapUI.fitIndiaBounds(false);
           }
         }
       }, 150);

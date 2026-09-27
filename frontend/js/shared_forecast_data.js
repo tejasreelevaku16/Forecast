@@ -21,16 +21,27 @@ const WeatherTrustCommon = {
   setLocation(locObj) {
     if (!locObj) return;
     const name = locObj.name || locObj.place || "Selected Location";
+    const rawLat = locObj.latitude !== undefined && locObj.latitude !== null ? locObj.latitude : (locObj.lat !== undefined && locObj.lat !== null ? locObj.lat : null);
+    const rawLon = locObj.longitude !== undefined && locObj.longitude !== null ? locObj.longitude : (locObj.lon !== undefined && locObj.lon !== null ? locObj.lon : null);
+
+    const lat = rawLat !== null && !isNaN(Number(rawLat)) ? Number(rawLat) : null;
+    const lon = rawLon !== null && !isNaN(Number(rawLon)) ? Number(rawLon) : null;
+
     this.currentLocation = {
       name: name,
       place: locObj.place || name,
       district: locObj.district || locObj.name || name,
       state: locObj.state || locObj.region || "",
-      latitude: locObj.latitude !== undefined && locObj.latitude !== null ? Number(locObj.latitude) : (locObj.lat !== undefined && locObj.lat !== null ? Number(locObj.lat) : 16.1875),
-      longitude: locObj.longitude !== undefined && locObj.longitude !== null ? Number(locObj.longitude) : (locObj.lon !== undefined && locObj.lon !== null ? Number(locObj.lon) : 81.1389),
+      latitude: lat,
+      longitude: lon,
       country: locObj.country || "India",
+      unique_id: locObj.unique_id || (lat !== null && lon !== null ? `${name}_${lat.toFixed(3)}_${lon.toFixed(3)}` : name)
     };
     try {
+      localStorage.setItem('weathertrust-authoritative-location', JSON.stringify(this.currentLocation));
+      window.currentSelectedLocation = name;
+      if (lat !== null) window.currentSelectedLat = lat;
+      if (lon !== null) window.currentSelectedLon = lon;
       window.dispatchEvent(new CustomEvent("weathertrust:locationChanged", { detail: this.currentLocation }));
     } catch (e) {}
   },
