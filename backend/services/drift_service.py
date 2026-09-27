@@ -356,6 +356,158 @@ LOCATION_DRIFT_REGISTRY: Dict[str, Dict[str, Any]] = {
             },
         ]
     },
+
+    "delhi": {
+        "location": "Delhi",
+        "district": "New Delhi",
+        "state": "Delhi",
+        "lat": 28.6139,
+        "lon": 77.2090,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 10.0,
+        "latest_rain_mm": 34.0,
+        "drift_mm": 24.0,
+        "stability": "MODERATE",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 10.0, "predicted_temp_c": 36.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 15.0, "predicted_temp_c": 35.0},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 22.0, "predicted_temp_c": 33.5},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 34.0, "predicted_temp_c": 31.0},
+        ]
+    },
+
+    "mumbai": {
+        "location": "Mumbai",
+        "district": "Mumbai City",
+        "state": "Maharashtra",
+        "lat": 19.0760,
+        "lon": 72.8777,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 28.0,
+        "latest_rain_mm": 68.0,
+        "drift_mm": 40.0,
+        "stability": "LOW",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 28.0, "predicted_temp_c": 31.5},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 38.0, "predicted_temp_c": 30.0},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 52.0, "predicted_temp_c": 29.0},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 68.0, "predicted_temp_c": 27.5},
+        ]
+    },
+
+    "bhopal": {
+        "location": "Bhopal",
+        "district": "Bhopal",
+        "state": "Madhya Pradesh",
+        "lat": 23.2599,
+        "lon": 77.4126,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 12.0,
+        "latest_rain_mm": 35.0,
+        "drift_mm": 23.0,
+        "stability": "MODERATE",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 12.0, "predicted_temp_c": 32.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 18.0, "predicted_temp_c": 31.0},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 26.0, "predicted_temp_c": 29.5},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 35.0, "predicted_temp_c": 28.0},
+        ]
+    },
+
+    "kolkata": {
+        "location": "Kolkata",
+        "district": "Kolkata",
+        "state": "West Bengal",
+        "lat": 22.5726,
+        "lon": 88.3639,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 15.0,
+        "latest_rain_mm": 42.0,
+        "drift_mm": 27.0,
+        "stability": "LOW",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 15.0, "predicted_temp_c": 32.5},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 22.0, "predicted_temp_c": 31.5},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 30.0, "predicted_temp_c": 30.5},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 42.0, "predicted_temp_c": 29.0},
+        ]
+    },
+
+    "jaipur": {
+        "location": "Jaipur",
+        "district": "Jaipur",
+        "state": "Rajasthan",
+        "lat": 26.9124,
+        "lon": 75.7873,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 2.0,
+        "latest_rain_mm": 8.0,
+        "drift_mm": 6.0,
+        "stability": "HIGH",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 2.0, "predicted_temp_c": 35.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 4.0, "predicted_temp_c": 34.5},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 5.0, "predicted_temp_c": 34.0},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 8.0, "predicted_temp_c": 33.0},
+        ]
+    },
+
+    "lucknow": {
+        "location": "Lucknow",
+        "district": "Lucknow",
+        "state": "Uttar Pradesh",
+        "lat": 26.8467,
+        "lon": 80.9462,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 8.0,
+        "latest_rain_mm": 24.0,
+        "drift_mm": 16.0,
+        "stability": "MODERATE",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 8.0, "predicted_temp_c": 34.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 12.0, "predicted_temp_c": 33.0},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 18.0, "predicted_temp_c": 31.5},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 24.0, "predicted_temp_c": 30.0},
+        ]
+    },
+
+    "pune": {
+        "location": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "lat": 18.5204,
+        "lon": 73.8567,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 6.0,
+        "latest_rain_mm": 19.0,
+        "drift_mm": 13.0,
+        "stability": "MODERATE",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 6.0, "predicted_temp_c": 30.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 10.0, "predicted_temp_c": 29.5},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 14.0, "predicted_temp_c": 28.5},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 19.0, "predicted_temp_c": 27.5},
+        ]
+    },
+
+    "ahmedabad": {
+        "location": "Ahmedabad",
+        "district": "Ahmedabad",
+        "state": "Gujarat",
+        "lat": 23.0225,
+        "lon": 72.5714,
+        "target_date": "Day 6 Outlook",
+        "previous_rain_mm": 5.0,
+        "latest_rain_mm": 15.0,
+        "drift_mm": 10.0,
+        "stability": "HIGH",
+        "cycles": [
+            {"run_name": "Cycle -18h (00Z)", "predicted_rain_mm": 5.0, "predicted_temp_c": 36.0},
+            {"run_name": "Cycle -12h (06Z)", "predicted_rain_mm": 8.0, "predicted_temp_c": 35.0},
+            {"run_name": "Cycle -06h (12Z)", "predicted_rain_mm": 11.0, "predicted_temp_c": 34.0},
+            {"run_name": "Latest (18Z)", "predicted_rain_mm": 15.0, "predicted_temp_c": 33.0},
+        ]
+    },
 }
 
 

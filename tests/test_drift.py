@@ -52,9 +52,44 @@ def test_drift_history_cycles():
     print("[PASS] 4-cycle NWP run history test passed.")
 
 
+def test_expanded_drift_locations():
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    client = TestClient(app)
+
+    # 1. Delhi
+    resp = client.get("/api/drift/history?location=Delhi")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["cycles"]) == 4
+    assert data["cycles"][-1]["predicted_rain_mm"] == 34.0
+
+    # 2. Mumbai
+    resp = client.get("/api/drift/history?location=Mumbai")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["cycles"]) == 4
+    assert data["cycles"][-1]["predicted_rain_mm"] == 68.0
+
+    # 3. Bhopal
+    resp = client.get("/api/drift/history?location=Bhopal")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["cycles"]) == 4
+    assert data["cycles"][-1]["predicted_rain_mm"] == 35.0
+
+    # 4. Unregistered location fallback
+    resp = client.get("/api/drift/history?location=RemoteVillage")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["cycles"]) == 1
+    assert "note" in data["cycles"][0]
+
+
 if __name__ == "__main__":
     print("\n--- Running Forecast Drift Test Suite ---")
     test_large_rainfall_drift()
     test_stable_forecast_drift()
     test_drift_history_cycles()
+    test_expanded_drift_locations()
     print("ALL FORECAST DRIFT TESTS PASSED!\n")

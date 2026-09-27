@@ -298,6 +298,11 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
     )
 
 
+# In-Memory Cache for Live Weather Forecasts (5-minute TTL)
+_FORECAST_CACHE: Dict[str, Any] = {}
+CACHE_TTL_SECONDS = 300
+
+
 def get_full_forecast_response(
     location_query: str = "Krishna District",
     lat: Optional[float] = None,
@@ -338,13 +343,24 @@ def get_full_forecast_response(
     reg_name = geo["region"]
     country = geo["country"]
 
+    cache_key = f"{loc_name.lower()}_{lat_val:.3f}_{lon_val:.3f}"
+    now = datetime.now()
+    if cache_key in _FORECAST_CACHE:
+        cached_time, cached_res = _FORECAST_CACHE[cache_key]
+        if (now - cached_time).total_seconds() < CACHE_TTL_SECONDS:
+            return cached_res
+
     try:
-        return fetch_live_forecast(lat_val, lon_val, loc_name, reg_name, country)
+        res = fetch_live_forecast(lat_val, lon_val, loc_name, reg_name, country)
+        _FORECAST_CACHE[cache_key] = (now, res)
+        return res
     except Exception as e:
         print(f"[!] Live API request failed ({e}). Reverting to structured sample baseline.")
         # Fallback to built-in sample generation
         from backend.services.weather_service import _sample_fallback
-        return _sample_fallback(location_query, geo)
+        res = _sample_fallback(location_query, geo)
+        _FORECAST_CACHE[cache_key] = (now, res)
+        return res
 
 
 def _sample_fallback(location_query: str, geo: Dict[str, Any]) -> WeatherForecastResponse:

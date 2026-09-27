@@ -52,6 +52,17 @@ app.include_router(explain_router)
 app.include_router(locations_router)
 
 
+@app.on_event("startup")
+def prewarm_ml_services():
+    """Pre-warms ML model bundle and location caches for fast response."""
+    try:
+        from backend.services.reliability_service import get_model_bundle
+        get_model_bundle()
+    except Exception as e:
+        print(f"[!] Startup prewarm notice: {e}")
+
+
+
 @app.get("/api/health", tags=["System"])
 def health_check():
     """Health check endpoint verifying backend operational status."""

@@ -14,8 +14,12 @@ let calibrationChartInstance = null;
 let rocChartInstance = null;
 
 async function loadCalibrationView() {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6500);
+
   try {
-    const resp = await fetch("/api/judge/calibration");
+    const resp = await fetch("/api/judge/calibration", { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!resp.ok) throw new Error("Failed to load calibration metrics");
     const data = await resp.json();
 
@@ -41,7 +45,19 @@ async function loadCalibrationView() {
     const modelTag = document.getElementById("calModelNameTag");
     if (modelTag) modelTag.textContent = data.model_name || "Calibrated Random Forest";
   } catch (err) {
-    console.error("Error loading calibration dashboard:", err);
+    clearTimeout(timeoutId);
+    console.warn("Error loading calibration dashboard:", err);
+    const interpEl = document.getElementById("calibrationInterpretationText");
+    if (interpEl) {
+      interpEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <span>Model calibration metrics currently unavailable.</span>
+          <button onclick="loadCalibrationView()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; cursor: pointer;">
+            🔄 Retry Calibration Metrics
+          </button>
+        </div>
+      `;
+    }
   }
 }
 

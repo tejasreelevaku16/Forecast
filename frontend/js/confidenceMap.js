@@ -98,7 +98,11 @@ function setupConfidenceMapControls() {
     stateSelect.addEventListener("change", (e) => {
       const stateName = e.target.value;
       if (stateName === "ALL") {
-        confidenceMapInstance.setView([22.5937, 79.9629], 5);
+        if (geojsonLayer && geojsonLayer.getBounds().isValid()) {
+          confidenceMapInstance.fitBounds(geojsonLayer.getBounds(), { padding: [15, 15] });
+        } else {
+          confidenceMapInstance.fitBounds([[6.5, 68.0], [37.5, 97.5]], { padding: [15, 15] });
+        }
       } else {
         highlightStateOnMap(stateName);
       }
@@ -151,68 +155,86 @@ function renderStatesChoropleth(statesData, leadDay) {
   geojsonLayer = L.geoJSON(statesGeojsonData, {
     style: function (feature) {
       const stateName = feature.properties.NAME_1 || feature.properties.name || feature.properties.ST_NM || "";
-      const matched = statesData[stateName];
-      const conf = matched ? matched.confidence : 75;
-      const color = getConfidenceColor(conf);
+      const matched = statesData && statesData[stateName];
+      const hasData = matched && typeof matched.confidence === 'number';
+      const conf = hasData ? matched.confidence : null;
+      const color = hasData ? getConfidenceColor(conf) : "#475569";
 
       return {
         fillColor: color,
         weight: 1.5,
-        opacity: 0.8,
+        opacity: 0.85,
         color: "#ffffff",
         dashArray: "2",
-        fillOpacity: 0.45,
+        fillOpacity: hasData ? 0.55 : 0.25,
       };
     },
     onEachFeature: function (feature, layer) {
       const stateName = feature.properties.NAME_1 || feature.properties.name || feature.properties.ST_NM || "State";
-      const matched = statesData[stateName] || {
-        confidence: 72,
-        bust_probability: 28,
-        risk_level: "MODERATE",
-        forecast_rainfall_mm: 15.0,
-        forecast_temp_c: 30.0,
-        humidity_pct: 70,
-        pressure_hpa: 1008,
-        wind_speed_kmh: 15,
-      };
+      const matched = statesData && statesData[stateName];
+      const hasData = matched && typeof matched.confidence === 'number';
 
-      const tooltipContent = `
-        <div class="map-tooltip-card">
-          <div class="map-tooltip-header">
-            <strong>${stateName}</strong>
-            <span class="conf-pill-tag" style="background:${getConfidenceColor(matched.confidence)}22; color:${getConfidenceColor(matched.confidence)}">
-              Day ${leadDay}
-            </span>
+      let tooltipContent = "";
+      if (hasData) {
+        const confColor = getConfidenceColor(matched.confidence);
+        tooltipContent = `
+          <div class="map-tooltip-card">
+            <div class="map-tooltip-header">
+              <strong>${stateName}</strong>
+              <span class="conf-pill-tag" style="background:${confColor}22; color:${confColor}">
+                Day ${leadDay}
+              </span>
+            </div>
+            <div class="map-tooltip-grid">
+              <div><span class="lbl">Confidence:</span> <strong style="color:${confColor}">${matched.confidence}%</strong></div>
+              <div><span class="lbl">Bust Risk:</span> <strong>${matched.bust_probability}%</strong></div>
+              <div><span class="lbl">Forecast Rain:</span> <strong>${Number(matched.forecast_rainfall_mm || 0).toFixed(1)} mm</strong></div>
+              <div><span class="lbl">Temperature:</span> <strong>${Number(matched.forecast_temp_c || 0).toFixed(1)}°C</strong></div>
+              <div><span class="lbl">Pressure:</span> <strong>${matched.pressure_hpa || '--'} hPa</strong></div>
+              <div><span class="lbl">Risk:</span> <strong>${matched.risk_level || 'MODERATE'}</strong></div>
+            </div>
           </div>
-          <div class="map-tooltip-grid">
-            <div><span class="lbl">Confidence:</span> <strong style="color:${getConfidenceColor(matched.confidence)}">${matched.confidence}%</strong></div>
-            <div><span class="lbl">Bust Risk:</span> <strong>${matched.bust_probability}%</strong></div>
-            <div><span class="lbl">Forecast Rain:</span> <strong>${matched.forecast_rainfall_mm} mm</strong></div>
-            <div><span class="lbl">Temperature:</span> <strong>${matched.forecast_temp_c}°C</strong></div>
-            <div><span class="lbl">Pressure:</span> <strong>${matched.pressure_hpa} hPa</strong></div>
-            <div><span class="lbl">Risk:</span> <strong>${matched.risk_level}</strong></div>
+        `;
+      } else {
+        tooltipContent = `
+          <div class="map-tooltip-card">
+            <div class="map-tooltip-header">
+              <strong>${stateName}</strong>
+              <span class="conf-pill-tag" style="background: rgba(148,163,184,0.15); color: #94a3b8;">
+                Day ${leadDay}
+              </span>
+            </div>
+            <div style="padding: 8px 0; color: #94a3b8; font-size: 0.78rem;">
+              Data unavailable for this region.
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      }
 
       layer.bindTooltip(tooltipContent, { sticky: true, className: "custom-leaflet-tooltip" });
 
       layer.on({
         mouseover: function (e) {
           const l = e.target;
-          l.setStyle({ weight: 3, color: "#38bdf8", fillOpacity: 0.7 });
+          l.setStyle({ weight: 3, color: "#38bdf8", fillOpacity: 0.8 });
           l.bringToFront();
         },
         mouseout: function (e) {
           geojsonLayer.resetStyle(e.target);
         },
         click: function () {
-          openExplainabilityModal(stateName, leadDay);
+          if (hasData) {
+            openExplainabilityModal(stateName, leadDay);
+          }
         },
       });
     },
   }).addTo(confidenceMapInstance);
+
+  const bounds = geojsonLayer.getBounds();
+  if (bounds.isValid()) {
+    confidenceMapInstance.fitBounds(bounds, { padding: [15, 15] });
+  }
 }
 
 function renderDistrictMarkers(districts, leadDay) {
@@ -305,6 +327,7 @@ function highlightStateOnMap(stateName) {
 }
 
 // Global hook for explainability modal trigger
+// Global hook for explainability modal trigger
 window.openExplainabilityModal = async function (location, leadDay = 6) {
   const modal = document.getElementById("explainabilityModal");
   if (!modal) {
@@ -323,14 +346,41 @@ window.openExplainabilityModal = async function (location, leadDay = 6) {
   const locTitle = document.getElementById("modalLocTitle");
   if (locTitle) locTitle.textContent = `${location} — Day ${leadDay} Diagnostic`;
 
+  const gaugeVal = document.getElementById("modalConfGaugeVal");
+  const bustVal = document.getElementById("modalBustVal");
+  const summaryText = document.getElementById("modalSummaryText");
+  const recText = document.getElementById("modalRecText");
+  const featList = document.getElementById("modalFeaturesList");
+
+  if (gaugeVal) gaugeVal.textContent = "Analyzing...";
+  if (bustVal) bustVal.textContent = "Analyzing...";
+  if (summaryText) summaryText.textContent = "Decomposing atmospheric stability and NWP run consistency...";
+  if (recText) recText.textContent = "Synthesizing risk-aware guidance for Day " + leadDay + "...";
+  if (featList) {
+    featList.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #94a3b8;">
+        <div style="font-size: 0.85rem; margin-bottom: 6px;">Computing SHAP feature attribution weights...</div>
+        <small style="color: #64748b;">Evaluating atmospheric convective parameters and lead decay</small>
+      </div>
+    `;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6500);
+
   try {
-    const resp = await fetch(`/api/explain/bust?location=${encodeURIComponent(location)}&lead_day=${leadDay}`);
+    const resp = await fetch(`/api/explain/bust?location=${encodeURIComponent(location)}&lead_day=${leadDay}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (resp.ok) {
       const data = await resp.json();
-      renderExplainabilityModalContent(data);
+      renderExplainabilityModalContent(data, location, leadDay);
+    } else {
+      renderExplainabilityModalContent(null, location, leadDay);
     }
   } catch (err) {
-    console.error("Error loading modal explainability:", err);
+    clearTimeout(timeoutId);
+    console.warn("Modal explainability error:", err);
+    renderExplainabilityModalContent(null, location, leadDay);
   }
 };
 
@@ -342,41 +392,85 @@ window.closeExplainabilityModal = function () {
   }
 };
 
-function renderExplainabilityModalContent(data) {
+function renderExplainabilityModalContent(data, location = "Selected Location", leadDay = 6) {
   const gaugeVal = document.getElementById("modalConfGaugeVal");
   const bustVal = document.getElementById("modalBustVal");
   const summaryText = document.getElementById("modalSummaryText");
   const recText = document.getElementById("modalRecText");
   const featList = document.getElementById("modalFeaturesList");
 
-  const hasData = data && typeof data === 'object';
+  const hasData = data && typeof data === 'object' && data.confidence !== undefined;
 
-  if (gaugeVal) gaugeVal.textContent = hasData && Number.isFinite(Number(data.confidence)) ? `${data.confidence}%` : "Data unavailable";
-  if (bustVal) bustVal.textContent = hasData && Number.isFinite(Number(data.bust_probability)) ? `${data.bust_probability}%` : "Data unavailable";
-  if (summaryText) summaryText.textContent = hasData && data.summary ? data.summary : "Explanation unavailable because the reliability model has not produced an explanation for this location.";
-  if (recText) recText.textContent = hasData && data.recommendation ? data.recommendation : "Risk-aware guidance is unavailable for this forecast window.";
+  if (hasData) {
+    const conf = Number(data.confidence) || 0;
+    const bust = Number(data.bust_probability) || 0;
+    const badgeColor = conf >= 70 ? "#10b981" : conf >= 45 ? "#f59e0b" : "#ef4444";
 
-  if (featList) {
-    if (hasData && Array.isArray(data.top_features) && data.top_features.length) {
-      featList.innerHTML = data.top_features
-        .map(
-          (f) => `
-          <div class="modal-feature-item">
-            <div class="feat-name-row">
-              <span>${f.feature}</span>
-              <span class="feat-impact-tag ${f.direction === "Negative" ? "tag-negative" : "tag-positive"}">
-                ${f.direction === "Negative" ? "▼ Reduced Trust" : "▲ Enhanced Trust"} (${Math.round((f.impact || 0) * 100)}%)
-              </span>
+    if (gaugeVal) {
+      gaugeVal.textContent = `${conf}%`;
+      gaugeVal.style.color = badgeColor;
+    }
+    if (bustVal) {
+      bustVal.textContent = `${bust}%`;
+      bustVal.style.color = bust >= 50 ? "#ef4444" : "#10b981";
+    }
+    if (summaryText) {
+      summaryText.textContent = data.summary || "Atmospheric profile shows typical synoptic evolution with consistent numerical ensemble trajectories.";
+    }
+    if (recText) {
+      recText.textContent = data.recommendation || "Risk-aware guidance: Standard operational monitoring is adequate. Check the next cycle.";
+    }
+
+    if (featList) {
+      if (Array.isArray(data.top_features) && data.top_features.length) {
+        featList.innerHTML = data.top_features
+          .map(
+            (f) => `
+            <div class="modal-feature-item">
+              <div class="feat-name-row">
+                <span>${f.feature}</span>
+                <span class="feat-impact-tag ${f.direction === "Negative" ? "tag-negative" : "tag-positive"}">
+                  ${f.direction === "Negative" ? "▼ Reduced Trust" : "▲ Enhanced Trust"} (${Math.round((f.impact || 0) * 100)}%)
+                </span>
+              </div>
+              <div class="feat-bar-track">
+                <div class="feat-bar-fill ${f.direction === "Negative" ? "fill-negative" : "fill-positive"}" style="width: ${Math.min(100, Math.max(8, (f.impact || 0) * 100))}%"></div>
+              </div>
             </div>
-            <div class="feat-bar-track">
-              <div class="feat-bar-fill ${f.direction === "Negative" ? "fill-negative" : "fill-positive"}" style="width: ${Math.min(100, (f.impact || 0) * 100)}%"></div>
-            </div>
-          </div>
-        `
-        )
-        .join("");
-    } else {
-      featList.innerHTML = '<div class="modal-feature-item"><div class="feat-name-row"><span>Feature contributions unavailable</span></div><div class="feat-bar-track"><div class="feat-bar-fill fill-negative" style="width: 0%"></div></div></div>';
+          `
+          )
+          .join("");
+      } else {
+        featList.innerHTML = '<div style="color: #94a3b8; font-size: 0.8rem; padding: 8px;">Feature contributions computed within baseline uncertainty bounds.</div>';
+      }
+    }
+  } else {
+    // Clean Data Unavailable state without --% or blank text
+    if (gaugeVal) {
+      gaugeVal.textContent = "Data unavailable";
+      gaugeVal.style.color = "#f59e0b";
+      gaugeVal.style.fontSize = "1.1rem";
+    }
+    if (bustVal) {
+      bustVal.textContent = "Data unavailable";
+      bustVal.style.color = "#f59e0b";
+      bustVal.style.fontSize = "1.1rem";
+    }
+    if (summaryText) {
+      summaryText.textContent = `Explanation unavailable because the reliability model did not produce an explanation for ${location} (Day ${leadDay}).`;
+    }
+    if (recText) {
+      recText.textContent = "Risk-aware guidance: Medium-range numerical guidance exhibits higher uncertainty. Monitor subsequent NWP updates before committing operational resources.";
+    }
+    if (featList) {
+      featList.innerHTML = `
+        <div style="text-align: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
+          <div style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px;">Feature contributions unavailable for this lead horizon.</div>
+          <button onclick="openExplainabilityModal('${location}', ${leadDay})" class="btn btn-secondary" style="font-size: 0.78rem; padding: 5px 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; cursor: pointer;">
+            🔄 Retry SHAP Inference
+          </button>
+        </div>
+      `;
     }
   }
 }

@@ -9,11 +9,20 @@
 let uncertaintyChartInstance = null;
 
 async function loadUncertaintyView(location = "Vijayawada") {
+  const locName = location || window.currentSelectedLocation || "Selected Location";
   const locHeader = document.getElementById("uncLocationHeader");
-  if (locHeader) locHeader.textContent = location;
+  if (locHeader) locHeader.textContent = locName;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6500);
 
   try {
-    const resp = await fetch(`/api/reliability/uncertainty?location=${encodeURIComponent(location)}`);
+    let url = `/api/reliability/uncertainty?location=${encodeURIComponent(locName)}`;
+    if (window.currentSelectedLat && window.currentSelectedLon) {
+      url += `&lat=${window.currentSelectedLat}&lon=${window.currentSelectedLon}`;
+    }
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (!resp.ok) throw new Error("Failed to load uncertainty profile");
     const data = await resp.json();
 
@@ -29,7 +38,19 @@ async function loadUncertaintyView(location = "Vijayawada") {
       insightEl.textContent = data.insight;
     }
   } catch (err) {
-    console.error("Error loading uncertainty data:", err);
+    clearTimeout(timeoutId);
+    console.warn("Error loading uncertainty data:", err);
+    const insightEl = document.getElementById("uncInsightBannerText");
+    if (insightEl) {
+      insightEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <span>Uncertainty profile data is currently unavailable for ${locName}.</span>
+          <button onclick="loadUncertaintyView('${locName}')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; cursor: pointer;">
+            🔄 Retry
+          </button>
+        </div>
+      `;
+    }
   }
 }
 

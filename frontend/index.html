@@ -23,7 +23,7 @@
   <!-- Top Disclaimer Notice -->
   <div class="disclaimer-banner">
     <div>
-      <strong>OFFICIAL DISCLAIMER:</strong> WeatherTrust AI functions as an explainable forecast reliability diagnostic layer. It does not replace official meteorological forecasts issued by the India Meteorological Department (IMD) or state disaster authorities.
+      <strong>WeatherTrust AI Diagnostic Disclaimer:</strong> WeatherTrust AI functions as an explainable forecast reliability diagnostic layer. It does not replace official meteorological forecasts issued by the India Meteorological Department (IMD) or state disaster authorities.
     </div>
     <span class="badge badge-neutral" id="disclaimerStatusBadge">Calibrated ML Operational</span>
   </div>
@@ -717,12 +717,12 @@
                   <circle id="explainGaugePath" class="gauge-progress-circle" cx="50" cy="50" r="45"></circle>
                 </svg>
                 <div class="gauge-center-text">
-                  <span id="explainGaugeValue" class="gauge-score-value">--%</span>
+                  <span id="explainGaugeValue" class="gauge-score-value">--</span>
                   <span class="gauge-score-label">Trust Score</span>
                 </div>
               </div>
               <div style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8;">
-                Bust Probability: <strong id="explainBustVal" style="color: #ef4444; font-size: 1.1rem; font-family: var(--font-mono);">--%</strong>
+                Bust Probability: <strong id="explainBustVal" style="color: #ef4444; font-size: 1.1rem; font-family: var(--font-mono);">--</strong>
               </div>
             </div>
 
@@ -753,11 +753,7 @@
         </div>
 
         <!-- =================================================================
-<<<<<<< HEAD
              PAGE: LIVE WEATHER & TRACKING
-=======
-             PAGE 2: LIVE WEATHER
->>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
              ================================================================= -->
         <div class="page-view" id="page-live-weather">
           
@@ -1176,7 +1172,7 @@
             <div class="recommendation-card" style="margin-bottom: 20px;">
               <div class="rec-icon">⚠️</div>
               <div class="rec-text">
-                <h5>Actionable Recommendation</h5>
+                <h5>Risk-Aware Guidance</h5>
                 <p id="recommendationText">Do not make important decisions based only on this forecast. Check the next forecast update.</p>
               </div>
             </div>
@@ -1246,23 +1242,23 @@
           <div class="dash-overview-grid" style="margin-bottom: 24px;">
             <div class="glass-card dash-stat-card">
               <span class="dash-stat-label">Target Outlook Date</span>
-              <div class="dash-stat-value" style="font-size: 1.4rem;">Day 6 Benchmark</div>
+              <div class="dash-stat-value" id="driftTargetDate" style="font-size: 1.4rem;">Day 6 Benchmark</div>
               <div class="dash-stat-subtext" style="color: #94a3b8;">Upcoming synoptic window</div>
             </div>
             <div class="glass-card dash-stat-card">
               <span class="dash-stat-label">Initial Model Run (00Z)</span>
-              <div class="dash-stat-value" style="font-size: 1.4rem; color: #94a3b8;">25.0 mm</div>
-              <div class="dash-stat-subtext" style="color: #94a3b8;">Moderate rain projection</div>
+              <div class="dash-stat-value" id="driftInitialRun" style="font-size: 1.4rem; color: #94a3b8;">25.0 mm</div>
+              <div class="dash-stat-subtext" id="driftInitialSubtext" style="color: #94a3b8;">Moderate rain projection</div>
             </div>
-            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+            <div class="glass-card dash-stat-card" id="driftLatestCard" style="border-color: rgba(239, 68, 68, 0.4);">
               <span class="dash-stat-label">Latest Model Run (18Z)</span>
-              <div class="dash-stat-value" style="font-size: 1.4rem; color: #ef4444;">80.0 mm</div>
-              <div class="dash-stat-subtext" style="color: #ef4444;">Extreme convective escalation</div>
+              <div class="dash-stat-value" id="driftLatestRun" style="font-size: 1.4rem; color: #ef4444;">80.0 mm</div>
+              <div class="dash-stat-subtext" id="driftLatestSubtext" style="color: #ef4444;">Extreme convective escalation</div>
             </div>
-            <div class="glass-card dash-stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+            <div class="glass-card dash-stat-card" id="driftNetCard" style="border-color: rgba(239, 68, 68, 0.4);">
               <span class="dash-stat-label">Net Shift / Drift</span>
               <div class="dash-stat-value" style="font-size: 1.4rem; color: #ef4444;" id="driftNetChange">+55.0 mm</div>
-              <div class="dash-stat-subtext" style="color: #ef4444;">+220% Volatility Escalation</div>
+              <div class="dash-stat-subtext" id="driftNetSubtext" style="color: #ef4444;">+220% Volatility Escalation</div>
             </div>
           </div>
 
@@ -1843,29 +1839,29 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
         <div class="glass-card stat-card" style="padding: 14px;">
           <span class="stat-label">Forecast Confidence</span>
-          <span id="modalConfGaugeVal" class="stat-value" style="color: #10b981; font-size: 1.6rem;">--%</span>
+          <span id="modalConfGaugeVal" class="stat-value" style="color: #10b981; font-size: 1.6rem;">Analyzing...</span>
         </div>
         <div class="glass-card stat-card" style="padding: 14px;">
           <span class="stat-label">Bust Probability</span>
-          <span id="modalBustVal" class="stat-value" style="color: #ef4444; font-size: 1.6rem;">--%</span>
+          <span id="modalBustVal" class="stat-value" style="color: #ef4444; font-size: 1.6rem;">Analyzing...</span>
         </div>
       </div>
 
       <div style="margin-bottom: 16px;">
         <h5 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Meteorological Drivers (SHAP Attribution)</h5>
         <div id="modalFeaturesList">
-          <!-- Populated dynamically -->
+          <div style="color: #94a3b8; font-size: 0.8rem; padding: 8px 0;">Computing SHAP feature attribution weights...</div>
         </div>
       </div>
 
       <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
-        <strong style="font-size: 0.8rem; color: var(--accent-cyan); display: block; margin-bottom: 4px;">Meteorological Summary</strong>
-        <p id="modalSummaryText" style="font-size: 0.8rem; color: #e2e8f0; line-height: 1.5; margin: 0;"></p>
+        <strong style="font-size: 0.8rem; color: var(--accent-cyan); display: block; margin-bottom: 4px;">Meteorological Diagnostic Summary</strong>
+        <p id="modalSummaryText" style="font-size: 0.8rem; color: #e2e8f0; line-height: 1.5; margin: 0;">Decomposing atmospheric stability and NWP run consistency...</p>
       </div>
 
       <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 12px;">
-        <strong style="font-size: 0.8rem; color: #f59e0b; display: block; margin-bottom: 4px;">Operational Recommendation</strong>
-        <p id="modalRecText" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;"></p>
+        <strong style="font-size: 0.8rem; color: #f59e0b; display: block; margin-bottom: 4px;">Risk-Aware Guidance</strong>
+        <p id="modalRecText" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;">Synthesizing operational risk-aware guidance...</p>
       </div>
     </div>
   </div>
@@ -1886,20 +1882,12 @@
   <script src="/js/map.js"></script>
   <script src="/js/judge.js"></script>
   <script src="/js/live_tracking.js"></script>
-<<<<<<< HEAD
-=======
-  
->>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
   <!-- SIH 10/10 Dedicated Feature Scripts -->
   <script src="/js/confidenceMap.js"></script>
   <script src="/js/daywiseForecast.js"></script>
   <script src="/js/uncertaintyChart.js"></script>
   <script src="/js/calibration.js"></script>
   <script src="/js/explainability.js"></script>
-<<<<<<< HEAD
-=======
-  
->>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

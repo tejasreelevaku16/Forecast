@@ -208,7 +208,7 @@ const WeatherUI = {
       alertBox.innerHTML = `
         <div style="font-size: 1.25rem;">⚠️</div>
         <div style="flex: 1;">
-          <strong style="color: #fbbf24; text-transform: uppercase; font-size: 0.8rem;">Official Advisory: ${first.headline}</strong>
+          <strong style="color: #fbbf24; text-transform: uppercase; font-size: 0.8rem;">WeatherTrust AI Diagnostic Alert: ${first.headline}</strong>
           <p style="font-size: 0.775rem; margin-top: 2px;">${first.description} (Issued: ${first.issued_at})</p>
         </div>
       `;

@@ -151,13 +151,8 @@ const AppRouter = {
   onPageActivated(pageSlug) {
     const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
-<<<<<<< HEAD
-    // Initialize GIS confidence map & India map sizing
-    if (pageSlug === "confidence-map" || pageSlug === "map") {
-=======
     // Initialize GIS confidence map
     if (pageSlug === "confidence-map") {
->>>>>>> 3182ae74a5a497a1864f768fa9132d473414b432
       setTimeout(() => {
         if (typeof initConfidenceMap === "function") {
           initConfidenceMap();
@@ -201,6 +196,13 @@ const AppRouter = {
     // Synchronize Live Tracking page location hierarchy
     if (pageSlug === "live-weather" && typeof LiveTrackingUI !== "undefined" && typeof LiveTrackingUI.findAndSelectLocation === "function") {
       LiveTrackingUI.findAndSelectLocation(loc);
+    }
+
+    // Trigger Forecast Drift Monitor
+    if (pageSlug === "drift" && typeof DriftUI !== "undefined" && typeof DriftUI.fetchDriftHistory === "function") {
+      DriftUI.fetchDriftHistory(loc).then((data) => {
+        DriftUI.renderDriftSection(data);
+      });
     }
 
     // Trigger Technical Evaluation (Judge) metrics
