@@ -46,18 +46,11 @@ const WeatherUI = {
   /**
    * Updates Current Weather hero card and 8-grid details
    */
-  renderCurrentWeather(current) {
-    if (!current) return;
-
+  renderCurrentWeather(current, fallbackLocation = "Selected Location") {
     // Header & Hero info
     const locTitle = document.getElementById('currentLocationTitle');
-    if (locTitle) locTitle.textContent = `${current.location}, ${current.region}`;
-
     const locSub = document.getElementById('currentLocationSubtitle');
-    if (locSub) locSub.textContent = `${current.country} • Lat: ${current.latitude.toFixed(2)}°, Lon: ${current.longitude.toFixed(2)}°`;
-
     const updatedElem = document.getElementById('lastUpdatedTime');
-    if (updatedElem) updatedElem.textContent = `Updated: ${current.updated_at}`;
 
     // Live Tracking specific State / Place tags
     const liveState = document.getElementById('liveStateDisplay');
@@ -65,44 +58,92 @@ const WeatherUI = {
     const liveDist = document.getElementById('liveDistrictDisplay');
     const liveDistWrap = document.getElementById('liveDistrictWrap');
 
+    const tempElem = document.getElementById('currentTemp');
+    const condTextElem = document.getElementById('currentConditionText');
+    const condIconElem = document.getElementById('currentConditionIcon');
+    const feelsLikeElem = document.getElementById('currentFeelsLike');
+    const tempRangeElem = document.getElementById('currentTempRange');
+
+    const humidityElem = document.getElementById('metricHumidity');
+    const dewPointElem = document.getElementById('metricDewPoint');
+    const windElem = document.getElementById('metricWind');
+    const windSubElem = document.getElementById('metricWindSub');
+    const pressureElem = document.getElementById('metricPressure');
+    const rainChanceElem = document.getElementById('metricRainChance');
+    const precipElem = document.getElementById('metricPrecip');
+    const uvElem = document.getElementById('metricUV');
+    const visibilityElem = document.getElementById('metricVisibility');
+    const sunElem = document.getElementById('metricSun');
+    const cloudCoverElem = document.getElementById('metricCloudCover');
+
+    if (!current) {
+      if (locTitle) locTitle.textContent = fallbackLocation;
+      if (locSub) locSub.textContent = "Weather data unavailable for this location";
+      if (updatedElem) updatedElem.textContent = "Status: Data Unavailable";
+      if (livePlace) livePlace.textContent = fallbackLocation;
+      if (liveDistWrap) liveDistWrap.style.display = 'none';
+
+      if (tempElem) tempElem.innerHTML = `--<sup>°C</sup>`;
+      if (condTextElem) condTextElem.textContent = "Data Unavailable";
+      if (condIconElem) condIconElem.textContent = "❓";
+      if (feelsLikeElem) feelsLikeElem.textContent = "Feels like --°C";
+      if (tempRangeElem) tempRangeElem.textContent = "H: --°C • L: --°C";
+
+      if (humidityElem) humidityElem.textContent = "--%";
+      if (dewPointElem) dewPointElem.textContent = "--°C";
+      if (windElem) windElem.textContent = "-- km/h";
+      if (windSubElem) windSubElem.textContent = "Dir: --";
+      if (pressureElem) pressureElem.textContent = "-- hPa";
+      if (rainChanceElem) rainChanceElem.textContent = "--%";
+      if (precipElem) precipElem.textContent = "-- mm";
+      if (uvElem) uvElem.textContent = "--";
+      if (visibilityElem) visibilityElem.textContent = "-- km";
+      if (sunElem) sunElem.textContent = "-- / --";
+      if (cloudCoverElem) cloudCoverElem.textContent = "--%";
+      return;
+    }
+
+    if (locTitle) locTitle.textContent = `${current.location}, ${current.region}`;
+    if (locSub) locSub.textContent = `${current.country} • Lat: ${current.latitude.toFixed(2)}°, Lon: ${current.longitude.toFixed(2)}°`;
+    if (updatedElem) updatedElem.textContent = `Updated: ${current.updated_at}`;
+
     if (liveState) liveState.textContent = current.region;
     if (livePlace) livePlace.textContent = current.location;
     if (current.district) {
       if (liveDist) liveDist.textContent = current.district;
       if (liveDistWrap) liveDistWrap.style.display = 'inline';
+    } else if (liveDistWrap) {
+      liveDistWrap.style.display = 'none';
     }
 
     // Temperature & Conditions
-    document.getElementById('currentTemp').innerHTML = `${Math.round(current.temperature_c)}<sup>°C</sup>`;
-    document.getElementById('currentConditionText').textContent = current.condition;
-    document.getElementById('currentConditionIcon').textContent = this.getIconMarkup(current.condition_icon);
-    document.getElementById('currentFeelsLike').textContent = `Feels like ${Math.round(current.feels_like_c)}°C`;
-    document.getElementById('currentTempRange').textContent = `H: ${Math.round(current.temp_max_c)}°C • L: ${Math.round(current.temp_min_c)}°C`;
+    if (tempElem) tempElem.innerHTML = `${Math.round(current.temperature_c)}<sup>°C</sup>`;
+    if (condTextElem) condTextElem.textContent = current.condition;
+    if (condIconElem) condIconElem.textContent = this.getIconMarkup(current.condition_icon);
+    if (feelsLikeElem) feelsLikeElem.textContent = `Feels like ${Math.round(current.feels_like_c)}°C`;
+    if (tempRangeElem) tempRangeElem.textContent = `H: ${Math.round(current.temp_max_c)}°C • L: ${Math.round(current.temp_min_c)}°C`;
 
     // 8-Metric Details Grid
-    document.getElementById('metricHumidity').textContent = `${current.humidity_pct}%`;
-    const dewPointElem = document.getElementById('metricDewPoint');
+    if (humidityElem) humidityElem.textContent = `${current.humidity_pct}%`;
     if (dewPointElem) {
-      dewPointElem.textContent = current.dew_point_c != null ? `${Math.round(current.dew_point_c)}°C` : '27°C';
+      dewPointElem.textContent = current.dew_point_c != null ? `${Math.round(current.dew_point_c)}°C` : '--°C';
     }
 
-    document.getElementById('metricWind').textContent = `${current.wind_speed_kmh} km/h`;
-    const windSubElem = document.getElementById('metricWindSub');
+    if (windElem) windElem.textContent = `${current.wind_speed_kmh} km/h`;
     if (windSubElem) {
       const gustText = current.wind_gusts_kmh != null ? ` • Gusts: ${Math.round(current.wind_gusts_kmh)} km/h` : '';
       windSubElem.textContent = `Dir: ${current.wind_direction}${gustText}`;
     }
 
-    document.getElementById('metricPressure').textContent = `${current.pressure_hpa} hPa`;
-    document.getElementById('metricRainChance').textContent = `${current.rain_chance_pct}%`;
-    document.getElementById('metricPrecip').textContent = `${current.precipitation_mm} mm`;
-    document.getElementById('metricUV').textContent = `${current.uv_index} / 11`;
-    document.getElementById('metricVisibility').textContent = `${current.visibility_km} km`;
-    document.getElementById('metricSun').textContent = `${current.sunrise} / ${current.sunset}`;
+    if (pressureElem) pressureElem.textContent = `${current.pressure_hpa} hPa`;
+    if (rainChanceElem) rainChanceElem.textContent = `${current.rain_chance_pct}%`;
+    if (precipElem) precipElem.textContent = `${current.precipitation_mm} mm`;
+    if (uvElem) uvElem.textContent = `${current.uv_index} / 11`;
+    if (visibilityElem) visibilityElem.textContent = `${current.visibility_km} km`;
+    if (sunElem) sunElem.textContent = `${current.sunrise} / ${current.sunset}`;
 
-    const cloudCoverElem = document.getElementById('metricCloudCover');
     if (cloudCoverElem) {
-      cloudCoverElem.textContent = current.cloud_cover_pct != null ? `${Math.round(current.cloud_cover_pct)}%` : '45%';
+      cloudCoverElem.textContent = current.cloud_cover_pct != null ? `${Math.round(current.cloud_cover_pct)}%` : '--%';
     }
   },
 
@@ -111,7 +152,12 @@ const WeatherUI = {
    */
   renderHourlyTimeline(hourlyItems) {
     const container = document.getElementById('hourlyTimelineContainer');
-    if (!container || !hourlyItems) return;
+    if (!container) return;
+
+    if (!hourlyItems || hourlyItems.length === 0) {
+      container.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: #94a3b8; width: 100%;">Hourly forecast data unavailable for this location.</div>';
+      return;
+    }
 
     container.innerHTML = '';
     hourlyItems.forEach(item => {
@@ -132,7 +178,12 @@ const WeatherUI = {
    */
   renderDailyForecast(dailyItems, reliabilityData = null) {
     const container = document.getElementById('dailyForecastContainer');
-    if (!container || !dailyItems) return;
+    if (!container) return;
+
+    if (!dailyItems || dailyItems.length === 0) {
+      container.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: #94a3b8; width: 100%;">10-day forecast outlook unavailable for this location.</div>';
+      return;
+    }
 
     const leadDayMap = {};
     if (reliabilityData && reliabilityData.lead_days) {

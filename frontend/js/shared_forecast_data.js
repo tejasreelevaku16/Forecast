@@ -7,8 +7,41 @@
  */
 
 const WeatherTrustCommon = {
+  // Authoritative single location state across all pages
+  currentLocation: {
+    name: "Krishna District",
+    place: "Krishna District",
+    district: "Krishna District",
+    state: "Andhra Pradesh",
+    latitude: 16.1875,
+    longitude: 81.1389,
+    country: "India",
+  },
+
+  setLocation(locObj) {
+    if (!locObj) return;
+    const name = locObj.name || locObj.place || "Selected Location";
+    this.currentLocation = {
+      name: name,
+      place: locObj.place || name,
+      district: locObj.district || locObj.name || name,
+      state: locObj.state || locObj.region || "",
+      latitude: locObj.latitude !== undefined && locObj.latitude !== null ? Number(locObj.latitude) : (locObj.lat !== undefined && locObj.lat !== null ? Number(locObj.lat) : 16.1875),
+      longitude: locObj.longitude !== undefined && locObj.longitude !== null ? Number(locObj.longitude) : (locObj.lon !== undefined && locObj.lon !== null ? Number(locObj.lon) : 81.1389),
+      country: locObj.country || "India",
+    };
+    try {
+      window.dispatchEvent(new CustomEvent("weathertrust:locationChanged", { detail: this.currentLocation }));
+    } catch (e) {}
+  },
+
+  getLocation() {
+    return this.currentLocation;
+  },
+
   // Common Data Store
   current: {
+    available: true,
     location: "Krishna District",
     target_date: "Lead Day 6 Outlook",
     forecast_run: "00Z GFS Cycle",
@@ -121,6 +154,25 @@ const WeatherTrustCommon = {
    */
   syncForecastData(payload) {
     if (!payload) return;
+    if (payload.available === false) {
+      this.current.available = false;
+      if (payload.location) this.current.location = payload.location;
+      this.current.target_date = "Data Unavailable";
+      this.current.rainfall = null;
+      this.current.temperature = null;
+      this.current.precipitation_probability = null;
+      this.current.trust_score = null;
+      this.current.bust_probability = null;
+      this.current.bust_risk = "DATA UNAVAILABLE";
+      this.current.forecast_drift = null;
+      this.current.forecast_drift_str = "Drift data unavailable";
+      this.current.confidence = "Unavailable";
+      this.current.confidence_label = "DATA UNAVAILABLE";
+      this.current.stability = "UNKNOWN";
+      this.current.stability_label = "STABILITY UNAVAILABLE";
+      return;
+    }
+    this.current.available = true;
     if (payload.location) this.current.location = payload.location;
     if (payload.target_date) this.current.target_date = payload.target_date;
     if (payload.forecast_run) this.current.forecast_run = payload.forecast_run;
@@ -136,6 +188,9 @@ const WeatherTrustCommon = {
     if (driftVal !== null && driftVal !== undefined && !isNaN(driftVal)) {
       this.current.forecast_drift = Number(driftVal);
       this.current.forecast_drift_str = this.formatDrift(driftVal);
+    } else {
+      this.current.forecast_drift = null;
+      this.current.forecast_drift_str = "Drift data unavailable";
     }
 
     const riskInfo = this.classifyRisk(this.current.bust_probability);

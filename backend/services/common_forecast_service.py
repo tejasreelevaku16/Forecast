@@ -23,21 +23,56 @@ def get_common_forecast_data(
     """
     overview = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
     
-    # Extract matching lead day details
-    target_lead = next((ld for ld in overview.lead_days if ld.lead_day == lead_day), None)
-    
     today = datetime.now()
     target_dt = today + timedelta(days=lead_day)
     target_date_str = target_dt.strftime("%b %d, %Y")
+
+    if not overview.available:
+        return {
+            "available": False,
+            "error": overview.error or "Forecast data unavailable",
+            "location": location,
+            "target_date": target_date_str,
+            "focus_lead_day": lead_day,
+            "forecast_run": "NWP Cycle",
+            "rainfall": None,
+            "rainfall_mm": None,
+            "temperature": None,
+            "temperature_c": None,
+            "precipitation_probability": None,
+            "precipitation_probability_pct": None,
+            "trust_score": None,
+            "bust_probability": None,
+            "bust_risk": "DATA UNAVAILABLE",
+            "bust_risk_display": "Data Unavailable",
+            "risk_level": "UNKNOWN",
+            "reliability_level": "UNKNOWN",
+            "forecast_drift": None,
+            "forecast_drift_mm": None,
+            "forecast_drift_str": "Drift data unavailable",
+            "confidence": "Unavailable",
+            "confidence_label": "DATA UNAVAILABLE",
+            "forecast_stability": "UNKNOWN",
+            "stability_label": "STABILITY UNAVAILABLE",
+            "color": "#94a3b8",
+            "badge_class": "badge-risk-mod",
+            "recommendation": "Data unavailable for this location.",
+            "last_updated": datetime.now().strftime("%I:%M %p"),
+            "is_demo": False,
+            "disclaimer": overview.disclaimer,
+        }
+    
+    # Extract matching lead day details
+    target_lead = next((ld for ld in overview.lead_days if ld.lead_day == lead_day), None)
     
     bust_prob = overview.bust_probability_pct
     trust_score = overview.reliability_score
     risk_info = classify_bust_risk(bust_prob)
     
-    rainfall = overview.rainfall_mm if overview.rainfall_mm is not None else (80.0 if "krishna" in location.lower() or "andhra" in location.lower() else 35.0)
+    rainfall = overview.rainfall_mm if overview.rainfall_mm is not None else (target_lead.primary_risk_driver if target_lead else 0.0)
     temperature = overview.temperature_c if overview.temperature_c is not None else 28.0
-    precip_prob = overview.precipitation_probability_pct if overview.precipitation_probability_pct is not None else 85
-    drift_val = overview.forecast_drift_mm if overview.forecast_drift_mm is not None else (55.0 if "krishna" in location.lower() or "andhra" in location.lower() else 18.0)
+    precip_prob = overview.precipitation_probability_pct if overview.precipitation_probability_pct is not None else 50
+    drift_val = overview.forecast_drift_mm if overview.forecast_drift_mm is not None else 0.0
     
     return {
         "location": overview.location,

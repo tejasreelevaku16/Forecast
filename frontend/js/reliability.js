@@ -11,11 +11,17 @@ const ReliabilityUI = {
   /**
    * Fetches reliability overview from FastAPI
    */
-  async fetchOverview(locationName = "Krishna District", leadDay = 6, sector = "General Public") {
+  async fetchOverview(locationName = "Krishna District", leadDay = 6, sector = "General Public", lat = null, lon = null, region = null) {
     this.currentSector = sector;
     this.currentLeadDay = leadDay;
     try {
-      const url = `/api/reliability/overview?location=${encodeURIComponent(locationName)}&lead_day=${leadDay}&sector=${encodeURIComponent(sector)}`;
+      let url = `/api/reliability/overview?location=${encodeURIComponent(locationName)}&lead_day=${leadDay}&sector=${encodeURIComponent(sector)}`;
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        url += `&lat=${lat}&lon=${lon}`;
+      }
+      if (region) {
+        url += `&region=${encodeURIComponent(region)}`;
+      }
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Reliability API Error: ${response.statusText}`);
@@ -71,10 +77,47 @@ const ReliabilityUI = {
    * Renders the Forecast Trust Hero Card and Explainability Section
    */
   renderHero(data) {
-    if (!data) return;
+    const scoreElem = document.getElementById('trustScoreValue');
+    const labelElem = document.getElementById('confidenceLabel');
+    const bustElem = document.getElementById('bustProbabilityValue');
+    const bustRiskLevelElem = document.getElementById('bustRiskLevelBadge');
+    const stabElem = document.getElementById('forecastStabilityValue');
+    const driftWrap = document.getElementById('driftMonitorSnapshot');
+    const whyList = document.getElementById('whyFactorsContainer');
+    const recTextElem = document.getElementById('recommendationText');
+    const badgeElem = document.getElementById('demoBadge');
+
+    if (!data || data.available === false) {
+      if (scoreElem) {
+        scoreElem.textContent = `-- / 100`;
+        scoreElem.className = 'score-display';
+      }
+      if (labelElem) {
+        labelElem.textContent = "⚪ DATA UNAVAILABLE";
+        labelElem.style.color = '#94a3b8';
+      }
+      if (bustElem) bustElem.textContent = `--%`;
+      if (bustRiskLevelElem) {
+        bustRiskLevelElem.textContent = "DATA UNAVAILABLE";
+        bustRiskLevelElem.className = 'badge badge-neutral';
+      }
+      if (stabElem) {
+        stabElem.textContent = "DATA UNAVAILABLE";
+        stabElem.style.color = '#94a3b8';
+      }
+      if (driftWrap) {
+        driftWrap.innerHTML = `<div style="font-size: 0.775rem; color: #94a3b8;"><strong>Forecast Drift Monitor:</strong> Drift data unavailable</div>`;
+      }
+      if (whyList) {
+        whyList.innerHTML = `<p style="font-size: 0.825rem; color: #94a3b8; padding: 10px;">Reliability explainability factors unavailable for this location.</p>`;
+      }
+      if (recTextElem) {
+        recTextElem.textContent = "Reliability analysis unavailable for this location.";
+      }
+      return;
+    }
 
     // ML Badge / Notice
-    const badgeElem = document.getElementById('demoBadge');
     if (badgeElem) {
       badgeElem.textContent = data.demo_badge_text || "CALIBRATED ML MODEL";
       badgeElem.className = data.is_demo ? 'badge badge-demo' : 'badge badge-neutral';
@@ -85,7 +128,7 @@ const ReliabilityUI = {
       }
     }
 
-    const bustProb = data.bust_probability_pct !== undefined ? data.bust_probability_pct : 76;
+    const bustProb = data.bust_probability_pct !== undefined ? data.bust_probability_pct : 50;
     const riskInfo = typeof WeatherTrustCommon !== 'undefined'
       ? WeatherTrustCommon.classifyRisk(bustProb)
       : {

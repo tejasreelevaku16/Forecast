@@ -35,6 +35,9 @@ def trust_overview(
     location: str = Query("Vijayawada", description="Location name or query"),
     lead_day: int = Query(6, description="Focus lead day: 1 to 10"),
     sector: str = Query("General Public", description="User persona for decision support"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    region: Optional[str] = Query(None, description="Optional region"),
 ):
     """
     Returns ML-backed Forecast Trust profile, Bust Risk probability,
@@ -43,19 +46,22 @@ def trust_overview(
     loc = _clean_str(location, "Krishna District")
     day = _clean_int(lead_day, 6)
     sec = _clean_str(sector, "General Public")
-    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec)
+    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec, lat=lat, lon=lon, region=region)
 
 
 @router.get("/daywise", summary="Get Day 1 to Day 10 Independent ML Predictions (SIH Feature 2)")
 def api_daywise_reliability(
-    location: str = Query("Vijayawada", description="City or district name")
+    location: str = Query("Vijayawada", description="City or district name"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    region: Optional[str] = Query(None, description="Optional region"),
 ) -> Dict[str, Any]:
     """
     SIH Feature 2 Endpoint:
     Produces independent ML predictions for every lead day (Day 1 through Day 10)
     with Confidence, Bust Probability, Risk Category, SHAP summary, Drift, and Uncertainty.
     """
-    return get_daywise_reliability(location=location)
+    return get_daywise_reliability(location=location, lat=lat, lon=lon, region=region)
 
 
 @router.get("/uncertainty", summary="Get Forecast Uncertainty & Variability Profile (SIH Feature 3)")
@@ -75,9 +81,12 @@ def demo_overview(
     location: str = Query("Vijayawada", description="Location name or query"),
     lead_day: int = Query(6, description="Focus lead day"),
     sector: str = Query("General Public", description="User persona"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    region: Optional[str] = Query(None, description="Optional region"),
 ):
     """Convenience alias for reliability overview."""
     loc = _clean_str(location, "Krishna District")
     day = _clean_int(lead_day, 6)
     sec = _clean_str(sector, "General Public")
-    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec)
+    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec, lat=lat, lon=lon, region=region)

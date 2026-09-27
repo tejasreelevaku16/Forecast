@@ -36,12 +36,22 @@ WMO_MAP = {
     51: ("Light Drizzle", "cloud-rain"),
     53: ("Moderate Drizzle", "cloud-rain"),
     55: ("Dense Drizzle", "cloud-rain"),
+    56: ("Light Freezing Drizzle", "cloud-rain"),
+    57: ("Dense Freezing Drizzle", "cloud-rain"),
     61: ("Slight Rain", "cloud-rain"),
     63: ("Moderate Rain", "cloud-rain"),
     65: ("Heavy Rain", "cloud-rain-heavy"),
+    66: ("Light Freezing Rain", "cloud-rain"),
+    67: ("Heavy Freezing Rain", "cloud-rain-heavy"),
+    71: ("Slight Snow Fall", "cloud"),
+    73: ("Moderate Snow Fall", "cloud"),
+    75: ("Heavy Snow Fall", "cloud"),
+    77: ("Snow Grains", "cloud"),
     80: ("Scattered Showers", "cloud-rain"),
     81: ("Moderate Showers", "cloud-rain"),
     82: ("Violent Showers", "cloud-rain-heavy"),
+    85: ("Slight Snow Showers", "cloud"),
+    86: ("Heavy Snow Showers", "cloud"),
     95: ("Thunderstorm", "cloud-lightning"),
     96: ("Thunderstorm with Hail", "cloud-lightning"),
     99: ("Severe Thunderstorm", "cloud-lightning"),
@@ -72,57 +82,52 @@ def _safe_get(url: str, timeout: int = config.API_TIMEOUT_SECONDS) -> requests.R
 def geocode_location(location_name: str) -> Optional[Dict[str, Any]]:
     """Resolves coordinates for location name using Indian locations hierarchy or Open-Meteo Geocoding API."""
     loc_clean = (location_name or "").strip()
-    if loc_clean:
-        try:
-            from backend.services.location_service import get_location_by_place_and_state
-            parts = [p.strip() for p in loc_clean.split(",") if p.strip()]
-            place_cand = parts[0] if parts else loc_clean
-            state_cand = parts[1] if len(parts) > 1 else None
-
-            match = get_location_by_place_and_state(place_cand, state_cand)
-            if match:
-                return {
-                    "name": match["place"],
-                    "region": match["state"],
-                    "country": "India",
-                    "lat": float(match["latitude"]),
-                    "lon": float(match["longitude"]),
-                    "district": match.get("district"),
-                    "state_code": match.get("state_code"),
-                }
-        except Exception as e:
-            print(f"[!] Indian location lookup note: {e}")
+    if not loc_clean:
+        return None
 
     try:
-        url = f"{config.OPEN_METEO_GEOCODING_URL}?name={requests.utils.quote(location_name)}&count=5&language=en&format=json"
+        from backend.services.location_service import get_location_by_place_and_state
+        parts = [p.strip() for p in loc_clean.split(",") if p.strip()]
+        place_cand = parts[0] if parts else loc_clean
+        state_cand = parts[1] if len(parts) > 1 else None
+
+        match = get_location_by_place_and_state(place_cand, state_cand)
+        if match:
+            return {
+                "name": match["place"],
+                "region": match["state"],
+                "country": "India",
+                "lat": float(match["latitude"]),
+                "lon": float(match["longitude"]),
+                "district": match.get("district"),
+                "state_code": match.get("state_code"),
+            }
+    except Exception as e:
+        print(f"[!] Indian location lookup note: {e}")
+
+    try:
+        url = f"{config.OPEN_METEO_GEOCODING_URL}?name={requests.utils.quote(loc_clean)}&count=5&language=en&format=json"
         resp = _safe_get(url, timeout=config.API_TIMEOUT_SECONDS)
         if resp.status_code == 200:
             data = resp.json()
             if "results" in data and len(data["results"]) > 0:
                 res = data["results"][0]
                 return {
-                    "name": res.get("name", location_name),
+                    "name": res.get("name", loc_clean),
                     "region": res.get("admin1", "State"),
                     "country": res.get("country", "India"),
                     "lat": float(res.get("latitude")),
                     "lon": float(res.get("longitude")),
                 }
     except Exception as e:
-        print(f"[!] Geocoding error for '{location_name}': {e}. Using fallback coordinates.")
+        print(f"[!] Geocoding error for '{loc_clean}': {e}")
     
-    # Fallback to Krishna District coordinates if geocoding fails or offline
-    return {
-        "name": location_name or "Krishna District",
-        "region": "Andhra Pradesh",
-        "country": "India",
-        "lat": config.DEFAULT_LAT,
-        "lon": config.DEFAULT_LON,
-    }
+    # Return None when location cannot be resolved; do not silently default to Krishna District.
+    return None
 
 
 def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
     """Finds closest Indian district or location metadata for given GPS coordinates."""
-    # List of Indian district anchors to match nearest
     from backend.services.india_map_service import INDIAN_DISTRICTS
     best_dist = float("inf")
     best_match = None
@@ -132,7 +137,7 @@ def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
             best_dist = dist_sq
             best_match = d
 
-    if best_match:
+    if best_match and best_dist < 4.0:
         return {
             "name": best_match["name"],
             "region": best_match["state"],
@@ -141,8 +146,8 @@ def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
             "lon": lon,
         }
     return {
-        "name": "Krishna District",
-        "region": "Andhra Pradesh",
+        "name": f"Location ({lat:.2f}, {lon:.2f})",
+        "region": "India",
         "country": "India",
         "lat": lat,
         "lon": lon,
@@ -336,6 +341,15 @@ def get_full_forecast_response(
     else:
         loc_q = str(location_query) if location_query and not hasattr(location_query, "default") else "Krishna District"
         geo = geocode_location(loc_q)
+        if geo is None:
+            return WeatherForecastResponse(
+                available=False,
+                error=f"Location '{location_query}' not found",
+                current=None,
+                hourly=[],
+                daily=[],
+                alerts=[]
+            )
 
     lat_val = geo["lat"]
     lon_val = geo["lon"]
@@ -355,12 +369,17 @@ def get_full_forecast_response(
         _FORECAST_CACHE[cache_key] = (now, res)
         return res
     except Exception as e:
-        print(f"[!] Live API request failed ({e}). Reverting to structured sample baseline.")
-        # Fallback to built-in sample generation
-        from backend.services.weather_service import _sample_fallback
-        res = _sample_fallback(location_query, geo)
-        _FORECAST_CACHE[cache_key] = (now, res)
-        return res
+        print(f"[!] Live API request failed ({e}) for {loc_name}")
+        if cache_key in _FORECAST_CACHE:
+            return _FORECAST_CACHE[cache_key][1]
+        return WeatherForecastResponse(
+            available=False,
+            error=f"Weather data unavailable for '{loc_name}'",
+            current=None,
+            hourly=[],
+            daily=[],
+            alerts=[]
+        )
 
 
 def _sample_fallback(location_query: str, geo: Dict[str, Any]) -> WeatherForecastResponse:
@@ -429,7 +448,7 @@ def _sample_fallback(location_query: str, geo: Dict[str, Any]) -> WeatherForecas
     )
 
 
-def get_current_weather(location_query: str = "Krishna District") -> CurrentWeather:
+def get_current_weather(location_query: str = "Krishna District") -> Optional[CurrentWeather]:
     return get_full_forecast_response(location_query).current
 
 

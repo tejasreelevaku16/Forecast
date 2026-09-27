@@ -40,18 +40,16 @@ function hideError() {
  * Synchronizes Dashboard Central Entrypoint Overview Cards
  */
 function updateDashboardHeroCards(weatherData, reliabilityData) {
-  if (weatherData && weatherData.current) {
+  const locTitle = document.getElementById('dashLocationTitle');
+  const heroTemp = document.getElementById('dashHeroTemp');
+  const heroCond = document.getElementById('dashHeroCond');
+  const heroSum = document.getElementById('dashHeroSummary');
+
+  if (weatherData && weatherData.available !== false && weatherData.current) {
     const c = weatherData.current;
-    const locTitle = document.getElementById('dashLocationTitle');
     if (locTitle) locTitle.textContent = `${c.location}, ${c.region}`;
-
-    const heroTemp = document.getElementById('dashHeroTemp');
     if (heroTemp) heroTemp.textContent = `${Math.round(c.temperature_c)}°C`;
-
-    const heroCond = document.getElementById('dashHeroCond');
     if (heroCond) heroCond.textContent = `${c.condition}`;
-
-    const heroSum = document.getElementById('dashHeroSummary');
     if (heroSum) {
       if (weatherData.daily && weatherData.daily.length > 5) {
         const d6 = weatherData.daily[5];
@@ -60,20 +58,36 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
         heroSum.textContent = `Current observation: ${c.condition}, ${Math.round(c.temperature_c)}°C with ${c.humidity_pct}% relative humidity.`;
       }
     }
-
-    // Header freshness
-    const updatedElem = document.getElementById('headerLastUpdated');
-    if (updatedElem) {
-      const now = new Date();
-      updatedElem.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
+  } else {
+    if (locTitle) locTitle.textContent = currentLocation;
+    if (heroTemp) heroTemp.textContent = `--°C`;
+    if (heroCond) heroCond.textContent = `Weather Unavailable`;
+    if (heroSum) heroSum.textContent = `Live meteorological observation is unavailable for ${currentLocation}.`;
   }
 
-  if (reliabilityData) {
+  // Header freshness
+  const updatedElem = document.getElementById('headerLastUpdated');
+  if (updatedElem) {
+    const now = new Date();
+    updatedElem.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  const rainElem = document.getElementById('dashForecastRain');
+  const condElem = document.getElementById('dashForecastCond');
+  const dateElem = document.getElementById('dashForecastDate');
+  const trustScoreElem = document.getElementById('dashTrustScore');
+  const confTierElem = document.getElementById('dashConfidenceTier');
+  const bustProbElem = document.getElementById('dashBustProb');
+  const riskTierElem = document.getElementById('dashRiskTier');
+  const stabElem = document.getElementById('dashStability');
+  const runChangeElem = document.getElementById('dashRunChange');
+  const actionGuidance = document.getElementById('dashActionGuidance');
+
+  if (reliabilityData && reliabilityData.available !== false) {
     if (typeof WeatherTrustCommon !== 'undefined') {
       WeatherTrustCommon.syncForecastData(reliabilityData);
     }
-    const bustProb = reliabilityData.bust_probability_pct !== undefined ? reliabilityData.bust_probability_pct : 76;
+    const bustProb = reliabilityData.bust_probability_pct !== undefined ? reliabilityData.bust_probability_pct : 50;
     const riskInfo = typeof WeatherTrustCommon !== 'undefined'
       ? WeatherTrustCommon.classifyRisk(bustProb)
       : {
@@ -87,31 +101,26 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
           stability: bustProb < 30 ? "HIGH" : bustProb < 60 ? "MODERATE" : "LOW",
         };
 
-    const rainElem = document.getElementById('dashForecastRain');
     if (rainElem) {
       const rainVal = (reliabilityData.rainfall_mm !== undefined && reliabilityData.rainfall_mm !== null)
         ? reliabilityData.rainfall_mm
-        : (reliabilityData.focus_lead_rainfall_mm !== undefined ? reliabilityData.focus_lead_rainfall_mm : 80);
+        : (reliabilityData.focus_lead_rainfall_mm !== undefined ? reliabilityData.focus_lead_rainfall_mm : 0);
       rainElem.textContent = `${Math.round(rainVal)} mm`;
     }
 
-    const condElem = document.getElementById('dashForecastCond');
     if (condElem) {
       const rainVal = (reliabilityData.rainfall_mm !== undefined && reliabilityData.rainfall_mm !== null)
         ? reliabilityData.rainfall_mm
-        : (reliabilityData.focus_lead_rainfall_mm || 80);
-      condElem.textContent = rainVal > 30 ? "Heavy Rain Expected" : "Moderate Rain / Showers";
+        : (reliabilityData.focus_lead_rainfall_mm || 0);
+      condElem.textContent = rainVal > 30 ? "Heavy Rain Expected" : rainVal > 5 ? "Moderate Rain / Showers" : "Stable Forecast";
     }
 
-    const dateElem = document.getElementById('dashForecastDate');
     if (dateElem) {
       dateElem.textContent = reliabilityData.target_date
         ? `Target: ${reliabilityData.target_date} (${reliabilityData.forecast_run || '00Z GFS'})`
         : `Target: Lead Day ${reliabilityData.focus_lead_day || 6} Outlook`;
     }
 
-    const trustScoreElem = document.getElementById('dashTrustScore');
-    const confTierElem = document.getElementById('dashConfidenceTier');
     if (trustScoreElem) {
       trustScoreElem.textContent = `${riskInfo.trust_score} / 100`;
       trustScoreElem.style.color = riskInfo.color;
@@ -122,8 +131,6 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       confTierElem.style.color = riskInfo.color;
     }
 
-    const bustProbElem = document.getElementById('dashBustProb');
-    const riskTierElem = document.getElementById('dashRiskTier');
     if (bustProbElem) {
       bustProbElem.textContent = `${riskInfo.bust_probability}%`;
       bustProbElem.style.color = riskInfo.color;
@@ -134,8 +141,6 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       riskTierElem.style.color = riskInfo.color;
     }
 
-    const stabElem = document.getElementById('dashStability');
-    const runChangeElem = document.getElementById('dashRunChange');
     if (stabElem) {
       const rawStab = reliabilityData.forecast_stability || (reliabilityData.drift_monitor ? reliabilityData.drift_monitor.stability_level : null) || riskInfo.stability;
       const formattedStab = typeof WeatherTrustCommon !== 'undefined'
@@ -157,7 +162,6 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       }
     }
 
-    const actionGuidance = document.getElementById('dashActionGuidance');
     if (actionGuidance) {
       actionGuidance.textContent = reliabilityData.recommendation;
     }
@@ -172,6 +176,40 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
       secBadge.className = `badge ${riskInfo.badge_class}`;
     }
     if (secAction) secAction.textContent = reliabilityData.recommendation;
+  } else {
+    if (typeof WeatherTrustCommon !== 'undefined') {
+      WeatherTrustCommon.syncForecastData({ available: false, location: currentLocation });
+    }
+    if (rainElem) rainElem.textContent = `-- mm`;
+    if (condElem) condElem.textContent = `Forecast Unavailable`;
+    if (dateElem) dateElem.textContent = `Target: Data Unavailable`;
+    if (trustScoreElem) {
+      trustScoreElem.textContent = `-- / 100`;
+      trustScoreElem.style.color = '#94a3b8';
+    }
+    if (confTierElem) {
+      confTierElem.textContent = `⚪ DATA UNAVAILABLE`;
+      confTierElem.style.color = '#94a3b8';
+    }
+    if (bustProbElem) {
+      bustProbElem.textContent = `--%`;
+      bustProbElem.style.color = '#94a3b8';
+    }
+    if (riskTierElem) {
+      riskTierElem.textContent = `⚪ DATA UNAVAILABLE`;
+      riskTierElem.style.color = '#94a3b8';
+    }
+    if (stabElem) {
+      stabElem.textContent = `DATA UNAVAILABLE`;
+      stabElem.style.color = '#94a3b8';
+    }
+    if (runChangeElem) {
+      runChangeElem.textContent = `Drift data unavailable`;
+      runChangeElem.style.color = '#94a3b8';
+    }
+    if (actionGuidance) {
+      actionGuidance.textContent = `Reliability analysis unavailable for ${currentLocation}.`;
+    }
   }
 }
 
@@ -182,6 +220,24 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
   currentLocation = locationQuery;
   currentSector = sector;
 
+  if (typeof WeatherTrustCommon !== 'undefined') {
+    WeatherTrustCommon.setLocation({
+      name: locationQuery,
+      place: locationQuery,
+      district: locationQuery,
+      state: state || '',
+      latitude: lat,
+      longitude: lon,
+      country: 'India'
+    });
+  }
+
+  // Clear previous location rendering immediately to prevent data leakage
+  WeatherUI.renderCurrentWeather(null, locationQuery);
+  WeatherUI.renderHourlyTimeline([]);
+  WeatherUI.renderDailyForecast([], null);
+  updateDashboardHeroCards(null, null);
+
   showLoading(`Analyzing forecast reliability for ${locationQuery}...`);
   hideError();
 
@@ -189,13 +245,9 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
     // Concurrent data retrieval from existing backend services
     const [weatherData, reliabilityData, driftData] = await Promise.all([
       WeatherUI.fetchForecast(locationQuery, lat, lon, state),
-      ReliabilityUI.fetchOverview(locationQuery, 6, sector),
+      ReliabilityUI.fetchOverview(locationQuery, 6, sector, lat, lon, state),
       DriftUI.fetchDriftHistory(locationQuery, lat, lon),
     ]);
-
-    if (!weatherData && !reliabilityData) {
-      throw new Error(`Unable to reach weather services for '${locationQuery}'. Please check network connectivity.`);
-    }
 
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
@@ -206,7 +258,7 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
     }
 
     // Page 2: Live Weather / Live Tracking Page View
-    if (weatherData && weatherData.current) {
+    if (weatherData && weatherData.available !== false && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
       WeatherUI.renderHourlyTimeline(weatherData.hourly);
       WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData);
@@ -215,6 +267,11 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
       if (typeof renderHourlyTrendChart === 'function') {
         renderHourlyTrendChart(weatherData.hourly);
       }
+    } else {
+      WeatherUI.renderCurrentWeather(null, locationQuery);
+      WeatherUI.renderHourlyTimeline([]);
+      WeatherUI.renderDailyForecast([], null);
+      WeatherUI.renderAlerts([]);
     }
 
     // Live Tracking Unified Sections (Daily Forecast, Drift, History, Reliability)
@@ -225,7 +282,7 @@ async function loadDashboard(locationQuery, sector = currentSector, lat = null, 
     // Page 4: Forecast Trust Page View
     if (reliabilityData) {
       ReliabilityUI.renderHero(reliabilityData);
-      if (typeof renderBustRiskChart === 'function') {
+      if (typeof renderBustRiskChart === 'function' && reliabilityData.available !== false) {
         renderBustRiskChart(reliabilityData.lead_days);
       }
     }
@@ -435,13 +492,13 @@ function setupEventListeners() {
         const query = searchInput.value.trim();
         if (query) {
           searchDropdown.classList.remove('active');
-          pills.forEach(p => p.classList.remove('active'));
           try {
             const resp = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`);
             if (resp.ok) {
               const matches = await resp.json();
               if (matches && matches.length > 0) {
                 const match = matches[0];
+                pills.forEach(p => p.classList.remove('active'));
                 if (typeof LiveTrackingUI !== 'undefined') {
                   LiveTrackingUI.selectLocation(match.state, match.place, false);
                 }
@@ -452,8 +509,18 @@ function setupEventListeners() {
                 return;
               }
             }
+            const weatherSearchResp = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`);
+            if (weatherSearchResp.ok) {
+              const wMatches = await weatherSearchResp.json();
+              if (wMatches && wMatches.length > 0) {
+                const wMatch = wMatches[0];
+                pills.forEach(p => p.classList.remove('active'));
+                loadDashboard(wMatch.name, currentSector, wMatch.latitude, wMatch.longitude, wMatch.region);
+                return;
+              }
+            }
           } catch (err) {}
-          loadDashboard(query);
+          showError(`Location "${query}" not found. Please select a valid Indian city or district.`);
         }
       }
     });

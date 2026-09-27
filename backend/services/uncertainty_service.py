@@ -24,11 +24,34 @@ from backend.services.weather_service import get_full_forecast_response
 from backend.services.drift_service import get_all_lead_days_drift
 
 
-def calculate_forecast_uncertainty_profile(location: str = "Vijayawada") -> Dict[str, Any]:
+def calculate_forecast_uncertainty_profile(
+    location: str = "Vijayawada",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None
+) -> Dict[str, Any]:
     """
     Computes genuine forecast uncertainty from real meteorological variance across Day 1–10.
     """
-    forecast_data = get_full_forecast_response(location)
+    forecast_data = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    if not forecast_data.available or not forecast_data.current or not forecast_data.daily or len(forecast_data.daily) == 0:
+        return {
+            "available": False,
+            "error": "Uncertainty data unavailable for this location",
+            "location": location,
+            "days": [],
+            "confidence": [],
+            "uncertainty": [],
+            "drift": [],
+            "kpis": {
+                "highest_confidence_day": 0,
+                "lowest_confidence_day": 0,
+                "max_uncertainty_day": 0,
+                "avg_confidence": 0,
+                "avg_drift": 0,
+            },
+            "insight": "Uncertainty data unavailable for this location.",
+        }
+
     daily = forecast_data.daily
     drift_profile = get_all_lead_days_drift(location)
 
@@ -148,4 +171,5 @@ def calculate_forecast_uncertainty_profile(location: str = "Vijayawada") -> Dict
             "avg_drift": avg_drift,
         },
         "insight": insight,
+        "available": True,
     }

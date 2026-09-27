@@ -20,14 +20,16 @@ router = APIRouter(tags=["Interactive India Map"])
 @router.get("/api/map/confidence", summary="Get Forecast Confidence for Location and Lead Day (SIH Feature 1)")
 def api_map_confidence(
     location: str = Query("Vijayawada", description="City or district name"),
-    day: int = Query(1, description="Lead day (1 to 10)")
+    day: int = Query(1, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """
     SIH Feature 1 Endpoint:
     Fetches live weather, computes features, runs calibrated ML model, and returns
     Forecast Confidence, Bust Probability, and real meteorological parameters.
     """
-    return get_map_confidence(location=location, day=day)
+    return get_map_confidence(location=location, day=day, lat=lat, lon=lon)
 
 
 @router.get("/api/map-data", summary="Get All India States Forecast Reliability")

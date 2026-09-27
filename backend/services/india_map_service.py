@@ -126,7 +126,12 @@ def _get_confidence_color(confidence: int) -> str:
         return "#ef4444"  # Red (0–39)
 
 
-def get_map_confidence(location: str = "Vijayawada", day: int = 1) -> Dict[str, Any]:
+def get_map_confidence(
+    location: str = "Vijayawada",
+    day: int = 1,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None
+) -> Dict[str, Any]:
     """
     SIH Feature 1 Endpoint Processor:
     1. Fetches live forecast.
@@ -134,11 +139,24 @@ def get_map_confidence(location: str = "Vijayawada", day: int = 1) -> Dict[str, 
     3. Runs calibrated ML model.
     4. Produces Forecast Confidence and Bust Probability.
     """
-    forecast_data = get_full_forecast_response(location)
+    day_idx = min(max(1, day), 10)
+    forecast_data = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    if not forecast_data.available or forecast_data.current is None:
+        return {
+            "available": False,
+            "error": "Confidence data unavailable for this location",
+            "location": location,
+            "day": day_idx,
+            "confidence": None,
+            "bust_probability": None,
+            "risk": "Unavailable",
+            "color": "#94a3b8",
+            "weather": None
+        }
+
     daily = forecast_data.daily
     curr = forecast_data.current
 
-    day_idx = min(max(1, day), 10)
     day_item = daily[day_idx - 1] if day_idx - 1 < len(daily) else None
 
     if day_item:
@@ -194,7 +212,8 @@ def get_map_confidence(location: str = "Vijayawada", day: int = 1) -> Dict[str, 
             "humidity": round(fc_humidity, 1),
             "pressure": round(est_pressure, 1),
             "wind_speed": round(fc_wind, 1),
-        }
+        },
+        "available": True,
     }
 
 

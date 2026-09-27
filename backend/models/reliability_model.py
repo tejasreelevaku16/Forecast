@@ -40,11 +40,11 @@ class LeadDayReliability(BaseModel):
 class ReliabilityOverview(BaseModel):
     location: str
     focus_lead_day: int = Field(default=6, description="Lead day highlighted on the trust card")
-    reliability_score: int = Field(ge=0, le=100)
-    confidence_label: str = Field(description="HIGH CONFIDENCE, MODERATE CONFIDENCE, or LOW CONFIDENCE")
-    bust_probability_pct: int = Field(ge=0, le=100)
-    risk_level: str = Field(description="LOW, MODERATE, or HIGH")
-    forecast_stability: str = Field(description="HIGH, MODERATE, or LOW")
+    reliability_score: int = Field(default=0, ge=0, le=100)
+    confidence_label: str = Field(default="UNKNOWN", description="HIGH CONFIDENCE, MODERATE CONFIDENCE, or LOW CONFIDENCE")
+    bust_probability_pct: int = Field(default=0, ge=0, le=100)
+    risk_level: str = Field(default="UNKNOWN", description="LOW, MODERATE, or HIGH")
+    forecast_stability: str = Field(default="UNKNOWN", description="HIGH, MODERATE, or LOW")
     
     # Top-level unified forecast parameters (for consistency across Dashboard, Map, etc.)
     forecast_drift_mm: Optional[float] = Field(default=None, description="Drift in mm for focus lead day")
@@ -57,18 +57,22 @@ class ReliabilityOverview(BaseModel):
     last_updated: Optional[str] = Field(default="Today, 6:30 PM", description="Last observation or cycle update timestamp")
 
     # Explainable "Why?" bullets
-    reasons: List[ExplainabilityFactor]
+    reasons: List[ExplainabilityFactor] = []
     
     # Forecast Drift summary
-    drift_monitor: ForecastDriftSnapshot
+    drift_monitor: Optional[ForecastDriftSnapshot] = None
     
     # Action recommendation
-    recommendation: str
+    recommendation: str = ""
     
     # 10-Day progression
-    lead_days: List[LeadDayReliability]
+    lead_days: List[LeadDayReliability] = []
     
     # Transparency & Disclaimers
-    is_demo: bool = True
-    demo_badge_text: str = "DEMO / SAMPLE SIMULATION"
-    disclaimer: str
+    is_demo: bool = False
+    demo_badge_text: str = "Operational Calibrated ML"
+    disclaimer: str = ""
+
+    # Reliability status
+    available: bool = True
+    error: Optional[str] = None

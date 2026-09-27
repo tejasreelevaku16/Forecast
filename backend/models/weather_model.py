@@ -83,7 +83,9 @@ class LocationSearchResult(BaseModel):
 
 
 class WeatherForecastResponse(BaseModel):
-    current: CurrentWeather
-    hourly: List[HourlyForecastItem]
-    daily: List[DailyForecastItem]
-    alerts: List[WeatherAlert]
+    current: Optional[CurrentWeather] = None
+    hourly: List[HourlyForecastItem] = []
+    daily: List[DailyForecastItem] = []
+    alerts: List[WeatherAlert] = []
+    available: bool = True
+    error: Optional[str] = None

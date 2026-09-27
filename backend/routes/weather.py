@@ -41,7 +41,7 @@ def _extract_coords(lat, lon, latitude, longitude):
     return final_lat, final_lon
 
 
-@router.get("/current", response_model=CurrentWeather, summary="Get Current Weather")
+@router.get("/current", response_model=Optional[CurrentWeather], summary="Get Current Weather")
 def current_weather(
     location: str = Query("Krishna District", description="Location name or query"),
     lat: Optional[float] = Query(None, description="Optional latitude"),

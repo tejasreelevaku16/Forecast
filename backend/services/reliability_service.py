@@ -57,13 +57,37 @@ def get_model_bundle() -> Optional[Dict[str, Any]]:
 def get_forecast_reliability_overview(
     location: str = "Vijayawada",
     focus_lead_day: int = 6,
-    sector: str = "General Public"
+    sector: str = "General Public",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    region: Optional[str] = None,
 ) -> ReliabilityOverview:
     """
     Computes ML-backed reliability assessment and bust probability for Day 1–10 from live forecast data.
     """
     bundle = get_model_bundle()
-    forecast_data = get_full_forecast_response(location)
+    forecast_data = get_full_forecast_response(location_query=location, lat=lat, lon=lon, region=region)
+    if not forecast_data.available or not forecast_data.daily or len(forecast_data.daily) == 0:
+        return ReliabilityOverview(
+            location=location,
+            focus_lead_day=focus_lead_day,
+            reliability_score=0,
+            confidence_label="DATA UNAVAILABLE",
+            bust_probability_pct=0,
+            risk_level="UNKNOWN",
+            forecast_stability="UNKNOWN",
+            risk_label="DATA UNAVAILABLE",
+            reasons=[],
+            drift_monitor=None,
+            recommendation="Reliability analysis unavailable for this location.",
+            lead_days=[],
+            is_demo=False,
+            demo_badge_text="Operational Calibrated ML",
+            disclaimer=config.OFFICIAL_DISCLAIMER,
+            available=False,
+            error=forecast_data.error or "Reliability data unavailable",
+        )
+
     daily = forecast_data.daily
     drift_profile = get_all_lead_days_drift(location)
 
@@ -73,13 +97,13 @@ def get_forecast_reliability_overview(
 
     lead_days: List[LeadDayReliability] = []
     focus_reasons = []
-    focus_bust_prob = 76
-    focus_rel_score = 24
-    focus_stability = "LOW"
-    focus_risk_level = "HIGH"
-    focus_drift_rain = 55.0
-    focus_fc_rain = 80.0
-    focus_fc_temp = 28.0
+    focus_bust_prob = 50
+    focus_rel_score = 50
+    focus_stability = "MODERATE"
+    focus_risk_level = "MODERATE"
+    focus_drift_rain = 0.0
+    focus_fc_rain = 0.0
+    focus_fc_temp = 25.0
     focus_target_date = f"Day {focus_lead_day} Outlook"
 
     for d in range(1, 11):
@@ -232,6 +256,8 @@ def get_forecast_reliability_overview(
         bust_probability_pct=focus_bust_prob,
         risk_level=focus_risk_level,
         forecast_stability=focus_stability,
+        risk_label=f"{focus_risk_level} RISK",
+        target_date=focus_target_date,
         reasons=focus_reasons,
         drift_monitor=focus_drift,
         recommendation=rec_msg,
@@ -242,18 +268,32 @@ def get_forecast_reliability_overview(
         rainfall_mm=round(focus_fc_rain, 1),
         temperature_c=round(focus_fc_temp, 1),
         forecast_drift_mm=round(focus_drift_rain, 1),
+        available=True,
     )
 
 
-def get_daywise_reliability(location: str = "Vijayawada") -> Dict[str, Any]:
+def get_daywise_reliability(
+    location: str = "Vijayawada",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    region: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Computes independent day-by-day ML predictions for Day 1 to Day 10.
     Returns: { "location": location, "days": [ { "day": 1, "confidence": 91, "bust_probability": 9, ... } ] }
     """
-    overview = get_forecast_reliability_overview(location=location, focus_lead_day=1)
-    drift_profile = get_all_lead_days_drift(location)
+    overview = get_forecast_reliability_overview(location=location, focus_lead_day=1, lat=lat, lon=lon, region=region)
+    if not overview.available:
+        return {
+            "available": False,
+            "error": overview.error or "Daywise reliability unavailable",
+            "location": location,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
+            "days": [],
+        }
 
-    forecast_data = get_full_forecast_response(location)
+    drift_profile = get_all_lead_days_drift(location)
+    forecast_data = get_full_forecast_response(location_query=location, lat=lat, lon=lon, region=region)
     daily = forecast_data.daily
 
     daywise_list = []
@@ -264,7 +304,7 @@ def get_daywise_reliability(location: str = "Vijayawada") -> Dict[str, Any]:
         fc_temp = round((float(day_fc.temp_max_c) + float(day_fc.temp_min_c)) / 2.0, 1) if day_fc else 30.0
 
         drift_item = drift_profile.get(d, {})
-        drift_val = float(drift_item.get("drift_amount", 2.0 + d * 1.5))
+        drift_val = float(drift_item.get("drift_amount", 0.0))
         unc_val = min(95, max(8, int(item.bust_probability_pct * 1.05)))
 
         if item.risk_level == "LOW":
@@ -292,6 +332,7 @@ def get_daywise_reliability(location: str = "Vijayawada") -> Dict[str, Any]:
         "location": location,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S IST"),
         "days": daywise_list,
+        "available": True,
     }
 
 
@@ -300,27 +341,51 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
     Returns full SHAP-driven explainability analysis with domain meteorological features.
     """
     overview = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day)
-    bundle = get_model_bundle()
+    if not overview.available or not overview.lead_days:
+        return {
+            "available": False,
+            "error": "Explainability analysis unavailable for this location",
+            "location": location,
+            "lead_day": lead_day,
+            "confidence": 0,
+            "bust_probability": 0,
+            "risk": "Unknown",
+            "summary": "Explainability analysis unavailable for this location.",
+            "top_features": [],
+            "recommendation": "Select a supported location or check connection."
+        }
 
+    bundle = get_model_bundle()
     day_item = next((d for d in overview.lead_days if d.lead_day == lead_day), overview.lead_days[0])
     forecast_data = get_full_forecast_response(location)
-    fc_rain = float(forecast_data.daily[lead_day - 1].precipitation_mm) if lead_day - 1 < len(forecast_data.daily) else 25.0
-    fc_temp = float(forecast_data.daily[lead_day - 1].temp_max_c) if lead_day - 1 < len(forecast_data.daily) else 30.0
-    drift_rain = 55.0 if lead_day == 6 else (lead_day * 4.0)
+    daily_items = forecast_data.daily if forecast_data and forecast_data.daily else []
+    day_fc = daily_items[lead_day - 1] if lead_day - 1 < len(daily_items) else None
+
+    drift_profile = get_all_lead_days_drift(location)
+    drift_item = drift_profile.get(lead_day, {})
+    drift_rain = float(drift_item.get("drift_amount", 0.0))
+
+    fc_rain = float(day_fc.precipitation_mm) if day_fc else 0.0
+    fc_temp = float(day_fc.temp_max_c) if day_fc else 28.0
+    fc_humidity = float(day_fc.humidity_pct) if day_fc else 70.0
+    fc_wind = float(day_fc.wind_speed_kmh) if day_fc else 15.0
     est_pressure = max(980.0, 1013.25 - (fc_rain * 0.4) - (lead_day * 0.3))
+
+    hist_prior_info = get_district_historical_error_prior(location, lead_day=lead_day)
+    reg_prior = hist_prior_info.get("historical_bust_rate", 0.35)
 
     feat_dict = {
         "lead_day": float(lead_day),
         "forecast_rainfall": float(fc_rain),
         "forecast_temp": float(fc_temp),
         "forecast_pressure": float(est_pressure),
-        "humidity": 80.0,
-        "wind_speed": 18.0,
+        "humidity": float(fc_humidity),
+        "wind_speed": float(fc_wind),
         "run_drift_rainfall_mm": float(drift_rain),
         "pressure_drop": max(0.0, 1013.25 - est_pressure),
-        "convective_instability": (fc_rain * 80.0) / 100.0,
+        "convective_instability": (fc_rain * fc_humidity) / 100.0,
         "rainfall_variability": fc_rain * 0.35 + drift_rain * 0.65,
-        "historical_error_prior": 0.35,
+        "historical_error_prior": float(reg_prior),
     }
 
     if bundle is not None:
@@ -336,7 +401,7 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
             "confidence": day_item.reliability_score,
             "bust_probability": day_item.bust_probability_pct,
             "risk": day_item.risk_level.title(),
-            "summary": "High forecast instability due to extended lead time and significant rainfall drift.",
+            "summary": "Forecast stability determined by calibrated atmospheric lead-day decay.",
             "top_features": [
                 {"feature": "Pressure Drop", "impact": 0.42, "direction": "Negative"},
                 {"feature": "Rainfall Gradient", "impact": 0.31, "direction": "Negative"},
@@ -345,6 +410,7 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
             "recommendation": "Monitor next forecast cycle before issuing operational decisions."
         }
 
+    shap_res["available"] = True
     shap_res["location"] = location
     shap_res["lead_day"] = lead_day
     shap_res["target_date"] = day_item.date

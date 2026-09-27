@@ -599,6 +599,11 @@ def get_location_by_place_and_state(place: str, state: Optional[str] = None) -> 
         if p_clean in loc["place"].lower():
             return loc
 
+    # Fourth attempt: match state name or state code directly
+    for loc in INDIAN_LOCATIONS:
+        if loc["state"].lower() == p_clean or loc["state_code"].lower() == p_clean:
+            return loc
+
     return None
 
 
