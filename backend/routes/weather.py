@@ -25,22 +25,68 @@ from backend.services.weather_service import (
 router = APIRouter(prefix="/api/weather", tags=["Weather"])
 
 
+def _extract_coords(lat, lon, latitude, longitude):
+    final_lat = lat if lat is not None and not hasattr(lat, "default") else (latitude if latitude is not None and not hasattr(latitude, "default") else None)
+    final_lon = lon if lon is not None and not hasattr(lon, "default") else (longitude if longitude is not None and not hasattr(longitude, "default") else None)
+    if final_lat is not None:
+        try:
+            final_lat = float(final_lat)
+        except (ValueError, TypeError):
+            final_lat = None
+    if final_lon is not None:
+        try:
+            final_lon = float(final_lon)
+        except (ValueError, TypeError):
+            final_lon = None
+    return final_lat, final_lon
+
+
 @router.get("/current", response_model=CurrentWeather, summary="Get Current Weather")
-def current_weather(location: str = Query("Krishna District", description="Location name or query")):
-    """Returns current weather conditions and essential observational parameters."""
-    return get_current_weather(location)
+def current_weather(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    latitude: Optional[float] = Query(None, description="Exact latitude alias"),
+    longitude: Optional[float] = Query(None, description="Exact longitude alias"),
+    region: Optional[str] = Query(None, description="Optional state/region name"),
+):
+    """Returns current weather conditions using exact coordinates or resolved location."""
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg).current
 
 
 @router.get("/hourly", response_model=List[HourlyForecastItem], summary="Get 24-Hour Forecast")
-def hourly_forecast(location: str = Query("Krishna District", description="Location name or query")):
-    """Returns hourly weather forecast for the next 24 hours."""
-    return get_hourly_forecast(location)
+def hourly_forecast(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    latitude: Optional[float] = Query(None, description="Exact latitude alias"),
+    longitude: Optional[float] = Query(None, description="Exact longitude alias"),
+    region: Optional[str] = Query(None, description="Optional state/region name"),
+):
+    """Returns hourly weather forecast for the next 24 hours using exact coordinates."""
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg).hourly
 
 
 @router.get("/daily", response_model=List[DailyForecastItem], summary="Get 10-Day Forecast")
-def daily_forecast(location: str = Query("Krishna District", description="Location name or query")):
-    """Returns day 1 to day 10 daily forecast outlook."""
-    return get_daily_forecast(location)
+def daily_forecast(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    latitude: Optional[float] = Query(None, description="Exact latitude alias"),
+    longitude: Optional[float] = Query(None, description="Exact longitude alias"),
+    region: Optional[str] = Query(None, description="Optional state/region name"),
+):
+    """Returns day 1 to day 10 daily forecast outlook using exact coordinates."""
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg).daily
 
 
 @router.get("/alerts", response_model=List[WeatherAlert], summary="Get Active Weather Alerts")
@@ -56,9 +102,35 @@ def search_city(q: str = Query(..., min_length=1, description="Search term")):
 
 
 @router.get("/forecast", response_model=WeatherForecastResponse, summary="Get Consolidated Forecast")
-def consolidated_forecast(location: str = Query("Krishna District", description="Location name or query")):
-    """Returns consolidated weather payload (current, hourly, daily, alerts) for optimal dashboard loading."""
-    return get_full_forecast_response(location)
+def consolidated_forecast(
+    location: str = Query("Krishna District", description="Location name or query"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+    latitude: Optional[float] = Query(None, description="Exact latitude alias"),
+    longitude: Optional[float] = Query(None, description="Exact longitude alias"),
+    region: Optional[str] = Query(None, description="Optional state/region name"),
+):
+    """Returns consolidated weather payload using exact coordinates."""
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
+
+
+@router.get("/live", response_model=WeatherForecastResponse, summary="Get Live Weather Forecast for Exact Coordinates")
+def live_weather_endpoint(
+    latitude: Optional[float] = Query(None, description="Exact latitude"),
+    longitude: Optional[float] = Query(None, description="Exact longitude"),
+    lat: Optional[float] = Query(None, description="Latitude alias"),
+    lon: Optional[float] = Query(None, description="Longitude alias"),
+    location: Optional[str] = Query("Krishna District", description="Location or place name"),
+    region: Optional[str] = Query(None, description="State/Region name"),
+):
+    """Fetches real-time weather from Open-Meteo for exact latitude and longitude."""
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
 
 
 @router.get("/locate", response_model=WeatherForecastResponse, summary="Locate User GPS Weather")

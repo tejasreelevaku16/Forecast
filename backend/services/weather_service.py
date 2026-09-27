@@ -70,7 +70,29 @@ def _safe_get(url: str, timeout: int = config.API_TIMEOUT_SECONDS) -> requests.R
 
 
 def geocode_location(location_name: str) -> Optional[Dict[str, Any]]:
-    """Resolves coordinates for location name using Open-Meteo Geocoding API."""
+    """Resolves coordinates for location name using Indian locations hierarchy or Open-Meteo Geocoding API."""
+    loc_clean = (location_name or "").strip()
+    if loc_clean:
+        try:
+            from backend.services.location_service import get_location_by_place_and_state
+            parts = [p.strip() for p in loc_clean.split(",") if p.strip()]
+            place_cand = parts[0] if parts else loc_clean
+            state_cand = parts[1] if len(parts) > 1 else None
+
+            match = get_location_by_place_and_state(place_cand, state_cand)
+            if match:
+                return {
+                    "name": match["place"],
+                    "region": match["state"],
+                    "country": "India",
+                    "lat": float(match["latitude"]),
+                    "lon": float(match["longitude"]),
+                    "district": match.get("district"),
+                    "state_code": match.get("state_code"),
+                }
+        except Exception as e:
+            print(f"[!] Indian location lookup note: {e}")
+
     try:
         url = f"{config.OPEN_METEO_GEOCODING_URL}?name={requests.utils.quote(location_name)}&count=5&language=en&format=json"
         resp = _safe_get(url, timeout=config.API_TIMEOUT_SECONDS)
@@ -274,20 +296,48 @@ def fetch_live_forecast(lat: float, lon: float, location_name: str, region_name:
     )
 
 
-def get_full_forecast_response(location_query: str = "Krishna District") -> WeatherForecastResponse:
+def get_full_forecast_response(
+    location_query: str = "Krishna District",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    region: Optional[str] = None
+) -> WeatherForecastResponse:
     """
     Primary interface for fetching weather forecast.
+    Accepts explicit coordinates (e.g. from Indian location selection) or resolves automatically.
     Attempts live Open-Meteo API query first; falls back gracefully to sample cache if offline.
     """
-    geo = geocode_location(location_query)
-    lat = geo["lat"]
-    lon = geo["lon"]
+    def _is_num(val):
+        if val is None or hasattr(val, "default"):
+            return False
+        try:
+            float(val)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    if _is_num(lat) and _is_num(lon):
+        loc_name = str(location_query).split(",")[0].strip() if location_query and not hasattr(location_query, "default") else "Selected Location"
+        reg_name = str(region) if region and not hasattr(region, "default") else ((str(location_query).split(",")[1].strip()) if location_query and not hasattr(location_query, "default") and "," in str(location_query) else "India")
+        geo = {
+            "name": loc_name,
+            "region": reg_name,
+            "country": "India",
+            "lat": float(lat),
+            "lon": float(lon),
+        }
+    else:
+        loc_q = str(location_query) if location_query and not hasattr(location_query, "default") else "Krishna District"
+        geo = geocode_location(loc_q)
+
+    lat_val = geo["lat"]
+    lon_val = geo["lon"]
     loc_name = geo["name"]
     reg_name = geo["region"]
     country = geo["country"]
 
     try:
-        return fetch_live_forecast(lat, lon, loc_name, reg_name, country)
+        return fetch_live_forecast(lat_val, lon_val, loc_name, reg_name, country)
     except Exception as e:
         print(f"[!] Live API request failed ({e}). Reverting to structured sample baseline.")
         # Fallback to built-in sample generation
@@ -378,34 +428,59 @@ def get_weather_alerts(location_query: str = "Krishna District") -> List[Weather
 
 
 def search_locations(query: str) -> List[LocationSearchResult]:
-    """Provides location search suggestions via Open-Meteo Geocoding API with preset fallbacks."""
+    """Provides location search suggestions via Indian hierarchy dataset and Open-Meteo Geocoding API."""
     q = (query or "").strip()
     if not q:
         return []
 
     results = []
+
+    # 1. Search verified Indian locations
+    try:
+        from backend.services.location_service import search_indian_locations
+        ind_matches = search_indian_locations(q, limit=12)
+        for loc in ind_matches:
+            reg_display = f"{loc['district'] + ', ' if loc.get('district') else ''}{loc['state']}"
+            results.append(
+                LocationSearchResult(
+                    location_id=f"in-{loc['state_code'].lower()}-{loc['place'].lower().replace(' ', '-')}",
+                    name=loc["place"],
+                    region=reg_display,
+                    country="India",
+                    latitude=float(loc["latitude"]),
+                    longitude=float(loc["longitude"]),
+                    district=loc.get("district"),
+                    state_code=loc.get("state_code"),
+                )
+            )
+    except Exception as e:
+        print(f"[!] Indian location search error: {e}")
+
+    # 2. Open-Meteo geocoding suggestions
     try:
         url = f"{config.OPEN_METEO_GEOCODING_URL}?name={requests.utils.quote(q)}&count=6&language=en&format=json"
         resp = _safe_get(url, timeout=3)
         if resp.status_code == 200:
             data = resp.json()
             for r in data.get("results", []):
-                results.append(
-                    LocationSearchResult(
-                        location_id=str(r.get("id", r.get("name"))),
-                        name=r.get("name"),
-                        region=r.get("admin1", "Region"),
-                        country=r.get("country", "India"),
-                        latitude=float(r.get("latitude")),
-                        longitude=float(r.get("longitude")),
+                r_name = r.get("name")
+                if not any(item.name.lower() == r_name.lower() for item in results):
+                    results.append(
+                        LocationSearchResult(
+                            location_id=str(r.get("id", r_name)),
+                            name=r_name,
+                            region=r.get("admin1", "Region"),
+                            country=r.get("country", "India"),
+                            latitude=float(r.get("latitude")),
+                            longitude=float(r.get("longitude")),
+                        )
                     )
-                )
     except Exception:
         pass
 
-    # Include matching preset locations
+    # 3. Include matching preset locations if not already present
     for loc in config.SUPPORTED_LOCATIONS:
-        if q.lower() in loc.lower() and not any(r.name in loc for r in results):
+        if q.lower() in loc.lower() and not any(r.name.lower() in loc.lower() for r in results):
             results.append(
                 LocationSearchResult(
                     location_id=loc.lower().replace(" ", "_"),

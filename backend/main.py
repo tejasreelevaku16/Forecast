@@ -5,6 +5,7 @@ Integrates FastAPI, CORS, API routers, and serves the frontend dashboard.
 
 import os
 from pathlib import Path
+from typing import Optional, List, Dict, Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +18,7 @@ from backend.routes.drift import router as drift_router
 from backend.routes.alerts import router as alerts_router
 from backend.routes.judge import router as judge_router
 from backend.routes.map import router as map_router
+from backend.routes.locations import router as locations_router
 
 from backend.services.weather_service import get_current_weather, get_full_forecast_response
 from backend.services.reliability_service import get_forecast_reliability_overview
@@ -44,6 +46,7 @@ app.include_router(drift_router)
 app.include_router(alerts_router)
 app.include_router(judge_router)
 app.include_router(map_router)
+app.include_router(locations_router)
 
 
 @app.get("/api/health", tags=["System"])
@@ -76,6 +79,23 @@ def api_reliability(location: str = "Krishna District", lead_day: int = 6, secto
     return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
 
 
+@app.get("/api/live-weather", tags=["Weather"])
+def api_live_weather(
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    location: Optional[str] = "Krishna District",
+    region: Optional[str] = None,
+):
+    """Direct endpoint: GET /api/live-weather with exact coordinate support."""
+    from backend.routes.weather import _extract_coords
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Krishna District"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
+
+
 # Static Frontend Mounting & SPA Page Routing
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
@@ -102,6 +122,10 @@ if FRONTEND_DIR.exists():
 
     @app.get("/live-weather", include_in_schema=False)
     async def page_live_weather():
+        return FileResponse(index_html)
+
+    @app.get("/live-tracking", include_in_schema=False)
+    async def page_live_tracking():
         return FileResponse(index_html)
 
     @app.get("/forecast", include_in_schema=False)

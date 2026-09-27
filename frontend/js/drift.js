@@ -6,9 +6,13 @@
 const DriftUI = {
   driftChartInstance: null,
 
-  async fetchDriftHistory(locationName = "Krishna District") {
+  async fetchDriftHistory(locationName = "Krishna District", lat = null, lon = null) {
     try {
-      const resp = await fetch(`/api/drift/history?location=${encodeURIComponent(locationName)}`);
+      let url = `/api/drift/history?location=${encodeURIComponent(locationName)}`;
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        url += `&lat=${lat}&lon=${lon}`;
+      }
+      const resp = await fetch(url);
       if (!resp.ok) throw new Error("Drift API error");
       return await resp.json();
     } catch (e) {

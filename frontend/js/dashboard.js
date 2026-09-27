@@ -178,7 +178,7 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
 /**
  * Loads and refreshes all dashboard modules across all 10 pages
  */
-async function loadDashboard(locationQuery, sector = currentSector) {
+async function loadDashboard(locationQuery, sector = currentSector, lat = null, lon = null, state = null) {
   currentLocation = locationQuery;
   currentSector = sector;
 
@@ -188,9 +188,9 @@ async function loadDashboard(locationQuery, sector = currentSector) {
   try {
     // Concurrent data retrieval from existing backend services
     const [weatherData, reliabilityData, driftData] = await Promise.all([
-      WeatherUI.fetchForecast(locationQuery),
+      WeatherUI.fetchForecast(locationQuery, lat, lon, state),
       ReliabilityUI.fetchOverview(locationQuery, 6, sector),
-      DriftUI.fetchDriftHistory(locationQuery),
+      DriftUI.fetchDriftHistory(locationQuery, lat, lon),
     ]);
 
     if (!weatherData && !reliabilityData) {
@@ -200,7 +200,7 @@ async function loadDashboard(locationQuery, sector = currentSector) {
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
 
-    // Page 2: Live Weather Page View
+    // Page 2: Live Weather / Live Tracking Page View
     if (weatherData && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
       WeatherUI.renderHourlyTimeline(weatherData.hourly);
@@ -210,6 +210,11 @@ async function loadDashboard(locationQuery, sector = currentSector) {
       if (typeof renderHourlyTrendChart === 'function') {
         renderHourlyTrendChart(weatherData.hourly);
       }
+    }
+
+    // Live Tracking Unified Sections (Daily Forecast, Drift, History, Reliability)
+    if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.renderLiveTrackingSections === 'function') {
+      LiveTrackingUI.renderLiveTrackingSections(weatherData, reliabilityData, driftData);
     }
 
     // Page 4: Forecast Trust Page View
@@ -229,13 +234,17 @@ async function loadDashboard(locationQuery, sector = currentSector) {
     await fetchAndRenderAlertsPage(locationQuery);
 
     // Page 6: India Map View synchronization
-    if (typeof IndiaMapUI !== 'undefined' && IndiaMapUI.map && IndiaMapUI.districtsData && IndiaMapUI.districtsData.length > 0) {
-      const match = IndiaMapUI.districtsData.find(d => 
-        locationQuery.toLowerCase().includes(d.name.toLowerCase()) || 
-        d.name.toLowerCase().includes(locationQuery.toLowerCase())
-      );
-      if (match) {
-        IndiaMapUI.map.setView([match.lat, match.lon], 7, { animate: true });
+    if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        const locObj = {
+          place: locationQuery,
+          district: locationQuery,
+          state: state || 'Andhra Pradesh',
+          country: 'India',
+          latitude: Number(lat),
+          longitude: Number(lon)
+        };
+        IndiaMapUI.selectLocation(locObj, false);
       }
     }
 
@@ -367,10 +376,26 @@ function setupEventListeners() {
                 <span style="font-size: 0.75rem; color: #94a3b8;">${item.country}</span>
               `;
               div.addEventListener('click', () => {
-                searchInput.value = item.name;
+                searchInput.value = `${item.name}, ${item.region}`;
                 searchDropdown.classList.remove('active');
                 pills.forEach(p => p.classList.remove('active'));
-                loadDashboard(item.name);
+                const statePart = item.region ? item.region.split(',').pop().trim() : (item.state || 'Andhra Pradesh');
+                const locObj = {
+                  place: item.name,
+                  district: item.district || item.name,
+                  state: statePart,
+                  state_code: item.state_code || '',
+                  country: item.country || 'India',
+                  latitude: Number(item.latitude),
+                  longitude: Number(item.longitude),
+                };
+                if (typeof LiveTrackingUI !== 'undefined') {
+                  LiveTrackingUI.selectLocation(statePart, item.name, false);
+                }
+                if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
+                  IndiaMapUI.selectLocation(locObj, false);
+                }
+                loadDashboard(item.name, currentSector, item.latitude, item.longitude, item.region);
               });
               searchDropdown.appendChild(div);
             });
@@ -390,12 +415,29 @@ function setupEventListeners() {
       }
     });
 
-    searchInput.addEventListener('keydown', (e) => {
+    searchInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         const query = searchInput.value.trim();
         if (query) {
           searchDropdown.classList.remove('active');
           pills.forEach(p => p.classList.remove('active'));
+          try {
+            const resp = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`);
+            if (resp.ok) {
+              const matches = await resp.json();
+              if (matches && matches.length > 0) {
+                const match = matches[0];
+                if (typeof LiveTrackingUI !== 'undefined') {
+                  LiveTrackingUI.selectLocation(match.state, match.place, false);
+                }
+                if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
+                  IndiaMapUI.selectLocation(match, false);
+                }
+                loadDashboard(match.place, currentSector, match.latitude, match.longitude, match.state);
+                return;
+              }
+            }
+          } catch (err) {}
           loadDashboard(query);
         }
       }
@@ -474,6 +516,9 @@ function setupEventListeners() {
 // Initial Boot
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.init === 'function') {
+    LiveTrackingUI.init();
+  }
   loadDashboard("Krishna District");
   if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.initMap === 'function') {
     IndiaMapUI.initMap();

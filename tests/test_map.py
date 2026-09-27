@@ -22,6 +22,19 @@ from backend.routes.weather import locate_weather
 
 BASE_URL = "http://127.0.0.1:8000"
 
+from backend.main import app
+from fastapi.testclient import TestClient
+_test_client = TestClient(app)
+
+def _get(url):
+    try:
+        return requests.get(url, timeout=0.5)
+    except Exception:
+        path = url.replace(BASE_URL, "")
+        if not path:
+            path = "/"
+        return _test_client.get(path)
+
 REQUIRED_STATES = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -113,7 +126,7 @@ def test_states_reliability_service():
 
 def test_api_map_data_endpoint():
     """Verify that GET /api/map-data returns the complete state reliability array."""
-    resp = requests.get(f"{BASE_URL}/api/map-data")
+    resp = _get(f"{BASE_URL}/api/map-data")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) >= 36
@@ -129,7 +142,7 @@ def test_api_map_data_endpoint():
 
 def test_api_map_states_dict_endpoint():
     """Verify that GET /api/map/states returns a dictionary for rapid O(1) map rendering."""
-    resp = requests.get(f"{BASE_URL}/api/map/states")
+    resp = _get(f"{BASE_URL}/api/map/states")
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, dict)

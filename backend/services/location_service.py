@@ -24,6 +24,7 @@ INDIAN_LOCATIONS: List[Dict[str, Any]] = [
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Anantapur", "district": "Anantapur", "latitude": 14.6819, "longitude": 77.6006},
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Ongole", "district": "Prakasam", "latitude": 15.5057, "longitude": 80.0499},
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Eluru", "district": "Eluru", "latitude": 16.7107, "longitude": 81.0952},
+    {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Krishna District", "district": "Krishna", "latitude": 16.1875, "longitude": 81.1389},
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Machilipatnam", "district": "Krishna", "latitude": 16.1875, "longitude": 81.1389},
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Chittoor", "district": "Chittoor", "latitude": 13.2172, "longitude": 79.1003},
     {"country": "India", "state": "Andhra Pradesh", "state_code": "AP", "place": "Vizianagaram", "district": "Vizianagaram", "latitude": 18.1067, "longitude": 83.3956},

@@ -42,6 +42,8 @@ class CurrentWeather(BaseModel):
     dew_point_c: float = 23.5
     wind_gusts_kmh: float = 26.0
     air_quality_index: str = "Moderate (AQI 82)"
+    district: Optional[str] = None
+    state_code: Optional[str] = None
 
 
 class HourlyForecastItem(BaseModel):
@@ -75,6 +77,8 @@ class LocationSearchResult(BaseModel):
     country: str
     latitude: float
     longitude: float
+    district: Optional[str] = None
+    state_code: Optional[str] = None
 
 
 class WeatherForecastResponse(BaseModel):

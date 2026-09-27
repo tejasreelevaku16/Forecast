@@ -52,7 +52,7 @@
         </li>
         <li class="nav-item" data-page="live-weather">
           <a href="/live-weather" data-page="live-weather">
-            <span>🌦</span> Live Weather
+            <span>🌦</span> Live Tracking
           </a>
         </li>
         <li class="nav-item" data-page="forecast">
@@ -335,23 +335,104 @@
         </div>
 
         <!-- =================================================================
-             PAGE 2: LIVE WEATHER
+             PAGE 2: LIVE TRACKING (INDIAN LOCATION HIERARCHY)
              ================================================================= -->
         <div class="page-view" id="page-live-weather">
           
           <div class="section-header" style="margin-bottom: 20px;">
             <div>
-              <h3><span>🌦</span> Real-Time Meteorological Tracking</h3>
-              <p style="font-size: 0.825rem; margin-top: 4px;">Live atmospheric surface parameters ingested via high-resolution meteorological feeds</p>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-risk-low" style="font-weight: 700;">LIVE TRACKING</span>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Hierarchical Selection: India ➔ State / UT ➔ Place / District ➔ Live Tracking</span>
+              </div>
+              <h2 style="font-size: 1.45rem; font-weight: 800; color: #fff; margin-top: 4px;">Live Weather & Forecast Tracking</h2>
             </div>
             <span class="badge badge-neutral" id="lastUpdatedTime">Updated: Just now</span>
+          </div>
+
+          <!-- Hierarchical Indian Location Selector -->
+          <div class="glass-card location-hierarchy-card" id="locationHierarchyCard">
+            <div class="hierarchy-card-header">
+              <div class="hierarchy-title-wrap">
+                <span class="hierarchy-flag">🇮🇳</span>
+                <div>
+                  <h4 class="hierarchy-title">Indian Location Hierarchy Selection</h4>
+                  <p class="hierarchy-subtitle">Select State / Union Territory, then select Place to retrieve live weather & forecast tracking</p>
+                </div>
+              </div>
+              <div class="hierarchy-country-pill">
+                <span>Country:</span> <strong>India</strong>
+              </div>
+            </div>
+
+            <div class="hierarchy-controls-grid">
+              <!-- State Selection -->
+              <div class="hierarchy-field">
+                <label for="stateSelect" class="hierarchy-field-label">
+                  <span>Select State</span>
+                  <span class="field-tag">All Indian States & UTs</span>
+                </label>
+                <div class="custom-select-wrap">
+                  <select id="stateSelect" class="hierarchy-dropdown">
+                    <option value="">-- Choose Indian State or UT --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Place Selection (Dependent on State) -->
+              <div class="hierarchy-field">
+                <label for="placeSelect" class="hierarchy-field-label">
+                  <span>Select Place</span>
+                  <span class="field-tag" id="placeStateHint">Filtered by State</span>
+                </label>
+                <div class="custom-select-wrap">
+                  <select id="placeSelect" class="hierarchy-dropdown" disabled>
+                    <option value="">-- Select Place --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <div class="hierarchy-action-col">
+                <label class="hierarchy-field-label" style="opacity: 0;">Action</label>
+                <button id="trackLocationBtn" class="track-btn">
+                  <span class="track-icon">🔄</span> Track Location
+                </button>
+              </div>
+            </div>
+
+            <!-- Fast Search Option with Ambiguity Resolution -->
+            <div class="hierarchy-search-box">
+              <div class="hierarchy-search-input-wrap">
+                <span>🔍</span>
+                <input type="text" id="liveTrackingSearchInput" class="hierarchy-search-input" placeholder="Search Indian places (e.g. Vijayawada, Mysuru, Hubballi, Varanasi)..." autocomplete="off" />
+                <button type="button" id="liveTrackingClearSearchBtn" class="clear-search-btn" style="display:none;">✕</button>
+              </div>
+              <div class="hierarchy-search-dropdown" id="liveTrackingSearchDropdown"></div>
+            </div>
+
+            <!-- Active Breadcrumb Path -->
+            <div class="hierarchy-breadcrumb-bar">
+              <span class="crumb-country">🇮🇳 India</span>
+              <span class="crumb-separator">➔</span>
+              <span class="crumb-state" id="crumbStateText">Andhra Pradesh</span>
+              <span class="crumb-separator">➔</span>
+              <span class="crumb-place" id="crumbPlaceText">Vijayawada (NTR)</span>
+              <span class="crumb-coords" id="crumbCoordsText">Lat: 16.51°, Lon: 80.65°</span>
+            </div>
           </div>
 
           <!-- Current Weather Hero Card -->
           <div class="glass-card weather-hero-card" style="margin-bottom: 24px;">
             <div class="weather-hero-header">
               <div>
-                <h2 class="location-title" id="currentLocationTitle">Krishna District, Andhra Pradesh</h2>
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 6px; font-size: 0.875rem;">
+                  <span style="color: #94a3b8;">State: <strong id="liveStateDisplay" style="color: #38bdf8;">Andhra Pradesh</strong></span>
+                  <span style="color: #64748b;">•</span>
+                  <span style="color: #94a3b8;">Place: <strong id="livePlaceDisplay" style="color: #38bdf8;">Vijayawada</strong></span>
+                  <span id="liveDistrictWrap" style="color: #94a3b8;">• District: <strong id="liveDistrictDisplay" style="color: #f8fafc;">NTR</strong></span>
+                </div>
+                <h2 class="location-title" id="currentLocationTitle">Vijayawada, Andhra Pradesh</h2>
                 <p class="location-subtitle" id="currentLocationSubtitle">India • Lat: 16.51°, Lon: 80.65°</p>
               </div>
               <span class="badge badge-neutral" style="color: #38bdf8;">Live Observation</span>
@@ -359,12 +440,12 @@
 
             <div class="temp-display-wrap">
               <div>
-                <div class="temp-primary" id="currentTemp">32<sup>°C</sup></div>
-                <div class="temp-subtext" id="currentFeelsLike">Feels like 37°C</div>
+                <div class="temp-primary" id="currentTemp">29<sup>°C</sup></div>
+                <div class="temp-subtext" id="currentFeelsLike">Feels like 33°C</div>
               </div>
               <div class="weather-condition-box">
                 <div class="weather-cond-icon" id="currentConditionIcon">⛅</div>
-                <div class="weather-cond-text" id="currentConditionText">Humid & Partly Cloudy</div>
+                <div class="weather-cond-text" id="currentConditionText">Partly Cloudy</div>
               </div>
             </div>
 
@@ -383,8 +464,8 @@
               <div class="detail-icon-wrap">💧</div>
               <div class="detail-info">
                 <span class="detail-label">Humidity</span>
-                <span class="detail-value" id="metricHumidity">78%</span>
-                <span class="detail-sub">Dew point <span id="metricDewPoint">27°C</span></span>
+                <span class="detail-value" id="metricHumidity">72%</span>
+                <span class="detail-sub">Dew point <span id="metricDewPoint">24°C</span></span>
               </div>
             </div>
 
@@ -392,8 +473,8 @@
               <div class="detail-icon-wrap">💨</div>
               <div class="detail-info">
                 <span class="detail-label">Wind Speed</span>
-                <span class="detail-value" id="metricWind">19.5 km/h</span>
-                <span class="detail-sub" id="metricWindSub">Dir: SE • Gusts: <span id="metricWindGusts">25 km/h</span></span>
+                <span class="detail-value" id="metricWind">14 km/h</span>
+                <span class="detail-sub" id="metricWindSub">Dir: SE • Gusts: <span id="metricWindGusts">20 km/h</span></span>
               </div>
             </div>
 
@@ -402,7 +483,7 @@
               <div class="detail-info">
                 <span class="detail-label">Pressure</span>
                 <span class="detail-value" id="metricPressure">1007 hPa</span>
-                <span class="detail-sub">Monsoonal low</span>
+                <span class="detail-sub">Atmospheric pressure</span>
               </div>
             </div>
 
@@ -410,8 +491,8 @@
               <div class="detail-icon-wrap">🌧️</div>
               <div class="detail-info">
                 <span class="detail-label">Precipitation</span>
-                <span class="detail-value" id="metricPrecip">2.4 mm</span>
-                <span class="detail-sub">Rain Chance: <span id="metricRainChance">40%</span></span>
+                <span class="detail-value" id="metricPrecip">0.0 mm</span>
+                <span class="detail-sub">Rain Chance: <span id="metricRainChance">20%</span></span>
               </div>
             </div>
 
@@ -420,7 +501,7 @@
               <div class="detail-info">
                 <span class="detail-label">UV Index</span>
                 <span class="detail-value" id="metricUV">7 / 11</span>
-                <span class="detail-sub">High during clear breaks</span>
+                <span class="detail-sub">High during midday</span>
               </div>
             </div>
 
@@ -428,8 +509,8 @@
               <div class="detail-icon-wrap">👁️</div>
               <div class="detail-info">
                 <span class="detail-label">Visibility</span>
-                <span class="detail-value" id="metricVisibility">8.5 km</span>
-                <span class="detail-sub">Moderate haze / mist</span>
+                <span class="detail-value" id="metricVisibility">9.0 km</span>
+                <span class="detail-sub">Clear visibility</span>
               </div>
             </div>
 
@@ -437,8 +518,8 @@
               <div class="detail-icon-wrap">🌅</div>
               <div class="detail-info">
                 <span class="detail-label">Sunrise / Sunset</span>
-                <span class="detail-value" id="metricSun">06:01 AM / 06:12 PM</span>
-                <span class="detail-sub">12h 11m Daylight</span>
+                <span class="detail-value" id="metricSun">06:00 AM / 06:15 PM</span>
+                <span class="detail-sub">12h 15m Daylight</span>
               </div>
             </div>
 
@@ -447,28 +528,128 @@
               <div class="detail-info">
                 <span class="detail-label">Cloud Cover</span>
                 <span class="detail-value" id="metricCloudCover">45%</span>
-                <span class="detail-sub">Atmospheric saturation</span>
+                <span class="detail-sub">Partly cloudy sky</span>
               </div>
             </div>
           </section>
 
-          <!-- 24-Hour Timeline -->
+          <!-- =================================================================
+               HOURLY FORECAST
+               ================================================================= -->
           <section class="glass-card hourly-container" id="hourlySection" style="margin-bottom: 24px;">
             <div class="section-header">
-              <h3><span>⏱️</span> 24-Hour Forecast Timeline</h3>
+              <div>
+                <span class="badge badge-neutral" style="color: #38bdf8; font-weight: 700; margin-bottom: 4px;">HOURLY FORECAST</span>
+                <h3><span>⏱️</span> 24-Hour Forecast Timeline</h3>
+              </div>
               <span style="font-size: 0.8rem; color: #94a3b8;">Hourly temperature, conditions & rain chance</span>
             </div>
             <div class="hourly-scroll" id="hourlyTimelineContainer"></div>
           </section>
 
           <!-- 24-Hour Trend Chart -->
-          <section class="glass-card chart-card">
+          <section class="glass-card chart-card" style="margin-bottom: 24px;">
             <div class="section-header">
               <h3><span>📈</span> 24-Hour Diurnal Weather Trends</h3>
               <span style="font-size: 0.775rem; color: #94a3b8;">Temperature (°C) vs Rain Chance (%)</span>
             </div>
             <div class="chart-container-inner">
               <canvas id="hourlyTrendChart"></canvas>
+            </div>
+          </section>
+
+          <!-- =================================================================
+               DAY 1–10 FORECAST
+               ================================================================= -->
+          <section class="glass-card" style="padding: 22px; margin-bottom: 24px;">
+            <div class="section-header" style="margin-bottom: 16px;">
+              <div>
+                <span class="badge badge-neutral" style="color: #38bdf8; font-weight: 700; margin-bottom: 4px;">10-DAY FORECAST</span>
+                <h3><span>📊</span> Day 1–10 Extended Outlook with Trust Assessment</h3>
+              </div>
+              <span style="font-size: 0.8rem; color: #94a3b8;">Day 1 through Day 10 meteorological projections</span>
+            </div>
+            <div class="daily-grid" id="liveDailyForecastContainer"></div>
+          </section>
+
+          <!-- =================================================================
+               FORECAST DRIFT
+               ================================================================= -->
+          <section class="glass-card live-drift-card">
+            <div class="section-header">
+              <div>
+                <span class="badge badge-neutral" style="color: #f59e0b; font-weight: 700; margin-bottom: 4px;">FORECAST DRIFT</span>
+                <h3><span>📈</span> Run-to-Run Forecast Drift</h3>
+              </div>
+              <span class="badge badge-risk-high" id="liveDriftStability">LOW STABILITY</span>
+            </div>
+
+            <div class="drift-flow-container">
+              <div class="drift-flow-box">
+                <div class="drift-flow-label">Previous Forecast</div>
+                <div class="drift-flow-val" id="liveDriftPrev">20 mm</div>
+              </div>
+              <div class="drift-flow-arrow">➔</div>
+              <div class="drift-flow-box">
+                <div class="drift-flow-label">Latest Forecast</div>
+                <div class="drift-flow-val" id="liveDriftLatest" style="color: #38bdf8;">58 mm</div>
+              </div>
+              <div class="drift-flow-box" style="padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.08);">
+                <div class="drift-flow-label">Run-to-Run Change</div>
+                <div class="drift-change-pill" id="liveDriftChange" style="color: #ef4444;">Change: +38 mm</div>
+              </div>
+            </div>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 4px 0 0 0;">
+              Comparing successive NWP cycles for identical target verification period. Higher drift indicates synoptic volatility.
+            </p>
+          </section>
+
+          <!-- =================================================================
+               FORECAST HISTORY
+               ================================================================= -->
+          <section class="glass-card" style="padding: 22px; margin-bottom: 24px;">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <div>
+                <span class="badge badge-neutral" style="color: #818cf8; font-weight: 700; margin-bottom: 4px;">FORECAST HISTORY</span>
+                <h3><span>⏱️</span> Multi-Cycle Forecast Progression Snapshots</h3>
+              </div>
+              <span style="font-size: 0.8rem; color: #94a3b8;">Last 4 numerical weather prediction (NWP) model update cycles</span>
+            </div>
+            <div class="live-history-grid" id="liveHistoryContainer"></div>
+          </section>
+
+          <!-- =================================================================
+               FORECAST RELIABILITY
+               ================================================================= -->
+          <section class="glass-card live-reliability-card">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <div>
+                <span class="badge badge-neutral" style="color: #10b981; font-weight: 700; margin-bottom: 4px;">RELIABILITY</span>
+                <h3><span>🛡️</span> Machine Learning Forecast Reliability & Bust Risk</h3>
+              </div>
+              <div id="liveReliabilityStatus" style="font-size: 0.8rem; color: #38bdf8;">
+                <span class="status-dot dot-green"></span> Status: Calibrated ML Inference Engine Active (forecast_reliability_model.pkl)
+              </div>
+            </div>
+
+            <div class="reliability-metrics-row">
+              <div class="reliability-metric-box">
+                <div class="rel-metric-label">Trust Score</div>
+                <div class="rel-metric-val" id="liveTrustScore" style="color: #ef4444;">24 / 100</div>
+                <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 10px; overflow: hidden;">
+                  <div id="liveTrustScoreBar" style="width: 24%; height: 100%; background: #ef4444; border-radius: 3px; transition: width 0.4s ease;"></div>
+                </div>
+              </div>
+
+              <div class="reliability-metric-box">
+                <div class="rel-metric-label">Bust Risk</div>
+                <div class="rel-metric-val" id="liveBustRisk" style="color: #ef4444;">HIGH RISK (76%)</div>
+                <span style="font-size: 0.75rem; color: #94a3b8;">High probability of significant forecast departure</span>
+              </div>
+            </div>
+
+            <div style="padding: 12px 14px; background: rgba(15, 23, 42, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #38bdf8; font-size: 0.825rem; color: #cbd5e1;">
+              <strong>Diagnostic Analysis:</strong> <span id="liveReliabilityDriver">Significant forecast drift (+38 mm) detected between successive NWP runs. Plan contingency buffers for operations.</span>
             </div>
           </section>
 
@@ -733,8 +914,9 @@
               <button class="map-filter-pill" data-filter="LOW">🔴 Low</button>
             </div>
 
-            <div style="min-width: 200px;">
-              <input type="text" id="mapDistrictSearch" class="search-input" style="padding: 6px 12px; font-size: 0.775rem; background: var(--bg-surface); border: 1px solid var(--bg-card-border); border-radius: var(--radius-sm);" placeholder="Search Indian State (e.g. Andhra, Telangana, Kerala)...">
+            <div class="search-box-container" style="min-width: 260px; position: relative;">
+              <input type="text" id="mapDistrictSearch" class="search-input" style="padding: 6px 12px; font-size: 0.775rem; background: var(--bg-surface); border: 1px solid var(--bg-card-border); border-radius: var(--radius-sm); width: 100%;" placeholder="Search Indian districts or cities (e.g. Krishna, Vijayawada, Hyderabad)..." autocomplete="off">
+              <div class="search-dropdown" id="mapSearchDropdown"></div>
             </div>
           </div>
 
@@ -1238,6 +1420,7 @@
   <script src="/js/drift.js"></script>
   <script src="/js/map.js"></script>
   <script src="/js/judge.js"></script>
+  <script src="/js/live_tracking.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

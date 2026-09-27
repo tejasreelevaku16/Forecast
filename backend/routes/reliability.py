@@ -11,6 +11,19 @@ from backend.services.reliability_service import get_forecast_reliability_overvi
 router = APIRouter(prefix="/api/reliability", tags=["Forecast Trust Layer"])
 
 
+def _clean_str(val, default):
+    if val is None or hasattr(val, "default"):
+        return default
+    return str(val)
+
+def _clean_int(val, default):
+    if val is None or hasattr(val, "default"):
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
 @router.get("/overview", response_model=ReliabilityOverview, summary="Get Forecast Trust Overview")
 def trust_overview(
     location: str = Query("Krishna District", description="Location name or query"),
@@ -21,7 +34,10 @@ def trust_overview(
     Returns ML-backed Forecast Trust profile, Bust Risk probability,
     lead-day risk breakdown, model-backed explainability factors, and sector recommendations.
     """
-    return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
+    loc = _clean_str(location, "Krishna District")
+    day = _clean_int(lead_day, 6)
+    sec = _clean_str(sector, "General Public")
+    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec)
 
 
 @router.get("/demo", response_model=ReliabilityOverview, summary="Alias for Forecast Trust Overview")
@@ -31,4 +47,7 @@ def demo_overview(
     sector: str = Query("General Public", description="User persona"),
 ):
     """Convenience alias for reliability overview."""
-    return get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector=sector)
+    loc = _clean_str(location, "Krishna District")
+    day = _clean_int(lead_day, 6)
+    sec = _clean_str(sector, "General Public")
+    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec)

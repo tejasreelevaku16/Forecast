@@ -22,6 +22,19 @@ from backend.services.india_map_service import get_all_india_states_map
 
 BASE_URL = "http://127.0.0.1:8000"
 
+from backend.main import app
+from fastapi.testclient import TestClient
+_test_client = TestClient(app)
+
+def _get(url):
+    try:
+        return requests.get(url, timeout=0.5)
+    except Exception:
+        path = url.replace(BASE_URL, "")
+        if not path:
+            path = "/"
+        return _test_client.get(path)
+
 
 def test_centralized_risk_classifier():
     """Verify exact thresholds and guarantees in risk_classifier.py."""
@@ -98,7 +111,7 @@ def test_forecast_data_consistency():
 
 def test_api_common_forecast_endpoint():
     """Verify GET /api/weather/common returns the unified forecast model."""
-    resp = requests.get(f"{BASE_URL}/api/weather/common?location=Krishna%20District&lead_day=6")
+    resp = _get(f"{BASE_URL}/api/weather/common?location=Krishna%20District&lead_day=6")
     assert resp.status_code == 200
     data = resp.json()
 

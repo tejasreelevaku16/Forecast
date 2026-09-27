@@ -8,6 +8,7 @@ const AppRouter = {
   routes: [
     "dashboard",
     "live-weather",
+    "live-tracking",
     "forecast",
     "trust",
     "drift",
@@ -51,12 +52,13 @@ const AppRouter = {
     }
 
     this.currentPage = pageSlug;
+    const viewSlug = pageSlug === "live-tracking" ? "live-weather" : pageSlug;
 
     // Update active nav item in sidebar
     const navItems = document.querySelectorAll(".nav-item");
     navItems.forEach((item) => {
       const targetPage = item.getAttribute("data-page");
-      if (targetPage === pageSlug) {
+      if (targetPage === pageSlug || (targetPage === "live-weather" && pageSlug === "live-tracking")) {
         item.classList.add("active");
       } else {
         item.classList.remove("active");
@@ -66,7 +68,7 @@ const AppRouter = {
     // Toggle active page view
     const pageViews = document.querySelectorAll(".page-view");
     pageViews.forEach((view) => {
-      if (view.id === `page-${pageSlug}`) {
+      if (view.id === `page-${viewSlug}`) {
         view.classList.add("active");
       } else {
         view.classList.remove("active");

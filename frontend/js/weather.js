@@ -23,9 +23,16 @@ const WeatherUI = {
   /**
    * Fetches full forecast payload from FastAPI backend
    */
-  async fetchForecast(locationName = "Krishna District") {
+  async fetchForecast(locationName = "Krishna District", lat = null, lon = null, region = null) {
     try {
-      const response = await fetch(`/api/weather/forecast?location=${encodeURIComponent(locationName)}`);
+      let url = `/api/weather/forecast?location=${encodeURIComponent(locationName)}`;
+      if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+        url += `&lat=${lat}&lon=${lon}`;
+      }
+      if (region) {
+        url += `&region=${encodeURIComponent(region)}`;
+      }
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Weather API Error: ${response.statusText}`);
       }
@@ -43,9 +50,27 @@ const WeatherUI = {
     if (!current) return;
 
     // Header & Hero info
-    document.getElementById('currentLocationTitle').textContent = `${current.location}, ${current.region}`;
-    document.getElementById('currentLocationSubtitle').textContent = `${current.country} • Lat: ${current.latitude.toFixed(2)}°, Lon: ${current.longitude.toFixed(2)}°`;
-    document.getElementById('lastUpdatedTime').textContent = `Updated: ${current.updated_at}`;
+    const locTitle = document.getElementById('currentLocationTitle');
+    if (locTitle) locTitle.textContent = `${current.location}, ${current.region}`;
+
+    const locSub = document.getElementById('currentLocationSubtitle');
+    if (locSub) locSub.textContent = `${current.country} • Lat: ${current.latitude.toFixed(2)}°, Lon: ${current.longitude.toFixed(2)}°`;
+
+    const updatedElem = document.getElementById('lastUpdatedTime');
+    if (updatedElem) updatedElem.textContent = `Updated: ${current.updated_at}`;
+
+    // Live Tracking specific State / Place tags
+    const liveState = document.getElementById('liveStateDisplay');
+    const livePlace = document.getElementById('livePlaceDisplay');
+    const liveDist = document.getElementById('liveDistrictDisplay');
+    const liveDistWrap = document.getElementById('liveDistrictWrap');
+
+    if (liveState) liveState.textContent = current.region;
+    if (livePlace) livePlace.textContent = current.location;
+    if (current.district) {
+      if (liveDist) liveDist.textContent = current.district;
+      if (liveDistWrap) liveDistWrap.style.display = 'inline';
+    }
 
     // Temperature & Conditions
     document.getElementById('currentTemp').innerHTML = `${Math.round(current.temperature_c)}<sup>°C</sup>`;

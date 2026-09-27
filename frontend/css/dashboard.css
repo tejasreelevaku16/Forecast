@@ -1808,4 +1808,499 @@
   }
 }
 
+/* ==========================================================================
+   WeatherTrust AI — Indian Location Hierarchy & Live Tracking Page Styles
+   ========================================================================== */
+
+.location-hierarchy-card {
+  padding: 24px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: visible;
+}
+
+.hierarchy-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hierarchy-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hierarchy-flag {
+  font-size: 1.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.hierarchy-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.hierarchy-subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+}
+
+.hierarchy-country-pill {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hierarchy-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.hierarchy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hierarchy-field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.field-tag {
+  font-size: 0.725rem;
+  font-weight: 500;
+  color: #38bdf8;
+}
+
+.custom-select-wrap {
+  position: relative;
+}
+
+.hierarchy-dropdown {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: var(--radius-sm);
+  color: #f8fafc;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+}
+
+.hierarchy-dropdown:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.hierarchy-dropdown:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hierarchy-dropdown option {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 8px;
+}
+
+.hierarchy-action-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-btn {
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.track-btn:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+}
+
+.track-btn.spinning .track-icon {
+  animation: spin 0.6s linear infinite;
+}
+
+/* Disambiguated Search Bar */
+.hierarchy-search-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.hierarchy-search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+
+.hierarchy-search-input-wrap:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.hierarchy-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.hierarchy-search-input::placeholder {
+  color: #64748b;
+}
+
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+}
+
+.clear-search-btn:hover {
+  color: #fff;
+}
+
+.hierarchy-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+
+.hierarchy-search-dropdown.active {
+  display: block;
+}
+
+.hierarchy-search-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.hierarchy-search-item:last-child {
+  border-bottom: none;
+}
+
+.hierarchy-search-item:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.search-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-item-place {
+  font-weight: 700;
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.search-item-dist {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  color: #94a3b8;
+}
+
+.search-item-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.search-item-coords {
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+/* Breadcrumb Bar */
+.hierarchy-breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.crumb-country {
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.crumb-separator {
+  color: #38bdf8;
+}
+
+.crumb-state {
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.crumb-place {
+  font-weight: 700;
+  color: #10b981;
+}
+
+.crumb-coords {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+/* Live Tracking Drift Card */
+.live-drift-card {
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.drift-flow-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.drift-flow-box {
+  text-align: center;
+}
+
+.drift-flow-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.drift-flow-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 4px;
+}
+
+.drift-flow-arrow {
+  font-size: 1.8rem;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.drift-metrics-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.drift-change-pill {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* Live Tracking History Grid */
+.live-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.live-history-card {
+  padding: 14px;
+}
+
+.live-history-card.latest-cycle {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+}
+
+.cycle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.775rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.cycle-name {
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.cycle-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.cycle-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.cycle-unit {
+  font-size: 0.8rem;
+  color: #38bdf8;
+}
+
+.cycle-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Live Tracking Reliability Card */
+.live-reliability-card {
+  padding: 22px;
+  margin-bottom: 24px;
+}
+
+.reliability-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.reliability-metric-box {
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rel-metric-label {
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.rel-metric-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.dot-green {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.dot-amber {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+@media (max-width: 768px) {
+  .hierarchy-controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .drift-flow-container {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 
