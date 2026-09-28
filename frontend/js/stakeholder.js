@@ -26,88 +26,67 @@ const StakeholderUI = {
     this.setupRoleTabs();
     this.populateDistrictSelect();
     this.setLeadDay(this.currentLeadDay, false);
-    this.switchRole(this.activeRole, false);
+    this.switchRole(this.activeRole, true);
   },
 
   setupEventListeners() {
-    // Lead day pills
-    const pills = document.querySelectorAll(".sync-lead-day-pills .lead-day-pill");
-    pills.forEach((pill) => {
-      pill.addEventListener("click", (e) => {
-        const d = parseInt(e.target.getAttribute("data-day") || "6", 10);
-        this.setLeadDay(d);
-      });
+    if (this._listenersBound) return;
+    this._listenersBound = true;
+
+    // Lead day pills delegation
+    document.addEventListener("click", (e) => {
+      const pill = e.target.closest(".sync-lead-day-pills .lead-day-pill");
+      if (pill) {
+        e.preventDefault();
+        const d = parseInt(pill.getAttribute("data-day") || "6", 10);
+        this.setLeadDay(d, true);
+      }
     });
 
-    // District select dropdown
-    const distSelect = document.getElementById("stakeholderDistrictSelect");
-    if (distSelect) {
-      distSelect.addEventListener("change", (e) => {
-        const loc = e.target.value;
-        this.onDistrictChanged(loc);
-      });
-    }
-
-    // Role tabs
-    const roleBtns = document.querySelectorAll(".role-tab-btn");
-    roleBtns.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const role = btn.getAttribute("data-role");
-        if (role) this.switchRole(role);
-      });
+    // District select dropdown delegation
+    document.addEventListener("change", (e) => {
+      if (e.target && e.target.id === "stakeholderDistrictSelect") {
+        this.onDistrictChanged(e.target.value);
+      }
     });
 
-    // Forecaster Export PDF & CSV
-    const exportCsvBtn = document.getElementById("forecasterExportCsvBtn");
-    if (exportCsvBtn) {
-      exportCsvBtn.addEventListener("click", () => this.exportForecasterCSV());
-    }
+    // Role tabs delegation
+    document.addEventListener("click", (e) => {
+      const roleBtn = e.target.closest(".role-tab-btn");
+      if (roleBtn) {
+        e.preventDefault();
+        const role = roleBtn.getAttribute("data-role");
+        if (role) this.switchRole(role, true);
+      }
+    });
 
-    const exportPdfBtn = document.getElementById("forecasterExportPdfBtn");
-    if (exportPdfBtn) {
-      exportPdfBtn.addEventListener("click", () => this.exportBriefingPDF());
-    }
+    // Global Action Buttons Delegation
+    document.addEventListener("click", (e) => {
+      if (e.target.closest("#forecasterExportCsvBtn")) {
+        this.exportForecasterCSV();
+      } else if (e.target.closest("#forecasterExportPdfBtn")) {
+        this.exportBriefingPDF();
+      } else if (e.target.closest("#disasterExportSitrepBtn")) {
+        this.exportDisasterSitrep();
+      } else if (e.target.closest("#adminRetrainSubmitBtn")) {
+        this.triggerModelRetrain();
+      } else if (e.target.closest("#adminCreateBackupBtn")) {
+        this.triggerBackup();
+      } else if (e.target.closest("#publicShareBtn")) {
+        this.sharePublicReport();
+      } else if (e.target.closest("#publicCopyWaBtn")) {
+        this.copyWhatsAppText();
+      }
+    });
 
-    // Disaster SITREP Export
-    const exportSitrepBtn = document.getElementById("disasterExportSitrepBtn");
-    if (exportSitrepBtn) {
-      exportSitrepBtn.addEventListener("click", () => this.exportDisasterSitrep());
-    }
-
-    // Admin Retrain Form
-    const retrainBtn = document.getElementById("adminRetrainSubmitBtn");
-    if (retrainBtn) {
-      retrainBtn.addEventListener("click", () => this.triggerModelRetrain());
-    }
-
-    // Admin Dataset Upload
     const datasetInput = document.getElementById("adminDatasetFileInput");
     if (datasetInput) {
       datasetInput.addEventListener("change", (e) => this.handleDatasetUpload(e));
     }
 
-    // Admin Backup Button
-    const backupBtn = document.getElementById("adminCreateBackupBtn");
-    if (backupBtn) {
-      backupBtn.addEventListener("click", () => this.triggerBackup());
-    }
-
-    // Admin Log Filter
     const logFilter = document.getElementById("adminLogFilter");
     if (logFilter) {
       logFilter.addEventListener("change", (e) => this.filterLogs(e.target.value));
-    }
-
-    // Public Share Button
-    const shareBtn = document.getElementById("publicShareBtn");
-    if (shareBtn) {
-      shareBtn.addEventListener("click", () => this.sharePublicReport());
-    }
-
-    // Public Copy WhatsApp text
-    const copyWaBtn = document.getElementById("publicCopyWaBtn");
-    if (copyWaBtn) {
-      copyWaBtn.addEventListener("click", () => this.copyWhatsAppText());
     }
   },
 
@@ -137,17 +116,21 @@ const StakeholderUI = {
         });
       })
       .catch(() => {
-        // Fallback default options
         const defaults = ["Krishna District", "Vijayawada", "Visakhapatnam", "Guntur", "Hyderabad", "Bengaluru Urban", "Mumbai City", "Delhi, NCR"];
         distSelect.innerHTML = defaults.map((d) => `<option value="${d}">${d}</option>`).join("");
       });
   },
 
   setLeadDay(day, shouldFetch = true) {
-    this.currentLeadDay = day;
+    this.currentLeadDay = parseInt(day, 10);
     const pills = document.querySelectorAll(".sync-lead-day-pills .lead-day-pill");
     pills.forEach((p) => {
-      p.classList.toggle("active", parseInt(p.getAttribute("data-day"), 10) === day);
+      const pDay = parseInt(p.getAttribute("data-day"), 10);
+      if (pDay === this.currentLeadDay) {
+        p.classList.add("active");
+      } else {
+        p.classList.remove("active");
+      }
     });
 
     if (shouldFetch) {
@@ -156,9 +139,35 @@ const StakeholderUI = {
   },
 
   onDistrictChanged(newLoc) {
+    if (!newLoc) return;
     this.currentLocation = newLoc;
     window.currentSelectedLocation = newLoc;
-    localStorage.setItem("weathertrust-selected-location", JSON.stringify({ name: newLoc }));
+    window.currentSelectedLat = null;
+    window.currentSelectedLon = null;
+    window.selectedLocation = null;
+    try {
+      localStorage.setItem("weathertrust-selected-location", JSON.stringify({ name: newLoc }));
+    } catch (e) {}
+
+    // Synchronize select dropdown value if not matching
+    const distSelect = document.getElementById("stakeholderDistrictSelect");
+    if (distSelect && distSelect.value !== newLoc) {
+      let found = false;
+      for (let i = 0; i < distSelect.options.length; i++) {
+        if (distSelect.options[i].value.toLowerCase() === newLoc.toLowerCase()) {
+          distSelect.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const opt = document.createElement("option");
+        opt.value = newLoc;
+        opt.textContent = newLoc;
+        opt.selected = true;
+        distSelect.appendChild(opt);
+      }
+    }
 
     // Sync header input if present
     const headerInput = document.getElementById("citySearchInput");
@@ -185,6 +194,13 @@ const StakeholderUI = {
 
     // Update Operator Banner
     this.updateOperatorBanner(roleName);
+
+    // Resize active map
+    if (roleName === "forecaster" && this.forecasterMap) {
+      setTimeout(() => this.forecasterMap.invalidateSize(), 150);
+    } else if (roleName === "disaster" && this.disasterMap) {
+      setTimeout(() => this.disasterMap.invalidateSize(), 150);
+    }
 
     if (shouldFetch) {
       this.loadActivePortalData();
@@ -244,12 +260,10 @@ const StakeholderUI = {
     }
 
     let endpoint = `/api/stakeholder/${role}?location=${encodeURIComponent(loc)}&lead_day=${day}`;
-    if (window.selectedLocation && (window.selectedLocation.place === loc || window.selectedLocation.district === loc || window.selectedLocation.displayName === loc)) {
+    if (window.selectedLocation && (window.selectedLocation.name === loc || window.selectedLocation.district === loc || window.selectedLocation.place === loc)) {
       if (window.selectedLocation.latitude !== null && window.selectedLocation.longitude !== null) {
         endpoint += `&lat=${window.selectedLocation.latitude}&lon=${window.selectedLocation.longitude}`;
       }
-    } else if (window.currentSelectedLat && window.currentSelectedLon) {
-      endpoint += `&lat=${window.currentSelectedLat}&lon=${window.currentSelectedLon}`;
     }
 
     fetch(endpoint, { signal: controller.signal })
@@ -414,23 +428,37 @@ const StakeholderUI = {
     if (!mapContainer || typeof L === "undefined") return;
 
     if (!this.forecasterMap) {
-      this.forecasterMap = L.map("forecasterConfidenceMap", {
-        center: [20.5937, 78.9629],
-        zoom: 4,
-        zoomControl: true,
-      });
+      try {
+        if (mapContainer._leaflet_id) {
+          mapContainer._leaflet_id = null;
+        }
+        this.forecasterMap = L.map("forecasterConfidenceMap", {
+          center: [20.5937, 78.9629],
+          zoom: 4,
+          zoomControl: true,
+        });
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-        maxZoom: 18,
-      }).addTo(this.forecasterMap);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+          maxZoom: 18,
+        }).addTo(this.forecasterMap);
+      } catch (err) {
+        console.warn("[StakeholderUI] Map init warning:", err);
+      }
+    }
+
+    if (this.forecasterMap) {
+      setTimeout(() => this.forecasterMap.invalidateSize(), 100);
+      setTimeout(() => this.forecasterMap.invalidateSize(), 300);
     }
 
     // Clear previous markers
-    if (this.forecasterMarkerLayer) {
+    if (this.forecasterMarkerLayer && this.forecasterMap) {
       this.forecasterMap.removeLayer(this.forecasterMarkerLayer);
     }
-    this.forecasterMarkerLayer = L.layerGroup().addTo(this.forecasterMap);
+    if (this.forecasterMap) {
+      this.forecasterMarkerLayer = L.layerGroup().addTo(this.forecasterMap);
+    }
 
     fetch(`/api/map/india-reliability?day=${leadDay}`)
       .then((r) => r.json())
@@ -708,22 +736,36 @@ const StakeholderUI = {
     if (!mapContainer || typeof L === "undefined") return;
 
     if (!this.disasterMap) {
-      this.disasterMap = L.map("disasterFloodMap", {
-        center: [17.0, 81.0],
-        zoom: 6,
-        zoomControl: true,
-      });
+      try {
+        if (mapContainer._leaflet_id) {
+          mapContainer._leaflet_id = null;
+        }
+        this.disasterMap = L.map("disasterFloodMap", {
+          center: [17.0, 81.0],
+          zoom: 6,
+          zoomControl: true,
+        });
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 18,
-      }).addTo(this.disasterMap);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+          maxZoom: 18,
+        }).addTo(this.disasterMap);
+      } catch (err) {
+        console.warn("[StakeholderUI] Disaster map init warning:", err);
+      }
     }
 
-    if (this.disasterMarkerLayer) {
+    if (this.disasterMap) {
+      setTimeout(() => this.disasterMap.invalidateSize(), 100);
+      setTimeout(() => this.disasterMap.invalidateSize(), 300);
+    }
+
+    if (this.disasterMarkerLayer && this.disasterMap) {
       this.disasterMap.removeLayer(this.disasterMarkerLayer);
     }
-    this.disasterMarkerLayer = L.layerGroup().addTo(this.disasterMap);
+    if (this.disasterMap) {
+      this.disasterMarkerLayer = L.layerGroup().addTo(this.disasterMap);
+    }
 
     if (floodData) {
       floodData.forEach((f) => {

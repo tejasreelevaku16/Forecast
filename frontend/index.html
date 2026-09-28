@@ -19,8 +19,40 @@
   <link rel="stylesheet" href="/css/weatherScenes.css">
   <link rel="stylesheet" href="/css/stakeholder.css">
   <link rel="stylesheet" href="/css/sih_differentiators.css">
+  <link rel="stylesheet" href="/css/background.css">
 </head>
 <body>
+
+  <!-- Global Background Component -->
+  <div class="global-background" id="weatherTrustGlobalBg" aria-hidden="true">
+    <div class="bg-sky-gradient"></div>
+    <div class="bg-scenery-plate"></div>
+    <div class="bg-cloud-layer bg-cloud-top-1"></div>
+    <div class="bg-cloud-layer bg-cloud-top-2"></div>
+    <div class="bg-cloud-layer bg-cloud-top-3"></div>
+    <div class="bg-fog-layer bg-fog-mid-1"></div>
+    <div class="bg-fog-layer bg-fog-mid-2"></div>
+    <div class="bg-fog-layer bg-fog-low-1"></div>
+    <div class="bg-pine-silhouette-layer">
+      <svg class="bg-pine-svg" viewBox="0 0 1920 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pineGradDistant" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(100, 130, 160, 0)" />
+            <stop offset="40%" stop-color="rgba(75, 105, 135, 0.25)" />
+            <stop offset="100%" stop-color="rgba(50, 80, 110, 0.45)" />
+          </linearGradient>
+          <linearGradient id="pineGradForeground" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(40, 65, 90, 0)" />
+            <stop offset="30%" stop-color="rgba(30, 50, 75, 0.35)" />
+            <stop offset="100%" stop-color="rgba(18, 32, 52, 0.65)" />
+          </linearGradient>
+        </defs>
+        <path fill="url(#pineGradDistant)" d="M0,400 L0,320 L15,290 L30,325 L45,280 L60,330 L80,270 L100,320 L120,295 L140,335 L165,260 L185,325 L210,285 L235,330 L260,250 L280,315 L310,275 L335,320 L370,240 L395,310 L430,270 L460,325 L500,230 L530,305 L570,265 L610,320 L650,225 L680,300 L720,260 L760,315 L800,220 L840,295 L880,255 L920,310 L970,215 L1010,290 L1060,250 L1110,305 L1160,210 L1210,285 L1260,245 L1310,300 L1370,205 L1420,280 L1470,240 L1530,295 L1590,200 L1640,275 L1700,235 L1760,290 L1820,195 L1870,270 L1920,230 L1920,400 Z"/>
+        <path fill="url(#pineGradForeground)" d="M0,400 L0,350 L25,310 L50,360 L85,290 L120,355 L160,280 L200,345 L245,270 L290,340 L340,260 L390,335 L445,250 L500,330 L560,245 L620,325 L685,240 L750,320 L820,235 L890,315 L965,230 L1040,310 L1120,225 L1200,305 L1285,220 L1370,300 L1460,215 L1550,295 L1645,210 L1740,290 L1835,205 L1920,285 L1920,400 Z"/>
+      </svg>
+    </div>
+    <div class="bg-vignette-overlay"></div>
+  </div>
 
   <!-- Top Disclaimer Notice -->
   <div class="disclaimer-banner">

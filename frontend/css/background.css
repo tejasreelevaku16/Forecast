@@ -1,0 +1,290 @@
+/* ==========================================================================
+   WeatherTrust AI — Global Background Component Stylesheet
+   Exact Replication of the Reference Mountain, Cloud, Pine & Mist Scenery
+   ========================================================================== */
+
+/* 1. Global Fixed Container (Zero interference with UI interactions) */
+.global-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  background-color: #dceefb;
+}
+
+/* 2. Base Sky Gradient (Atmospheric Ice-Blue Palette) */
+.bg-sky-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    #d9edf9 0%,
+    #c4e1f7 20%,
+    #a8d2f2 42%,
+    #93c5eb 65%,
+    #81b7e4 85%,
+    #72abd9 100%
+  );
+}
+
+/* 3. Reference Scenery Plate (High-Resolution Landscape Matte) */
+.bg-scenery-plate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/assets/weather_background.jpg');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  opacity: 0.96;
+  filter: saturate(1.05) contrast(1.02);
+}
+
+/* 4. Upper Sky Volumetric Cloud Layers (Cinematic Ambient Movement) */
+.bg-cloud-layer {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Top Cloud Layer 1: High Fluffy Cumulus Drift (35s duration) */
+.bg-cloud-top-1 {
+  top: 0;
+  left: -20%;
+  width: 140%;
+  height: 45%;
+  background:
+    radial-gradient(ellipse 480px 220px at 25% 25%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.35) 45%, transparent 75%),
+    radial-gradient(ellipse 550px 260px at 75% 20%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 50%, transparent 80%),
+    radial-gradient(ellipse 360px 180px at 50% 12%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.25) 45%, transparent 70%);
+  filter: blur(14px);
+  opacity: 0.7;
+  animation: bgCloudDriftHorizontal1 38s ease-in-out infinite alternate;
+}
+
+/* Top Cloud Layer 2: Soft Stratocumulus Volume (42s duration) */
+.bg-cloud-top-2 {
+  top: 8%;
+  left: -15%;
+  width: 130%;
+  height: 40%;
+  background:
+    radial-gradient(ellipse 420px 200px at 15% 40%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 75%),
+    radial-gradient(ellipse 500px 240px at 85% 35%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.28) 48%, transparent 78%),
+    radial-gradient(ellipse 380px 190px at 45% 45%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.15) 50%, transparent 72%);
+  filter: blur(20px);
+  opacity: 0.6;
+  animation: bgCloudDriftHorizontal2 44s ease-in-out infinite alternate;
+}
+
+/* Top Cloud Layer 3: High Sunlight Glow / Cirrus Haze */
+.bg-cloud-top-3 {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 35%;
+  background: radial-gradient(ellipse 700px 300px at 60% 10%, rgba(255, 255, 255, 0.5) 0%, rgba(240, 248, 255, 0.15) 55%, transparent 80%);
+  filter: blur(28px);
+  opacity: 0.75;
+}
+
+/* 5. Atmospheric Fog & Mountain Valley Mist Layers */
+.bg-fog-layer {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Mid Fog Layer 1: Mountain Ridge & Valley Flow */
+.bg-fog-mid-1 {
+  top: 38%;
+  left: -25%;
+  width: 150%;
+  height: 28%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(240, 248, 255, 0.32) 25%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(235, 246, 255, 0.35) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(24px);
+  opacity: 0.65;
+  animation: bgFogFlow1 30s ease-in-out infinite alternate;
+}
+
+/* Mid Fog Layer 2: Deeper Ridge Mist */
+.bg-fog-mid-2 {
+  top: 50%;
+  left: -20%;
+  width: 140%;
+  height: 25%;
+  background: radial-gradient(
+    ellipse 850px 220px at 45% 50%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(230, 242, 254, 0.3) 45%,
+    transparent 80%
+  );
+  filter: blur(22px);
+  opacity: 0.55;
+  animation: bgFogFlow2 36s ease-in-out infinite alternate;
+}
+
+/* Lower Fog Layer: Base Forest Mist */
+.bg-fog-low-1 {
+  bottom: 8%;
+  left: -15%;
+  width: 130%;
+  height: 22%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 40%,
+    rgba(240, 248, 255, 0.5) 80%,
+    rgba(225, 240, 253, 0.25) 100%
+  );
+  filter: blur(26px);
+  opacity: 0.6;
+  animation: bgFogFlow3 34s ease-in-out infinite alternate;
+}
+
+/* 6. Pine Forest Silhouette SVG Layer (Atmospheric Depth & Vector Sharpness) */
+.bg-pine-silhouette-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 28%;
+  opacity: 0.7;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.bg-pine-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 7. Atmospheric Vignette & Contrast Overlay */
+.bg-vignette-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    transparent 40%,
+    rgba(180, 210, 235, 0.15) 75%,
+    rgba(130, 175, 215, 0.28) 100%
+  );
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Smooth Infinite Keyframe Animations (20–44 seconds, subtle and premium)
+   ========================================================================== */
+
+@keyframes bgCloudDriftHorizontal1 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(40px, -6px, 0) scale(1.02);
+  }
+  100% {
+    transform: translate3d(85px, 0, 0) scale(1);
+  }
+}
+
+@keyframes bgCloudDriftHorizontal2 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.01);
+  }
+  50% {
+    transform: translate3d(-50px, 8px, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-95px, 0, 0) scale(1.01);
+  }
+}
+
+@keyframes bgFogFlow1 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(35px, -4px, 0);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate3d(70px, 0, 0);
+    opacity: 0.58;
+  }
+}
+
+@keyframes bgFogFlow2 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.48;
+  }
+  50% {
+    transform: translate3d(-30px, 5px, 0);
+    opacity: 0.62;
+  }
+  100% {
+    transform: translate3d(-65px, 0, 0);
+    opacity: 0.52;
+  }
+}
+
+@keyframes bgFogFlow3 {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate3d(25px, -3px, 0);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(50px, 0, 0);
+    opacity: 0.55;
+  }
+}
+
+/* ==========================================================================
+   Responsive Optimizations (Desktop, Laptop, Tablet, Mobile)
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+  .bg-cloud-top-1 { filter: blur(12px); }
+  .bg-cloud-top-2 { filter: blur(16px); }
+  .bg-fog-mid-1, .bg-fog-mid-2 { filter: blur(18px); }
+}
+
+@media (max-width: 768px) {
+  .bg-scenery-plate {
+    background-position: 45% bottom;
+  }
+  .bg-cloud-top-1, .bg-cloud-top-2 {
+    width: 180%;
+    filter: blur(10px);
+  }
+  .bg-fog-mid-1, .bg-fog-mid-2, .bg-fog-low-1 {
+    width: 180%;
+    filter: blur(15px);
+  }
+}

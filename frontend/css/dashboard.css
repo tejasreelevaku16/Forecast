@@ -8,13 +8,20 @@
   min-height: 100vh;
   height: 100vh;
   max-height: 100vh;
+  position: relative;
+  z-index: 10;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation - Exact Frosted Ice Glass Aesthetic */
 .sidebar {
   width: var(--sidebar-width);
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--bg-card-border);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 4px 0 28px rgba(31, 60, 100, 0.08);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -29,7 +36,7 @@
 
 .brand-section {
   padding: 24px 20px;
-  border-bottom: 1px solid var(--bg-card-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .brand-logo {
@@ -42,7 +49,7 @@
 .brand-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  background: linear-gradient(135deg, #0284c7, #2563eb);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -50,21 +57,22 @@
   color: #fff;
   font-weight: 800;
   font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
 }
 
 .brand-text h1 {
   font-size: 1.05rem;
   letter-spacing: -0.01em;
-  color: var(--text-primary);
+  color: #1e293b;
   line-height: 1.2;
 }
 
 .brand-tagline {
   font-size: 0.68rem;
-  color: var(--accent-cyan);
+  color: #0284c7;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Nav Links */
@@ -85,24 +93,26 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  color: #334155;
   text-decoration: none;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .nav-item a:hover {
-  background: var(--bg-surface);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.65);
+  color: #0284c7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .nav-item.active a {
-  background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(59, 130, 246, 0.05));
-  color: var(--accent-cyan);
-  border-left: 3px solid var(--accent-cyan);
-  font-weight: 600;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95), rgba(240, 249, 255, 0.9));
+  color: #0284c7;
+  border-left: 3.5px solid #0284c7;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
 }
 
 .nav-item .nav-badge {
@@ -110,14 +120,16 @@
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  font-weight: 700;
 }
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid var(--bg-card-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: #64748b;
   flex-shrink: 0;
 }
 
@@ -132,12 +144,14 @@
   overflow-x: hidden;
 }
 
-/* Header */
+/* Header - Exact Light Frosted Glass Style */
 .top-header {
   min-height: var(--header-height);
   height: auto;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--bg-card-border);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -159,39 +173,43 @@
 .search-input-wrapper {
   display: flex;
   align-items: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-md);
-  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  padding: 8px 18px;
   gap: 10px;
+  box-shadow: 0 4px 16px rgba(31, 60, 100, 0.06);
   transition: all 0.2s ease;
 }
 
 .search-input-wrapper:focus-within {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2), 0 4px 16px rgba(31, 60, 100, 0.08);
 }
 
 .search-input {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: #1e293b;
   font-size: 0.875rem;
   width: 100%;
 }
 .search-input::placeholder {
-  color: var(--text-muted);
+  color: #64748b;
 }
 
 .locate-btn {
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid var(--accent-cyan);
-  color: var(--accent-cyan);
+  background: rgba(2, 132, 199, 0.12);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+  color: #0284c7;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  border-radius: 9999px;
   cursor: pointer;
   white-space: nowrap;
   display: flex;
@@ -200,8 +218,8 @@
   transition: all 0.2s ease;
 }
 .locate-btn:hover {
-  background: var(--accent-cyan);
-  color: #0b132b;
+  background: #0284c7;
+  color: #ffffff;
 }
 .locate-btn:disabled {
   opacity: 0.6;
@@ -213,10 +231,12 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--bg-card-border);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   max-height: 220px;
   overflow-y: auto;
   display: none;
@@ -232,12 +252,12 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: var(--text-primary);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #1e293b;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 .search-dropdown-item:hover {
-  background: var(--bg-surface-hover);
-  color: var(--accent-cyan);
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
 }
 
 /* Quick City Filter Pills */
@@ -257,24 +277,28 @@
 }
 
 .pill-btn {
-  background: var(--bg-surface);
-  border: 1px solid var(--bg-card-border);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: #334155;
   font-size: 0.775rem;
-  font-weight: 500;
-  padding: 5px 12px;
+  font-weight: 600;
+  padding: 5px 14px;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .pill-btn:hover {
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
+  color: #0284c7;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #0284c7;
 }
 .pill-btn.active {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -307,6 +331,8 @@
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* Primary Top Grid: Weather Hero + Forecast Trust Layer Hero */
@@ -322,7 +348,9 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: linear-gradient(135deg, rgba(24, 35, 60, 0.9), rgba(17, 26, 46, 0.95));
+  background: rgba(15, 25, 45, 0.9);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
 }
 
 .weather-hero-header {

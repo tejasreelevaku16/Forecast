@@ -9,8 +9,8 @@
   --bg-secondary: #111a2e;
   --bg-surface: #18233c;
   --bg-surface-hover: #1f2d4d;
-  --bg-card: rgba(24, 35, 60, 0.75);
-  --bg-card-border: rgba(255, 255, 255, 0.08);
+  --bg-card: rgba(15, 25, 45, 0.85);
+  --bg-card-border: rgba(255, 255, 255, 0.12);
   
   /* Text Colors */
   --text-primary: #f8fafc;
@@ -64,7 +64,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background-color: transparent;
   color: var(--text-primary);
   line-height: 1.5;
   overflow-x: hidden;
@@ -182,29 +182,33 @@ p {
 /* Cards */
 .glass-card {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  transition: border-color 0.2s ease;
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.5), 0 10px 15px -6px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.55), 0 12px 18px -6px rgba(0, 0, 0, 0.45);
 }
 
 /* Alert Banner */
 .disclaimer-banner {
-  background: rgba(15, 23, 42, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
   padding: 8px 24px;
   font-size: 0.775rem;
-  color: var(--text-muted);
+  color: #334155;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 .disclaimer-banner strong {
-  color: var(--accent-cyan);
+  color: #0284c7;
 }
+

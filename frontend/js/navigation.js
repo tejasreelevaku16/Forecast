@@ -260,13 +260,15 @@ const AppRouter = {
     // Trigger Stakeholder Workspace & Resource Optimization AI
     if (pageSlug === "stakeholder") {
       setTimeout(() => {
-        if (typeof window.initStakeholderWorkspace === "function") {
+        if (typeof StakeholderUI !== "undefined") {
+          StakeholderUI.init();
+        } else if (typeof window.initStakeholderWorkspace === "function") {
           window.initStakeholderWorkspace();
         }
         if (typeof window.ResourceOptimization !== "undefined") {
           window.ResourceOptimization.loadResourcePlan(loc, 6);
         }
-      }, 150);
+      }, 50);
     }
 
     // Redraw charts when view changes

@@ -12,14 +12,24 @@ let currentSector = "General Public";
 /**
  * Global Loading and Error State Helpers
  */
+let _loadingTimer = null;
 function showLoading(msg = "Evaluating forecast reliability...") {
   const overlay = document.getElementById('globalLoadingOverlay');
   const text = document.getElementById('globalLoadingText');
   if (overlay) overlay.classList.add('active');
   if (text) text.textContent = msg;
+
+  if (_loadingTimer) clearTimeout(_loadingTimer);
+  _loadingTimer = setTimeout(() => {
+    hideLoading();
+  }, 2000);
 }
 
 function hideLoading() {
+  if (_loadingTimer) {
+    clearTimeout(_loadingTimer);
+    _loadingTimer = null;
+  }
   const overlay = document.getElementById('globalLoadingOverlay');
   if (overlay) overlay.classList.remove('active');
 }
@@ -387,6 +397,7 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
 
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
+    hideLoading();
 
     // Update Weather Scene Engine (Live Weather Scene) with exact coordinates
     if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
