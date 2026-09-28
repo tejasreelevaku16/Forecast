@@ -18,26 +18,55 @@ const JudgeUI = {
 
   renderJudgeDashboard(data) {
     if (!data || data.status !== "trained_model_active") return;
+    const judgeSection = document.getElementById('judgeSection');
+    if (!judgeSection) return;
 
-    // Header info
-    document.getElementById('judgeModelName').textContent = data.selected_model;
-    document.getElementById('judgeCalibration').textContent = data.calibration_technique;
-    document.getElementById('judgeSplitInfo').textContent = data.training_strategy;
+    const setEl = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    // Header info (safely set if present)
+    setEl('judgeModelName', data.selected_model);
+    setEl('judgeCalibration', data.calibration_technique);
+    setEl('judgeSplitInfo', data.training_strategy);
 
     const m = data.evaluation_metrics;
-    document.getElementById('metricRocAuc').textContent = m.roc_auc.toFixed(4);
-    document.getElementById('metricAccuracy').textContent = `${(m.accuracy * 100).toFixed(2)}%`;
-    document.getElementById('metricPrecision').textContent = `${(m.precision * 100).toFixed(2)}%`;
-    document.getElementById('metricRecall').textContent = `${(m.recall * 100).toFixed(2)}%`;
-    document.getElementById('metricF1').textContent = m.f1_score.toFixed(4);
-    document.getElementById('metricBrier').textContent = m.brier_score.toFixed(4);
+    if (m) {
+      if (m.accuracy !== undefined) {
+        setEl('judgeAccuracy', `${(m.accuracy * 100).toFixed(2)}%`);
+        setEl('metricAccuracy', `${(m.accuracy * 100).toFixed(2)}%`);
+      }
+      if (m.precision !== undefined) {
+        setEl('judgePrecision', `${(m.precision * 100).toFixed(2)}%`);
+        setEl('metricPrecision', `${(m.precision * 100).toFixed(2)}%`);
+      }
+      if (m.recall !== undefined) {
+        setEl('judgeRecall', `${(m.recall * 100).toFixed(2)}%`);
+        setEl('metricRecall', `${(m.recall * 100).toFixed(2)}%`);
+      }
+      if (m.f1_score !== undefined) {
+        setEl('judgeF1', m.f1_score.toFixed(4));
+        setEl('metricF1', m.f1_score.toFixed(4));
+      }
+      if (m.roc_auc !== undefined) {
+        setEl('judgeRocAuc', m.roc_auc.toFixed(4));
+        setEl('metricRocAuc', m.roc_auc.toFixed(4));
+      }
+      if (m.brier_score !== undefined) {
+        setEl('judgeBrier', m.brier_score.toFixed(4));
+        setEl('metricBrier', m.brier_score.toFixed(4));
+      }
 
-    // Confusion Matrix
-    const cm = m.confusion_matrix;
-    document.getElementById('cmTN').textContent = cm[0][0];
-    document.getElementById('cmFP').textContent = cm[0][1];
-    document.getElementById('cmFN').textContent = cm[1][0];
-    document.getElementById('cmTP').textContent = cm[1][1];
+      // Confusion Matrix
+      const cm = m.confusion_matrix;
+      if (cm && cm.length >= 2) {
+        setEl('cmTN', cm[0][0]);
+        setEl('cmFP', cm[0][1]);
+        setEl('cmFN', cm[1][0]);
+        setEl('cmTP', cm[1][1]);
+      }
+    }
 
     // Feature Importances
     const featContainer = document.getElementById('judgeFeatureWeights');

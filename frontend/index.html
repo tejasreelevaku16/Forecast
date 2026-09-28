@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/weatherScenes.css">
   <link rel="stylesheet" href="/css/stakeholder.css">
+  <link rel="stylesheet" href="/css/sih_differentiators.css">
 </head>
 <body>
 
@@ -408,6 +409,44 @@
             </div>
           </div>
 
+          <!-- =================================================================
+               SIH DIFFERENTIATOR 6: MULTI-AGENT WEATHER INTELLIGENCE WAR ROOM
+               ================================================================= -->
+          <div class="multi-agent-war-room">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <h3 style="margin: 0; font-size: 1.15rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                  <span>🤖</span> Multi-Agent Collaborative Weather Intelligence
+                </h3>
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                  Five specialized autonomous AI agents independently evaluating the identical synoptic forecast state.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="text-align: right;">
+                  <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Agent Consensus:</span>
+                  <div style="font-size: 1.25rem; font-weight: 800; color: #10b981;" id="agentConsensusScore">88.5%</div>
+                </div>
+                <span class="badge badge-low" id="agentConsensusStatus">STRONG CONSENSUS</span>
+              </div>
+            </div>
+
+            <!-- Joint Multi-Agent Directive Banner -->
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 14px; margin-bottom: 18px;">
+              <strong style="font-size: 0.82rem; color: #38bdf8; display: block; margin-bottom: 4px; text-transform: uppercase;">
+                🏛️ Joint Multi-Agent Operational Directive:
+              </strong>
+              <p id="agentJointDirective" style="font-size: 0.84rem; color: #f1f5f9; line-height: 1.5; margin: 0;">
+                All 5 autonomous agents are analyzing live forecast telemetry...
+              </p>
+            </div>
+
+            <!-- 5 Collaborative Agent Cards -->
+            <div class="agent-cards-grid" id="agentCardsContainer">
+              <!-- Dynamically populated by multi_agent.js -->
+            </div>
+          </div>
+
         </div>
 
         <!-- =================================================================
@@ -743,6 +782,38 @@
             <p id="explainRecText" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.6; margin: 0;">
               Loading operational protocols...
             </p>
+          </div>
+
+          <!-- SIH DIFFERENTIATOR 2: AI WHY-CHAIN ENGINE -->
+          <div class="why-chain-section">
+            <div class="why-chain-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                <div>
+                  <h4 style="margin: 0; font-size: 1rem; color: #c084fc;">
+                    <span>🧠</span> AI Why-Chain Engine (Meteorological Causal Chain)
+                  </h4>
+                  <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                    Tracing physical mechanisms beyond SHAP: Atmospheric Trigger → Moisture Dynamics → Shear → Instability → Model Vulnerability → Calibrated Output.
+                  </p>
+                </div>
+                <span class="badge badge-low" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #c084fc;">
+                  Causal Hierarchy Active
+                </span>
+              </div>
+
+              <!-- Full Natural Language Reasoning Narrative Box -->
+              <div style="background: rgba(30, 41, 59, 0.6); border-radius: 8px; padding: 14px; border-left: 3px solid #a855f7; margin-bottom: 16px;">
+                <strong style="color: #c084fc; font-size: 0.8rem; text-transform: uppercase;">End-to-End Synoptic Domino Effect:</strong>
+                <p id="whyChainSummaryText" style="font-size: 0.82rem; color: #e2e8f0; line-height: 1.5; margin-top: 4px;">
+                  Generating meteorological why-chain...
+                </p>
+              </div>
+
+              <!-- Interactive Visual Flow Diagram Nodes -->
+              <div class="why-chain-flow" id="whyChainFlowContainer">
+                <!-- Dynamically rendered by why_chain.js -->
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1244,32 +1315,154 @@
         <div class="page-view" id="page-forecast-replay">
           <div class="section-header replay-page-header">
             <div>
-              <h3>Forecast Replay</h3>
-              <p>Step through the current Open-Meteo Day 10 to Day 1 forecast for <strong id="forecastReplayLocation">Unavailable</strong>.</p>
+              <h3><span>⏪</span> Forecast Confidence Digital Twin</h3>
+              <p>10-Day Synoptic Replay & Physical Verification Engine for <strong id="dtCurrentLocationLabel">Vijayawada</strong>.</p>
             </div>
-            <span class="badge badge-neutral" id="forecastReplayDayLabel">Select a forecast day</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge badge-neutral" id="dtSelectedDayBadge">Lead Day 10</span>
+              <span class="badge badge-low" id="dtConfidenceStatusBadge">AI CONFIDENCE ACTIVE</span>
+            </div>
           </div>
-          <div id="forecastReplayEmpty" class="insight-empty-state">Replay will appear when a ten-day forecast is available.</div>
-          <div id="forecastReplayContent" hidden>
-            <section class="glass-card replay-controls">
-              <label for="forecastReplaySlider">Forecast day</label>
-              <input id="forecastReplaySlider" type="range" min="0" max="9" value="0" step="1" aria-label="Replay forecast day, Day 10 to Day 1">
-              <div class="replay-slider-labels"><span>Day 10</span><span>Day 1</span></div>
-            </section>
-            <div class="replay-metrics-grid">
-              <article class="glass-card replay-metric"><span>Rainfall</span><strong class="replay-value" id="replayRainfall">Unavailable</strong></article>
-              <article class="glass-card replay-metric"><span>Temperature</span><strong class="replay-value" id="replayTemperature">Unavailable</strong></article>
-              <article class="glass-card replay-metric"><span>Wind</span><strong class="replay-value" id="replayWind">Unavailable</strong></article>
-              <article class="glass-card replay-metric"><span>Humidity</span><strong class="replay-value" id="replayHumidity">Unavailable</strong></article>
-              <article class="glass-card replay-metric"><span>Pressure</span><strong class="replay-value" id="replayPressure">Unavailable</strong></article>
-              <article class="glass-card replay-metric"><span>Trust Score</span><strong class="replay-value" id="replayTrustScore">Unavailable</strong><span id="replayTrustBadge"></span></article>
-              <article class="glass-card replay-metric"><span>Bust Probability</span><strong class="replay-value" id="replayBustProbability">Unavailable</strong></article>
+
+          <div class="digital-twin-wrapper">
+            <!-- Timeline & Playback Control Bar -->
+            <div class="dt-controls-card">
+              <div class="dt-playback-bar">
+                <div class="dt-playback-buttons">
+                  <button class="dt-btn" id="dtRewindBtn" title="Rewind to Day 10"><span>⏮</span> Day 10</button>
+                  <button class="dt-btn" id="dtStepBackBtn" title="Step Back 1 Day"><span>⏪</span> Prev</button>
+                  <button class="dt-btn" id="dtPlayBtn" title="Play / Pause Replay" style="min-width: 100px;"><span>▶</span> Play</button>
+                  <button class="dt-btn" id="dtStepFwdBtn" title="Step Forward 1 Day"><span>⏩</span> Next</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">PLAYBACK SPEED:</span>
+                  <button class="dt-btn dt-speed-btn active" data-speed="1" style="padding: 4px 10px; font-size: 0.75rem;">1x</button>
+                  <button class="dt-btn dt-speed-btn" data-speed="2" style="padding: 4px 10px; font-size: 0.75rem;">2x</button>
+                  <button class="dt-btn dt-speed-btn" data-speed="4" style="padding: 4px 10px; font-size: 0.75rem;">4x</button>
+                </div>
+              </div>
+
+              <div class="dt-slider-container">
+                <input id="dtTimelineSlider" class="dt-slider-range" type="range" min="0" max="9" value="0" step="1" aria-label="Digital Twin Lead Day Slider">
+                <div class="dt-slider-ticks">
+                  <span>Day 10 (Earliest Outlook)</span>
+                  <span>Day 8</span>
+                  <span>Day 6 (Synoptic Pivot)</span>
+                  <span>Day 4</span>
+                  <span>Day 2</span>
+                  <span>Day 1 (Observation Day)</span>
+                </div>
+              </div>
             </div>
-            <section class="replay-boundaries">
-              <div><span>Earliest forecast</span><strong id="replayEarliestLabel">Unavailable</strong></div>
-              <div><span>Latest forecast</span><strong id="replayLatestLabel">Unavailable</strong></div>
-              <p id="replayDriftSummary">Forecast drift unavailable.</p>
-            </section>
+
+            <!-- Animated Atmospheric State Gauges -->
+            <div class="dt-animated-gauges">
+              <div class="dt-gauge-tile">
+                <span class="dt-gauge-title">Precipitation Volume</span>
+                <div class="dt-gauge-val" id="dtGaugeRainVal">18.5 mm</div>
+                <div class="dt-gauge-sub" id="dtGaugeRainSub">MODERATE INTENSITY</div>
+              </div>
+              <div class="dt-gauge-tile">
+                <span class="dt-gauge-title">Surface Temperature</span>
+                <div class="dt-gauge-val" id="dtGaugeTempVal">29.4 °C</div>
+                <div class="dt-gauge-sub" id="dtGaugeTempSub">24.0° / 34.0°</div>
+              </div>
+              <div class="dt-gauge-tile">
+                <span class="dt-gauge-title">Wind Vector & Force</span>
+                <div class="dt-gauge-val" id="dtGaugeWindVal">22 km/h</div>
+                <div class="dt-gauge-sub" id="dtGaugeWindSub">165° BREEZY</div>
+              </div>
+              <div class="dt-gauge-tile">
+                <span class="dt-gauge-title">Barometric Pressure</span>
+                <div class="dt-gauge-val" id="dtGaugePresVal">1007.8 hPa</div>
+                <div class="dt-gauge-sub" id="dtGaugePresSub">TREND: FALLING</div>
+              </div>
+            </div>
+
+            <!-- Two-Column Analytics Layout -->
+            <div class="dt-main-grid">
+              <!-- Left: Forecast vs Actual Error Delta Table -->
+              <div class="dt-comparative-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h4 style="margin: 0; font-size: 0.95rem; color: #f8fafc;">Forecast vs. Actual Ground-Truth Comparison</h4>
+                  <span style="font-size: 0.72rem; color: #94a3b8;">CALIBRATED EMPIRICAL DELTA</span>
+                </div>
+                <table class="dt-comparison-table">
+                  <thead>
+                    <tr>
+                      <th>Meteorological Parameter</th>
+                      <th>Model Forecast</th>
+                      <th>Verification Actual</th>
+                      <th>Error Delta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>🌧️ Rainfall</td>
+                      <td id="dtFcRain">18.5 mm</td>
+                      <td id="dtActRain">24.2 mm</td>
+                      <td><span id="dtDeltaRain" class="dt-delta-badge dt-delta-warn">5.7 mm</span></td>
+                    </tr>
+                    <tr>
+                      <td>🌡️ Temperature</td>
+                      <td id="dtFcTemp">32.0 °C</td>
+                      <td id="dtActTemp">31.2 °C</td>
+                      <td><span id="dtDeltaTemp" class="dt-delta-badge dt-delta-good">0.8 °C</span></td>
+                    </tr>
+                    <tr>
+                      <td>💨 Wind Speed</td>
+                      <td id="dtFcWind">22.0 km/h</td>
+                      <td id="dtActWind">25.8 km/h</td>
+                      <td><span id="dtDeltaWind" class="dt-delta-badge dt-delta-good">3.8 km/h</span></td>
+                    </tr>
+                    <tr>
+                      <td>⏱️ Barometric Pressure</td>
+                      <td id="dtFcPres">1007.8 hPa</td>
+                      <td id="dtActPres">1006.5 hPa</td>
+                      <td><span id="dtDeltaPres" class="dt-delta-badge dt-delta-good">1.3 hPa</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div style="margin-top: 18px; padding: 12px; background: rgba(30, 41, 59, 0.5); border-radius: 8px; border-left: 3px solid #38bdf8;">
+                  <strong style="font-size: 0.8rem; color: #38bdf8; display: block; margin-bottom: 4px;">Synoptic Replay Assessment:</strong>
+                  <p id="dtSynopticNarrative" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.45; margin: 0;">
+                    Extended range NWP guidance exhibits broad ensemble dispersion. Macro-synoptic trough detected.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Right: AI Confidence & Bust Probability Evolution Chart -->
+              <div class="dt-comparative-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h4 style="margin: 0; font-size: 0.95rem; color: #f8fafc;">Confidence & Bust Probability Evolution (Day 10 → Day 1)</h4>
+                  <span style="font-size: 0.72rem; color: #38bdf8;">REAL-TIME TRAJECTORY</span>
+                </div>
+                <div style="position: relative; height: 260px;">
+                  <canvas id="dtEvolutionChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backward-compatibility elements for legacy insights if needed -->
+            <div style="display: none;">
+              <span id="forecastReplayLocation"></span>
+              <span id="forecastReplayDayLabel"></span>
+              <div id="forecastReplayEmpty"></div>
+              <div id="forecastReplayContent"></div>
+              <input id="forecastReplaySlider" type="range">
+              <span id="replayRainfall"></span>
+              <span id="replayTemperature"></span>
+              <span id="replayWind"></span>
+              <span id="replayHumidity"></span>
+              <span id="replayPressure"></span>
+              <span id="replayTrustScore"></span>
+              <span id="replayTrustBadge"></span>
+              <span id="replayBustProbability"></span>
+              <span id="replayEarliestLabel"></span>
+              <span id="replayLatestLabel"></span>
+              <span id="replayDriftSummary"></span>
+            </div>
           </div>
         </div>
 
@@ -1470,6 +1663,128 @@
 
           </div>
 
+          <!-- =================================================================
+               SIH DIFFERENTIATOR 4: DISTRICT RELIABILITY PASSPORT
+               ================================================================= -->
+          <div class="passport-card" id="districtPassportSection">
+            <div class="passport-header">
+              <div class="passport-emblem">
+                <div class="passport-seal">🇮🇳</div>
+                <div>
+                  <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+                    Official Meteorological Audit Document
+                  </div>
+                  <h3 style="margin: 2px 0 0 0; color: #f8fafc; font-size: 1.25rem;">
+                    District Reliability Passport: <span id="passportDistrictName" style="color: #38bdf8;">Vijayawada</span>
+                  </h3>
+                  <span style="font-size: 0.76rem; color: #94a3b8;" id="passportIdBadge">IND-MET-948201</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div id="passportTrustTier" style="font-size: 0.95rem; font-weight: 800; color: #10b981;">GOLD / HIGH RELIABILITY</div>
+                <span class="badge" id="passportSealBadge" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; margin-top: 4px;">
+                  🥇 Verified Resilient
+                </span>
+              </div>
+            </div>
+
+            <!-- Key Scores Grid -->
+            <div class="passport-scores-grid">
+              <div class="passport-metric-tile">
+                <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Overall Reliability</span>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; margin: 4px 0;" id="passportOverallScore">78.5 / 100</div>
+                <span style="font-size: 0.72rem; color: #94a3b8;">Calibrated Prior</span>
+              </div>
+              <div class="passport-metric-tile">
+                <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Historical Accuracy</span>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #10b981; margin: 4px 0;" id="passportAccuracyPct">81.2%</div>
+                <span style="font-size: 0.72rem; color: #94a3b8;">&le;15mm error margin</span>
+              </div>
+              <div class="passport-metric-tile">
+                <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Monsoon Reliability</span>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #f59e0b; margin: 4px 0;" id="passportMonsoonScore">68.5%</div>
+                <span style="font-size: 0.72rem; color: #94a3b8;">Active SW Monsoon</span>
+              </div>
+              <div class="passport-metric-tile">
+                <span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Most Error-Prone Month</span>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #ef4444; margin: 4px 0;" id="passportWorstMonth">July</div>
+                <span style="font-size: 0.72rem; color: #94a3b8;">Convective Volatility</span>
+              </div>
+            </div>
+
+            <!-- Event Breakdown & Seasonal Performance -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px;">
+              <!-- Left: Event Vulnerability Gauges -->
+              <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px;">
+                <h5 style="margin: 0 0 12px 0; font-size: 0.82rem; text-transform: uppercase; color: #f59e0b;">Event-Specific Reliability Ratings</h5>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+                      <span>🌀 Cyclone & Deep Depression Reliability</span>
+                      <strong id="passValCyclone" style="color: #38bdf8;">55.2%</strong>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                      <div style="width: 55%; height: 100%; background: #38bdf8;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+                      <span>🔥 Heatwave Reliability</span>
+                      <strong id="passValHeatwave" style="color: #10b981;">78.4%</strong>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                      <div style="width: 78%; height: 100%; background: #10b981;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 3px;">
+                      <span>🌧️ Heavy Rainfall & Cloudburst Reliability</span>
+                      <strong id="passValHeavyRain" style="color: #ef4444;">54.0%</strong>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                      <div style="width: 54%; height: 100%; background: #ef4444;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Seasonal Performance Table -->
+              <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 0.82rem; text-transform: uppercase; color: #38bdf8;">Seasonal Forecast Skill Breakdown</h5>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                  <thead>
+                    <tr style="color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                      <th style="text-align: left; padding: 6px;">Season</th>
+                      <th style="text-align: left; padding: 6px;">Trust</th>
+                      <th style="text-align: left; padding: 6px;">Rain MAE</th>
+                      <th style="text-align: left; padding: 6px;">Temp MAE</th>
+                      <th style="text-align: left; padding: 6px;">Tier</th>
+                    </tr>
+                  </thead>
+                  <tbody id="passportSeasonalTbody">
+                    <!-- Populated by district_passport.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Lead-Day Degradation Trend Chart & AI Summary -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+              <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 0.82rem; text-transform: uppercase; color: #f59e0b;">10-Day Forecast Skill Decay Curve</h5>
+                <div style="position: relative; height: 160px;">
+                  <canvas id="passportLeadTrendChart"></canvas>
+                </div>
+              </div>
+              <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px;">
+                <h5 style="margin: 0 0 6px 0; font-size: 0.82rem; text-transform: uppercase; color: #38bdf8;">🏛️ AI Synoptic Reliability Executive Briefing</h5>
+                <p id="passportAiSummary" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;">
+                  Loading official district synoptic reliability evaluation...
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- =================================================================
@@ -1648,6 +1963,125 @@
             </div>
           </div>
 
+          <!-- =================================================================
+               SIH DIFFERENTIATOR 3: REAL-TIME DECISION SIMULATOR (WHAT-IF)
+               ================================================================= -->
+          <div class="simulator-wrapper" style="margin-top: 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+              <div>
+                <h4 style="margin: 0; font-size: 1.05rem; color: #38bdf8;">
+                  <span>🎛️</span> Real-Time Weather Decision Simulator (What-If Sandbox)
+                </h4>
+                <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                  Manipulate atmospheric variables in real time: watch Trust Score, Bust Probability, Alerts, SHAP bars, and Sector Decisions recalculate instantly.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge badge-low" id="simReliabilityTierBadge">HIGH RELIABILITY</span>
+              </div>
+            </div>
+
+            <!-- Scenario Presets Bar -->
+            <div class="simulator-presets-bar">
+              <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">⚡ Scenario Presets:</span>
+              <button class="sim-preset-btn" data-preset="monsoon_cloudburst">🌧️ Monsoon Cloudburst</button>
+              <button class="sim-preset-btn" data-preset="cyclonic_squall">🌪️ Severe Cyclone Squall</button>
+              <button class="sim-preset-btn" data-preset="summer_heatwave">🔥 Summer Heatwave</button>
+              <button class="sim-preset-btn" data-preset="benign_fair_weather">☀️ Fair Weather</button>
+            </div>
+
+            <!-- 6 Interactive Sliders Grid -->
+            <div class="simulator-sliders-grid">
+              <!-- Slider 1: Rainfall -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>🌧️ Rainfall Volume</span>
+                  <span class="val" id="simRainVal">25 mm</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simRainSlider" min="0" max="250" value="25" step="1">
+              </div>
+
+              <!-- Slider 2: Temperature -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>🌡️ Surface Temperature</span>
+                  <span class="val" id="simTempVal">30 °C</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simTempSlider" min="10" max="50" value="30" step="0.5">
+              </div>
+
+              <!-- Slider 3: Wind Speed -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>💨 Wind Velocity</span>
+                  <span class="val" id="simWindVal">18 km/h</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simWindSlider" min="0" max="120" value="18" step="1">
+              </div>
+
+              <!-- Slider 4: Humidity -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>💧 Relative Humidity</span>
+                  <span class="val" id="simHumVal">70 %</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simHumSlider" min="10" max="100" value="70" step="1">
+              </div>
+
+              <!-- Slider 5: Barometric Pressure -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>⏱️ Barometric Pressure</span>
+                  <span class="val" id="simPresVal">1010 hPa</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simPresSlider" min="950" max="1030" value="1010" step="1">
+              </div>
+
+              <!-- Slider 6: Cloud Cover -->
+              <div class="sim-slider-tile">
+                <div class="sim-slider-header">
+                  <span>☁️ Cloud Cover</span>
+                  <span class="val" id="simCloudVal">50 %</span>
+                </div>
+                <input type="range" class="sim-range-input" id="simCloudSlider" min="0" max="100" value="50" step="1">
+              </div>
+            </div>
+
+            <!-- Real-time Simulation Results Grid -->
+            <div class="sim-results-grid">
+              <!-- Left Column: Trust Score, Bust Prob & SHAP Bars -->
+              <div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                  <div class="glass-card stat-card" style="padding: 14px; text-align: center;">
+                    <span class="stat-label">Simulated Trust Score</span>
+                    <div id="simTrustScoreVal" style="font-size: 1.6rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">75 / 100</div>
+                  </div>
+                  <div class="glass-card stat-card" style="padding: 14px; text-align: center;">
+                    <span class="stat-label">Simulated Bust Risk</span>
+                    <div id="simBustProbVal" style="font-size: 1.6rem; font-weight: 800; color: #ef4444; margin-top: 4px;">25%</div>
+                  </div>
+                </div>
+
+                <!-- Dynamic Alerts Container -->
+                <div style="margin-bottom: 16px;">
+                  <h5 style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px;">Triggered Hazardous Alerts</h5>
+                  <div id="simAlertsContainer"></div>
+                </div>
+
+                <!-- Real-time SHAP Weights -->
+                <div class="glass-card" style="padding: 16px;">
+                  <h5 style="font-size: 0.8rem; text-transform: uppercase; color: #38bdf8; margin-bottom: 10px;">Real-Time SHAP Meteorological Weights</h5>
+                  <div id="simShapBarsContainer"></div>
+                </div>
+              </div>
+
+              <!-- Right Column: Sector Decision Support Matrix -->
+              <div>
+                <h5 style="font-size: 0.8rem; text-transform: uppercase; color: var(--accent-cyan); margin-bottom: 10px;">Instant Cross-Sector Guidance</h5>
+                <div id="simSectorGuidanceContainer" style="max-height: 480px; overflow-y: auto;"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- =================================================================
@@ -2391,6 +2825,112 @@
                 </div>
               </div>
 
+              <!-- =================================================================
+                   SIH DIFFERENTIATOR 5: RESOURCE OPTIMIZATION AI ENGINE
+                   ================================================================= -->
+              <div class="stakeholder-panel" style="margin-top: 20px;">
+                <div class="stakeholder-panel-header">
+                  <div>
+                    <h3 class="stakeholder-panel-title"><span>🤖</span> Resource Optimization AI Engine</h3>
+                    <p class="stakeholder-panel-subtitle">Dynamic allocation derived from Bust Probability, Population Risk, Rainfall, and Flood Risk Index</p>
+                  </div>
+                  <span class="badge badge-low" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8;">Multi-District Optimization Active</span>
+                </div>
+
+                <!-- 5 Operational Resource Tiles -->
+                <div class="resource-opt-grid">
+                  <!-- 1. NDRF Deployment Priority -->
+                  <div class="resource-opt-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">1. NDRF Deployment Priority</span>
+                      <span style="font-size: 1.2rem;">🚤</span>
+                    </div>
+                    <div id="resNdrfTier" style="font-size: 1rem; font-weight: 800; color: #ef4444; margin-bottom: 4px;">TIER 1 (IMMEDIATE PRE-POSITIONING)</div>
+                    <div style="font-size: 0.82rem; color: #f8fafc; margin-bottom: 6px;">
+                      <strong id="resNdrfBattalions">4 Battalions</strong> • <span id="resNdrfBoats">16 Inflatable Boats</span>
+                    </div>
+                    <p id="resNdrfGuidance" style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin: 0;"></p>
+                  </div>
+
+                  <!-- 2. Relief Camp Recommendation -->
+                  <div class="resource-opt-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">2. Relief Camp Recommendation</span>
+                      <span style="font-size: 1.2rem;">🏕️</span>
+                    </div>
+                    <div id="resReliefShelters" style="font-size: 1rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">4 Designated Centers</div>
+                    <div style="font-size: 0.82rem; color: #f8fafc; margin-bottom: 6px;">
+                      Capacity: <strong id="resReliefCapacity">2,000 Persons</strong> • <span id="resReliefWater">12 Potable Water Tankers</span>
+                    </div>
+                    <p id="resReliefGuidance" style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin: 0;"></p>
+                  </div>
+
+                  <!-- 3. Reservoir Monitoring Priority -->
+                  <div class="resource-opt-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">3. Reservoir Monitoring Priority</span>
+                      <span style="font-size: 1.2rem;">🌊</span>
+                    </div>
+                    <div id="resReservoirStatus" style="font-size: 1rem; font-weight: 800; color: #f59e0b; margin-bottom: 4px;">CONTROLLED EMERGENCY DISCHARGE</div>
+                    <div style="font-size: 0.82rem; color: #f8fafc; margin-bottom: 6px;">
+                      Flood Cushion: <strong id="resReservoirCushion">25% Cushion Buffer</strong>
+                    </div>
+                    <p id="resReservoirAdvisory" style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin: 0;"></p>
+                  </div>
+
+                  <!-- 4. Pump Allocation Suggestion -->
+                  <div class="resource-opt-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">4. De-watering Pump Allocation</span>
+                      <span style="font-size: 1.2rem;">⚙️</span>
+                    </div>
+                    <div id="resPumpsAllocated" style="font-size: 1rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">8 Heavy Units Allocated</div>
+                    <div style="font-size: 0.82rem; color: #f8fafc; margin-bottom: 6px;">
+                      High-Capacity (1000 GPM): <strong id="resPumpsHighCap">3 Units</strong>
+                    </div>
+                    <p id="resPumpsZones" style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin: 0;"></p>
+                  </div>
+
+                  <!-- 5. Medical Emergency Readiness -->
+                  <div class="resource-opt-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">5. Medical Emergency Readiness</span>
+                      <span style="font-size: 1.2rem;">🏥</span>
+                    </div>
+                    <div id="resMedUnits" style="font-size: 1rem; font-weight: 800; color: #10b981; margin-bottom: 4px;">3 Mobile Medical Units</div>
+                    <div style="font-size: 0.82rem; color: #f8fafc; margin-bottom: 6px;">
+                      Antivenom & Chlorine: <strong id="resMedAntivenom">100 Vials Stockpile</strong>
+                    </div>
+                    <p style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.45; margin: 0;">Active water-borne disease surveillance protocol activated across relief centers.</p>
+                  </div>
+                </div>
+
+                <!-- 6. Multi-District Resource Priority Ranking Table -->
+                <div style="margin-top: 20px;">
+                  <h4 style="font-size: 0.88rem; text-transform: uppercase; color: #38bdf8; margin-bottom: 8px;">
+                    📊 State & National Multi-District Resource Ranking
+                  </h4>
+                  <div style="overflow-x: auto;">
+                    <table class="resource-ranking-table">
+                      <thead>
+                        <tr>
+                          <th>Rank</th>
+                          <th>District / Basin</th>
+                          <th>Precipitation (24h)</th>
+                          <th>Flood Risk</th>
+                          <th>Bust Risk</th>
+                          <th>Composite Urgency Score</th>
+                          <th>NDRF Deployment</th>
+                        </tr>
+                      </thead>
+                      <tbody id="resRankingTableBody">
+                        <!-- Populated by resource_optimization.js -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
 
@@ -2958,6 +3498,13 @@
   <script src="/js/explainability.js"></script>
   <script src="/js/weatherInsights.js"></script>
   <script src="/js/stakeholder.js"></script>
+  <!-- SIH Differentiator Scripts -->
+  <script src="/js/digital_twin.js"></script>
+  <script src="/js/why_chain.js"></script>
+  <script src="/js/decision_simulator.js"></script>
+  <script src="/js/district_passport.js"></script>
+  <script src="/js/resource_optimization.js"></script>
+  <script src="/js/multi_agent.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

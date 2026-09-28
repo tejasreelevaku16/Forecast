@@ -40,3 +40,20 @@ def api_explain_bust(
     final_day = day if day is not None and not hasattr(day, "default") else lead_day
     clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
     return get_shap_explainability_detail(location=clean_loc, lead_day=final_day)
+
+
+@router.get("/why-chain", summary="Get AI Why-Chain Meteorological Reasoning Flow (SIH Differentiator 2)")
+def api_explain_why_chain(
+    location: str = Query("Vijayawada", description="City or district name"),
+    lead_day: int = Query(6, description="Lead day (1 to 10)"),
+) -> Dict[str, Any]:
+    """
+    SIH Differentiator 2 Endpoint:
+    Returns multi-level meteorological causal reasoning chain beyond SHAP,
+    tracing Atmospheric Trigger -> Moisture Dynamics -> Kinematic Shear ->
+    Convective Instability -> NWP Drift -> Calibrated Confidence Score.
+    """
+    from backend.services.why_chain_service import generate_meteorological_why_chain
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
+    final_day = max(1, min(10, int(lead_day)))
+    return generate_meteorological_why_chain(location=clean_loc, lead_day=final_day)

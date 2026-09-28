@@ -215,28 +215,91 @@ const StakeholderUI = {
     const day = this.currentLeadDay || 6;
     const role = this.activeRole || "forecaster";
 
+    if (this._activeFetchController) {
+      this._activeFetchController.abort();
+    }
+    const controller = new AbortController();
+    this._activeFetchController = controller;
+
     if (role === "admin") {
-      fetch("/api/stakeholder/admin")
-        .then((r) => r.json())
+      fetch("/api/stakeholder/admin", { signal: controller.signal })
+        .then(async (r) => {
+          if (!r.ok) {
+            const errText = await r.text().catch(() => "");
+            throw new Error(`HTTP ${r.status}: ${errText || r.statusText}`);
+          }
+          return r.json();
+        })
         .then((data) => {
           this.cachedData.admin = data;
+          this.clearPortalError("admin");
           this.renderAdminPortal(data);
         })
-        .catch((err) => console.error("[StakeholderUI] Admin fetch error:", err));
+        .catch((err) => {
+          if (err.name === 'AbortError') return;
+          console.error("[StakeholderUI] Admin fetch error:", err);
+          this.renderPortalError("admin", err.message, loc);
+        });
       return;
     }
 
-    const endpoint = `/api/stakeholder/${role}?location=${encodeURIComponent(loc)}&lead_day=${day}`;
-    fetch(endpoint)
-      .then((r) => r.json())
+    let endpoint = `/api/stakeholder/${role}?location=${encodeURIComponent(loc)}&lead_day=${day}`;
+    if (window.selectedLocation && (window.selectedLocation.place === loc || window.selectedLocation.district === loc || window.selectedLocation.displayName === loc)) {
+      if (window.selectedLocation.latitude !== null && window.selectedLocation.longitude !== null) {
+        endpoint += `&lat=${window.selectedLocation.latitude}&lon=${window.selectedLocation.longitude}`;
+      }
+    } else if (window.currentSelectedLat && window.currentSelectedLon) {
+      endpoint += `&lat=${window.currentSelectedLat}&lon=${window.currentSelectedLon}`;
+    }
+
+    fetch(endpoint, { signal: controller.signal })
+      .then(async (r) => {
+        if (!r.ok) {
+          const errText = await r.text().catch(() => "");
+          throw new Error(`HTTP ${r.status}: ${errText || r.statusText}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         this.cachedData[role] = data;
+        this.clearPortalError(role);
         if (role === "forecaster") this.renderForecasterPortal(data);
         else if (role === "disaster") this.renderDisasterPortal(data);
         else if (role === "agriculture") this.renderAgriculturePortal(data);
         else if (role === "public") this.renderPublicPortal(data);
       })
-      .catch((err) => console.error(`[StakeholderUI] ${role} fetch error:`, err));
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        console.error(`[StakeholderUI] ${role} fetch error:`, err);
+        this.renderPortalError(role, err.message, loc);
+      });
+  },
+
+  renderPortalError(role, errorMsg, location) {
+    const container = document.getElementById(`portal-${role}`);
+    if (!container) return;
+    let alertBox = container.querySelector(".stakeholder-error-banner");
+    if (!alertBox) {
+      alertBox = document.createElement("div");
+      alertBox.className = "stakeholder-error-banner";
+      alertBox.style.cssText = "background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; color: #fca5a5; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;";
+      container.prepend(alertBox);
+    }
+    alertBox.innerHTML = `
+      <div>
+        <strong>Operational Data Unavailable:</strong> Unable to load ${role} portal data for <em>${location}</em> (${errorMsg}).
+      </div>
+      <button onclick="StakeholderUI.loadActivePortalData()" class="btn btn-sm btn-outline-neutral" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
+        🔄 Retry
+      </button>
+    `;
+  },
+
+  clearPortalError(role) {
+    const container = document.getElementById(`portal-${role}`);
+    if (!container) return;
+    const alertBox = container.querySelector(".stakeholder-error-banner");
+    if (alertBox) alertBox.remove();
   },
 
   // =========================================================================

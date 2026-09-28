@@ -581,28 +581,45 @@ def get_location_by_place_and_state(place: str, state: Optional[str] = None) -> 
     p_clean = (place or "").strip().lower()
     s_clean = (state or "").strip().lower() if state else None
 
-    # First attempt: match both place and state
+    # First attempt: match both place/district and state
     if s_clean:
         for loc in INDIAN_LOCATIONS:
-            if loc["place"].lower() == p_clean and (
-                loc["state"].lower() == s_clean or loc["state_code"].lower() == s_clean
-            ):
+            p_match = loc["place"].lower() == p_clean or (loc.get("district") or "").lower() == p_clean
+            s_match = loc["state"].lower() == s_clean or loc["state_code"].lower() == s_clean
+            if p_match and s_match:
                 return loc
 
-    # Second attempt: match place directly
+    # Second attempt: match place or district directly
     for loc in INDIAN_LOCATIONS:
-        if loc["place"].lower() == p_clean:
+        if loc["place"].lower() == p_clean or (loc.get("district") or "").lower() == p_clean:
             return loc
 
     # Third attempt: substring match
     for loc in INDIAN_LOCATIONS:
-        if p_clean in loc["place"].lower():
+        if p_clean in loc["place"].lower() or p_clean in (loc.get("district") or "").lower():
             return loc
 
     # Fourth attempt: match state name or state code directly
     for loc in INDIAN_LOCATIONS:
         if loc["state"].lower() == p_clean or loc["state_code"].lower() == p_clean:
             return loc
+
+    # Fifth attempt: match authoritative INDIAN_DISTRICTS list
+    try:
+        from backend.services.india_map_service import INDIAN_DISTRICTS
+        for d in INDIAN_DISTRICTS:
+            if d["name"].lower() == p_clean or (d.get("city") and d["city"].lower() == p_clean):
+                return {
+                    "country": "India",
+                    "state": d["state"],
+                    "state_code": d.get("state_code", ""),
+                    "place": d.get("city", d["name"]),
+                    "district": d["name"],
+                    "latitude": float(d["lat"]),
+                    "longitude": float(d["lon"]),
+                }
+    except Exception:
+        pass
 
     return None
 

@@ -7,14 +7,22 @@
  */
 
 let uncertaintyChartInstance = null;
+let activeUncertaintyController = null;
 
 async function loadUncertaintyView(location = "Vijayawada") {
   const locName = location || window.currentSelectedLocation || "Selected Location";
   const locHeader = document.getElementById("uncLocationHeader");
   if (locHeader) locHeader.textContent = locName;
 
+  if (activeUncertaintyController) {
+    activeUncertaintyController.abort();
+  }
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  activeUncertaintyController = controller;
+
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 15000);
 
   try {
     let url = `/api/reliability/uncertainty?location=${encodeURIComponent(locName)}`;
@@ -23,7 +31,7 @@ async function loadUncertaintyView(location = "Vijayawada") {
     }
     const resp = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
-    if (!resp.ok) throw new Error("Failed to load uncertainty profile");
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
 
     // 1. Update KPI cards
@@ -39,6 +47,9 @@ async function loadUncertaintyView(location = "Vijayawada") {
     }
   } catch (err) {
     clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      return;
+    }
     console.warn("Error loading uncertainty data:", err);
     const insightEl = document.getElementById("uncInsightBannerText");
     if (insightEl) {
@@ -50,6 +61,10 @@ async function loadUncertaintyView(location = "Vijayawada") {
           </button>
         </div>
       `;
+    }
+  } finally {
+    if (activeUncertaintyController === controller) {
+      activeUncertaintyController = null;
     }
   }
 }

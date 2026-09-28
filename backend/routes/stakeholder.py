@@ -40,6 +40,8 @@ def get_stakeholder_overview(
     role: str = Query("forecaster", description="Target role: forecaster, disaster, agriculture, public, admin"),
     location: str = Query("Krishna District", description="City or district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """
     Returns role-tailored operational data payload for the requested role and location.
@@ -48,50 +50,58 @@ def get_stakeholder_overview(
     role_clean = role.lower().strip()
     
     if role_clean == "disaster":
-        return {"role": "disaster", "data": get_disaster_portal_data(location=location, focus_lead_day=lead_day)}
+        return {"role": "disaster", "data": get_disaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
     elif role_clean == "agriculture":
-        return {"role": "agriculture", "data": get_agriculture_portal_data(location=location, focus_lead_day=lead_day)}
+        return {"role": "agriculture", "data": get_agriculture_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
     elif role_clean == "public":
-        return {"role": "public", "data": get_public_portal_data(location=location)}
+        return {"role": "public", "data": get_public_portal_data(location=location, lat=lat, lon=lon)}
     elif role_clean == "admin":
         return {"role": "admin", "data": get_admin_portal_data()}
     else:
-        return {"role": "forecaster", "data": get_forecaster_portal_data(location=location, focus_lead_day=lead_day)}
+        return {"role": "forecaster", "data": get_forecaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
 
 
 @router.get("/forecaster", summary="Forecaster (IMD / MoES) Portal Operational Data")
 def api_forecaster_portal(
     location: str = Query("Krishna District", description="City or district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Operational weather forecasting, bust probability, SHAP, and ensemble consensus."""
-    return get_forecaster_portal_data(location=location, focus_lead_day=lead_day)
+    return get_forecaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/disaster", summary="Disaster Management Authority Portal Operational Data")
 def api_disaster_portal(
     location: str = Query("Krishna District", description="City or district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Emergency planning, flood and cyclone risk, 72h impact timeline, evacuation support."""
-    return get_disaster_portal_data(location=location, focus_lead_day=lead_day)
+    return get_disaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/agriculture", summary="Agriculture Department Portal Operational Data")
 def api_agriculture_portal(
     location: str = Query("Krishna District", description="City or district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Agro-meteorological decision support, soil moisture, crop stress, and sowing advisories."""
-    return get_agriculture_portal_data(location=location, focus_lead_day=lead_day)
+    return get_agriculture_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/public", summary="Public Citizen Portal Weather & Reliability Data")
 def api_public_portal(
     location: str = Query("Krishna District", description="City or district name"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Citizen-friendly plain-language weather dashboard, safety checklist, and shareable card."""
-    return get_public_portal_data(location=location)
+    return get_public_portal_data(location=location, lat=lat, lon=lon)
 
 
 @router.get("/admin", summary="Administrator Portal System Diagnostics & Controls")
@@ -139,3 +149,20 @@ def api_create_backup() -> Dict[str, Any]:
         "size_kb": 128.4,
         "message": "Operational database checkpoint and calibration cache backed up successfully.",
     }
+
+
+@router.get("/resource-optimization", summary="Get Resource Optimization AI Plan (SIH Differentiator 5)")
+def api_resource_optimization(
+    location: str = Query("Vijayawada", description="District or location name"),
+    lead_day: int = Query(6, description="Lead day (1 to 10)"),
+) -> Dict[str, Any]:
+    """
+    SIH Differentiator 5 Endpoint:
+    Returns dynamic operational resource allocation plans: NDRF deployment priority,
+    relief camp recommendations, reservoir spillway monitoring, heavy pump allocation,
+    medical emergency readiness, and composite multi-district resource urgency ranking.
+    """
+    from backend.services.resource_optimization_service import get_resource_optimization_plan
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
+    day = max(1, min(10, int(lead_day)))
+    return get_resource_optimization_plan(location=clean_loc, lead_day=day)

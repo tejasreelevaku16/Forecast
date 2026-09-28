@@ -90,3 +90,18 @@ def demo_overview(
     day = _clean_int(lead_day, 6)
     sec = _clean_str(sector, "General Public")
     return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec, lat=lat, lon=lon, region=region)
+
+
+@router.get("/passport", summary="Get District Reliability Passport (SIH Differentiator 4)")
+def api_district_reliability_passport(
+    district: str = Query("Vijayawada", description="District or city name"),
+) -> Dict[str, Any]:
+    """
+    SIH Differentiator 4 Endpoint:
+    Returns the official District Reliability Passport containing Overall Score,
+    Monsoon/Heatwave/Cyclone/Heavy Rainfall reliability, Seasonal performance,
+    Historical Accuracy %, Most Error-Prone Month, Lead-Day Trend, and AI Summary.
+    """
+    from backend.services.district_passport_service import get_district_reliability_passport
+    clean_dist = str(district) if district and not hasattr(district, "default") else "Vijayawada"
+    return get_district_reliability_passport(district_name=clean_dist)

@@ -93,17 +93,38 @@ def geocode_location(location_name: str) -> Optional[Dict[str, Any]]:
 
         match = get_location_by_place_and_state(place_cand, state_cand)
         if match:
+            # If search was for the district name, preserve it as name
+            is_dist_search = match.get("district") and match.get("district").lower() == place_cand.lower()
+            name_val = match.get("district") if is_dist_search else match["place"]
             return {
-                "name": match["place"],
+                "name": name_val,
                 "region": match["state"],
                 "country": "India",
                 "lat": float(match["latitude"]),
                 "lon": float(match["longitude"]),
+                "city": match.get("place"),
                 "district": match.get("district"),
                 "state_code": match.get("state_code"),
             }
     except Exception as e:
         print(f"[!] Indian location lookup note: {e}")
+
+    try:
+        from backend.services.india_map_service import INDIAN_DISTRICTS
+        p_clean = loc_clean.lower()
+        for d in INDIAN_DISTRICTS:
+            if d["name"].lower() == p_clean or (d.get("city") and d["city"].lower() == p_clean):
+                return {
+                    "name": d["name"],
+                    "region": d["state"],
+                    "country": "India",
+                    "lat": float(d["lat"]),
+                    "lon": float(d["lon"]),
+                    "city": d.get("city", d["name"]),
+                    "district": d["name"],
+                }
+    except Exception as e:
+        pass
 
     try:
         url = f"{config.OPEN_METEO_GEOCODING_URL}?name={requests.utils.quote(loc_clean)}&count=5&language=en&format=json"

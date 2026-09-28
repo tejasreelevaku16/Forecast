@@ -224,12 +224,30 @@ const AppRouter = {
       });
     }
 
-    if (pageSlug === "forecast-replay" && typeof WeatherTrustInsightsUI !== "undefined") {
-      WeatherTrustInsightsUI.renderReplay(window.currentWeatherInsights);
+    if (pageSlug === "forecast-replay") {
+      if (typeof window.DigitalTwin !== "undefined") {
+        window.DigitalTwin.init(loc);
+      }
+      if (typeof WeatherTrustInsightsUI !== "undefined") {
+        WeatherTrustInsightsUI.renderReplay(window.currentWeatherInsights);
+      }
     }
 
-    if (pageSlug === "decision-support" && typeof WeatherTrustInsightsUI !== "undefined") {
-      WeatherTrustInsightsUI.renderAdvisories(window.currentWeatherInsights);
+    if (pageSlug === "decision-support") {
+      if (typeof window.DecisionSimulator !== "undefined") {
+        window.DecisionSimulator.init();
+      }
+      if (typeof WeatherTrustInsightsUI !== "undefined") {
+        WeatherTrustInsightsUI.renderAdvisories(window.currentWeatherInsights);
+      }
+    }
+
+    if (pageSlug === "map" && typeof window.DistrictPassport !== "undefined") {
+      window.DistrictPassport.loadPassport(loc);
+    }
+
+    if (pageSlug === "dashboard" && typeof window.MultiAgentIntelligence !== "undefined") {
+      window.MultiAgentIntelligence.loadIntelligence(loc, 6);
     }
 
     // Trigger Technical Evaluation (Judge) metrics
@@ -239,11 +257,14 @@ const AppRouter = {
       });
     }
 
-    // Trigger Stakeholder Workspace
+    // Trigger Stakeholder Workspace & Resource Optimization AI
     if (pageSlug === "stakeholder") {
       setTimeout(() => {
         if (typeof window.initStakeholderWorkspace === "function") {
           window.initStakeholderWorkspace();
+        }
+        if (typeof window.ResourceOptimization !== "undefined") {
+          window.ResourceOptimization.loadResourcePlan(loc, 6);
         }
       }, 150);
     }

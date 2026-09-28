@@ -23,6 +23,8 @@ from backend.routes.explain import router as explain_router
 from backend.routes.locations import router as locations_router
 from backend.routes.insights import router as insights_router
 from backend.routes.stakeholder import router as stakeholder_router
+from backend.routes.simulator import router as simulator_router
+from backend.routes.intelligence import router as intelligence_router
 
 from backend.services.weather_service import get_current_weather, get_full_forecast_response
 from backend.services.reliability_service import get_forecast_reliability_overview
@@ -65,6 +67,8 @@ app.include_router(explain_router)
 app.include_router(locations_router)
 app.include_router(insights_router)
 app.include_router(stakeholder_router)
+app.include_router(simulator_router)
+app.include_router(intelligence_router)
 
 
 @app.on_event("startup")

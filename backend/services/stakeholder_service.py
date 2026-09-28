@@ -133,13 +133,18 @@ OPERATIONAL_LOGS: List[Dict[str, Any]] = [
 # =============================================================================
 # 1. FORECASTER PORTAL DATA GENERATOR
 # =============================================================================
-def get_forecaster_portal_data(location: str = "Krishna District", focus_lead_day: int = 6) -> Dict[str, Any]:
+def get_forecaster_portal_data(
+    location: str = "Krishna District",
+    focus_lead_day: int = 6,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> Dict[str, Any]:
     """Generates complete operational forecaster workspace data."""
     lead_day = max(1, min(10, focus_lead_day))
     
     # 1. Fetch live forecast & reliability overview
-    forecast = get_full_forecast_response(location_query=location)
-    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day)
+    forecast = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
     historical_prior = get_district_historical_error_prior(district_or_city=location, lead_day=lead_day)
     
     # 2. All-India district reliability status for national KPIs
@@ -346,7 +351,7 @@ def get_forecaster_portal_data(location: str = "Krishna District", focus_lead_da
     
     return {
         "location": location,
-        "state": forecast.current.region or "Andhra Pradesh",
+        "state": (forecast.current.region if forecast.current else None) or "Andhra Pradesh",
         "focus_lead_day": lead_day,
         "forecast_confidence_pct": conf_score,
         "bust_probability_pct": bust_prob,
@@ -377,13 +382,18 @@ def get_forecaster_portal_data(location: str = "Krishna District", focus_lead_da
 # =============================================================================
 # 2. DISASTER MANAGEMENT PORTAL DATA GENERATOR
 # =============================================================================
-def get_disaster_portal_data(location: str = "Krishna District", focus_lead_day: int = 6) -> Dict[str, Any]:
+def get_disaster_portal_data(
+    location: str = "Krishna District",
+    focus_lead_day: int = 6,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> Dict[str, Any]:
     """Generates disaster management operations dashboard and emergency response tools."""
     lead_day = max(1, min(10, focus_lead_day))
     
     # 1. Live location forecast and overview
-    forecast = get_full_forecast_response(location_query=location)
-    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day)
+    forecast = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
     
     # 2. Extract 72-Hour impact forecast directly from hourly/daily data
     hourly_items = forecast.hourly if forecast.available and forecast.hourly else []
@@ -626,7 +636,7 @@ def get_disaster_portal_data(location: str = "Krishna District", focus_lead_day:
     
     return {
         "location": location,
-        "state": forecast.current.region or "Andhra Pradesh",
+        "state": (forecast.current.region if forecast.current else None) or "Andhra Pradesh",
         "focus_lead_day": lead_day,
         "red_alert_districts_count": red_alerts,
         "orange_alert_districts_count": orange_alerts,
@@ -650,12 +660,17 @@ def get_disaster_portal_data(location: str = "Krishna District", focus_lead_day:
 # =============================================================================
 # 3. AGRICULTURE PORTAL DATA GENERATOR
 # =============================================================================
-def get_agriculture_portal_data(location: str = "Krishna District", focus_lead_day: int = 6) -> Dict[str, Any]:
+def get_agriculture_portal_data(
+    location: str = "Krishna District",
+    focus_lead_day: int = 6,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> Dict[str, Any]:
     """Generates agro-meteorological advisory, crop stress, and soil water analytics."""
     lead_day = max(1, min(10, focus_lead_day))
     
-    forecast = get_full_forecast_response(location_query=location)
-    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector="Farmer")
+    forecast = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=lead_day, sector="Farmer", lat=lat, lon=lon)
     
     daily_items = forecast.daily if forecast.available and forecast.daily else []
     
@@ -801,7 +816,7 @@ def get_agriculture_portal_data(location: str = "Krishna District", focus_lead_d
     
     return {
         "location": location,
-        "state": forecast.current.region or "Andhra Pradesh",
+        "state": (forecast.current.region if forecast.current else None) or "Andhra Pradesh",
         "focus_lead_day": lead_day,
         "rainfall_reliability_score": agri_conf,
         "crop_risk_level": "Moderate" if crop_stress["overall_stress_level"] == "MODERATE" else "Low",
@@ -831,10 +846,14 @@ def get_agriculture_portal_data(location: str = "Krishna District", focus_lead_d
 # =============================================================================
 # 4. PUBLIC PORTAL DATA GENERATOR
 # =============================================================================
-def get_public_portal_data(location: str = "Krishna District") -> Dict[str, Any]:
+def get_public_portal_data(
+    location: str = "Krishna District",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> Dict[str, Any]:
     """Generates citizen-friendly, transparent, jargon-free weather & confidence information."""
-    forecast = get_full_forecast_response(location_query=location)
-    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=1)
+    forecast = get_full_forecast_response(location_query=location, lat=lat, lon=lon)
+    reliability = get_forecast_reliability_overview(location=location, focus_lead_day=1, lat=lat, lon=lon)
     
     curr = forecast.current
     cur_temp = float(curr.temperature_c) if curr else 30.5
@@ -967,7 +986,7 @@ def get_public_portal_data(location: str = "Krishna District") -> Dict[str, Any]
     
     return {
         "location": location,
-        "state": forecast.current.region or "Andhra Pradesh",
+        "state": (forecast.current.region if forecast.current else None) or "Andhra Pradesh",
         "current_temperature_c": cur_temp,
         "feels_like_c": feels_like,
         "weather_condition": condition,

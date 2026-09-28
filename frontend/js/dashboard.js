@@ -464,6 +464,18 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
     if (typeof loadConfidenceMapData === 'function' && typeof currentConfidenceLeadDay !== 'undefined') {
       loadConfidenceMapData(currentConfidenceLeadDay);
     }
+    if (typeof window.MultiAgentIntelligence !== 'undefined') {
+      window.MultiAgentIntelligence.loadIntelligence(locationQuery, 6);
+    }
+    if (typeof window.DistrictPassport !== 'undefined') {
+      window.DistrictPassport.loadPassport(locationQuery);
+    }
+    if (typeof window.DigitalTwin !== 'undefined') {
+      window.DigitalTwin.fetchReplayData(locationQuery);
+    }
+    if (typeof window.ResourceOptimization !== 'undefined') {
+      window.ResourceOptimization.loadResourcePlan(locationQuery, 6);
+    }
 
     hideLoading();
   } catch (err) {
@@ -705,11 +717,13 @@ function setupEventListeners() {
     });
   }
 
-  // Auto-refresh every 30 minutes
-  setInterval(() => {
-    console.log("[WeatherTrust] 30-minute auto-refresh triggered...");
-    loadDashboard(currentLocation);
-  }, 30 * 60 * 1000);
+  // Auto-refresh every 30 minutes (single registration)
+  if (!window._weatherTrustRefreshTimer) {
+    window._weatherTrustRefreshTimer = setInterval(() => {
+      console.log("[WeatherTrust] 30-minute auto-refresh triggered...");
+      loadDashboard(currentLocation);
+    }, 30 * 60 * 1000);
+  }
 }
 
 // Initial Boot

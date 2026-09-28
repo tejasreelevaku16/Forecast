@@ -188,3 +188,18 @@ def weather_scene(
     
     return get_weather_scene(location=location_query)
 
+
+@router.get("/digital-twin", summary="Get Forecast Confidence Digital Twin Replay (SIH Differentiator 1)")
+def api_digital_twin_replay(
+    location: str = Query("Vijayawada", description="District or location name"),
+):
+    """
+    SIH Differentiator 1 Endpoint:
+    Returns 10-day digital twin replay with Forecast vs Actual comparisons,
+    AI confidence decay curves, bust probability evolution, error timeline,
+    and synoptic animation cues.
+    """
+    from backend.services.digital_twin_service import get_digital_twin_replay
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
+    return get_digital_twin_replay(location=clean_loc)
+

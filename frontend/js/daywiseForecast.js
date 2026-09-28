@@ -5,6 +5,8 @@
  * Fetches and renders independent calibrated ML predictions for Day 1 through Day 10.
  */
 
+let activeDaywiseController = null;
+
 async function loadDaywiseForecast(location = "Vijayawada") {
   const container = document.getElementById("daywiseCardsGrid");
   const locLabel = document.getElementById("daywiseLocationHeader");
@@ -21,8 +23,15 @@ async function loadDaywiseForecast(location = "Vijayawada") {
     </div>
   `;
 
+  if (activeDaywiseController) {
+    activeDaywiseController.abort();
+  }
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  activeDaywiseController = controller;
+
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, 15000);
 
   try {
     let url = `/api/reliability/daywise?location=${encodeURIComponent(locName)}`;
@@ -40,6 +49,9 @@ async function loadDaywiseForecast(location = "Vijayawada") {
     renderDaywiseCards(days, locName);
   } catch (err) {
     clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      return;
+    }
     console.warn("Error loading daywise forecast:", err);
     container.innerHTML = `
       <div class="glass-card" style="grid-column: 1 / -1; text-align: center; padding: 40px 24px; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05);">
@@ -53,6 +65,10 @@ async function loadDaywiseForecast(location = "Vijayawada") {
         </button>
       </div>
     `;
+  } finally {
+    if (activeDaywiseController === controller) {
+      activeDaywiseController = null;
+    }
   }
 }
 

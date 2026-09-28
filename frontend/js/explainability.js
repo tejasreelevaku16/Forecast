@@ -18,6 +18,10 @@ async function loadExplainabilityData(location = "Vijayawada", leadDay = 6) {
   const locHeader = document.getElementById("explainLocationHeader");
   if (locHeader) locHeader.textContent = `${location} (Lead Day ${leadDay})`;
 
+  if (typeof window.WhyChainEngine !== "undefined") {
+    window.WhyChainEngine.loadWhyChain(location, leadDay);
+  }
+
   try {
     const resp = await fetch(`/api/explain/bust?location=${encodeURIComponent(location)}&lead_day=${leadDay}`);
     if (!resp.ok) throw new Error("Failed to load explainability data");
