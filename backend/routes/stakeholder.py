@@ -11,11 +11,13 @@ Exposes role-based operational endpoints for 5 stakeholder portals:
 - Administrator
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from backend.services.stakeholder_service import (
+    get_all_stakeholder_states,
+    get_stakeholder_districts_by_state,
     get_forecaster_portal_data,
     get_disaster_portal_data,
     get_agriculture_portal_data,
@@ -35,10 +37,26 @@ from backend.models.stakeholder_model import (
 router = APIRouter(prefix="/api/stakeholder", tags=["Stakeholder Workspace"])
 
 
+@router.get("/states", summary="Get All Indian States and UTs Directory for Stakeholders")
+def api_get_states() -> List[Dict[str, Any]]:
+    """Returns directory of all 36 Indian states and Union Territories with official district counts."""
+    return get_all_stakeholder_states()
+
+
+@router.get("/districts", summary="Get Districts for Selected State")
+def api_get_districts(
+    state: str = Query("Andhra Pradesh", description="Target Indian state name or code")
+) -> List[Dict[str, Any]]:
+    """Returns the list of districts and coordinates belonging to the requested Indian state."""
+    return get_stakeholder_districts_by_state(state)
+
+
 @router.get("/overview", summary="Unified Stakeholder Workspace Overview")
 def get_stakeholder_overview(
     role: str = Query("forecaster", description="Target role: forecaster, disaster, agriculture, public, admin"),
-    location: str = Query("Krishna District", description="City or district name"),
+    location: Optional[str] = Query(None, description="City, district, or place name"),
+    state: Optional[str] = Query(None, description="Optional target state"),
+    district: Optional[str] = Query(None, description="Optional target district"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
     lat: Optional[float] = Query(None, description="Optional latitude"),
     lon: Optional[float] = Query(None, description="Optional longitude"),
@@ -50,58 +68,66 @@ def get_stakeholder_overview(
     role_clean = role.lower().strip()
     
     if role_clean == "disaster":
-        return {"role": "disaster", "data": get_disaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
+        return {"role": "disaster", "data": get_disaster_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)}
     elif role_clean == "agriculture":
-        return {"role": "agriculture", "data": get_agriculture_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
+        return {"role": "agriculture", "data": get_agriculture_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)}
     elif role_clean == "public":
-        return {"role": "public", "data": get_public_portal_data(location=location, lat=lat, lon=lon)}
+        return {"role": "public", "data": get_public_portal_data(location=location, state=state, district=district, lat=lat, lon=lon)}
     elif role_clean == "admin":
         return {"role": "admin", "data": get_admin_portal_data()}
     else:
-        return {"role": "forecaster", "data": get_forecaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)}
+        return {"role": "forecaster", "data": get_forecaster_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)}
 
 
 @router.get("/forecaster", summary="Forecaster (IMD / MoES) Portal Operational Data")
 def api_forecaster_portal(
-    location: str = Query("Krishna District", description="City or district name"),
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
     lat: Optional[float] = Query(None, description="Optional latitude"),
     lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Operational weather forecasting, bust probability, SHAP, and ensemble consensus."""
-    return get_forecaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
+    return get_forecaster_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/disaster", summary="Disaster Management Authority Portal Operational Data")
 def api_disaster_portal(
-    location: str = Query("Krishna District", description="City or district name"),
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
     lat: Optional[float] = Query(None, description="Optional latitude"),
     lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Emergency planning, flood and cyclone risk, 72h impact timeline, evacuation support."""
-    return get_disaster_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
+    return get_disaster_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/agriculture", summary="Agriculture Department Portal Operational Data")
 def api_agriculture_portal(
-    location: str = Query("Krishna District", description="City or district name"),
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
     lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
     lat: Optional[float] = Query(None, description="Optional latitude"),
     lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Agro-meteorological decision support, soil moisture, crop stress, and sowing advisories."""
-    return get_agriculture_portal_data(location=location, focus_lead_day=lead_day, lat=lat, lon=lon)
+    return get_agriculture_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)
 
 
 @router.get("/public", summary="Public Citizen Portal Weather & Reliability Data")
 def api_public_portal(
-    location: str = Query("Krishna District", description="City or district name"),
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
     lat: Optional[float] = Query(None, description="Optional latitude"),
     lon: Optional[float] = Query(None, description="Optional longitude"),
 ) -> Dict[str, Any]:
     """Citizen-friendly plain-language weather dashboard, safety checklist, and shareable card."""
-    return get_public_portal_data(location=location, lat=lat, lon=lon)
+    return get_public_portal_data(location=location, state=state, district=district, lat=lat, lon=lon)
 
 
 @router.get("/admin", summary="Administrator Portal System Diagnostics & Controls")
@@ -158,9 +184,7 @@ def api_resource_optimization(
 ) -> Dict[str, Any]:
     """
     SIH Differentiator 5 Endpoint:
-    Returns dynamic operational resource allocation plans: NDRF deployment priority,
-    relief camp recommendations, reservoir spillway monitoring, heavy pump allocation,
-    medical emergency readiness, and composite multi-district resource urgency ranking.
+    Returns dynamic operational resource allocation plans.
     """
     from backend.services.resource_optimization_service import get_resource_optimization_plan
     clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
