@@ -139,6 +139,24 @@ def api_live_weather(
     return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
 
 
+@app.get("/api/live-tracking", tags=["Weather"])
+def api_live_tracking(
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    location: Optional[str] = "Vijayawada",
+    region: Optional[str] = None,
+):
+    """Direct canonical live-tracking API returning real observations, forecast drift and reliability."""
+    from backend.routes.weather import _extract_coords
+    from backend.services.weather_service import get_live_tracking_data
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_live_tracking_data(location=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
+
+
 # Static Frontend Mounting & SPA Page Routing
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
@@ -197,7 +215,9 @@ if FRONTEND_DIR.exists():
 
     for page in PAGES:
         app.add_api_route(f"/{page}", _make_page_handler(), methods=["GET"], include_in_schema=False)
+        app.add_api_route(f"/{page}/", _make_page_handler(), methods=["GET"], include_in_schema=False)
 
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static_assets")
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
 
 

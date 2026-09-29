@@ -133,6 +133,27 @@ def live_weather_endpoint(
     return get_full_forecast_response(location_query=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
 
 
+@router.get("/live-tracking", summary="Get Canonical Live Tracking Observations, Drift & Reliability")
+def live_tracking_endpoint(
+    latitude: Optional[float] = Query(None, description="Exact latitude"),
+    longitude: Optional[float] = Query(None, description="Exact longitude"),
+    lat: Optional[float] = Query(None, description="Latitude alias"),
+    lon: Optional[float] = Query(None, description="Longitude alias"),
+    location: Optional[str] = Query("Vijayawada", description="Location or place name"),
+    region: Optional[str] = Query(None, description="State/Region name"),
+):
+    """
+    Canonical live tracking API returning timestamp, location, temperature, humidity,
+    pressure, wind, rainfall, forecast reliability, forecast drift and bust risk.
+    """
+    from backend.services.weather_service import get_live_tracking_data
+    final_lat, final_lon = _extract_coords(lat, lon, latitude, longitude)
+    clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
+    clean_reg = str(region) if region and not hasattr(region, "default") else None
+    return get_live_tracking_data(location=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
+
+
+
 @router.get("/locate", response_model=WeatherForecastResponse, summary="Locate User GPS Weather")
 def locate_weather(
     lat: float = Query(..., description="Latitude from GPS"),
