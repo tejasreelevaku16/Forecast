@@ -88,9 +88,9 @@ const WeatherSceneEngine = {
   /**
    * Load scene for a specific location
    */
-  async loadSceneForLocation(location, lat = null, lon = null) {
+  async loadSceneForLocation(location, lat = null, lon = null, score = null) {
     if (this.isTransitioning) {
-      this.pendingLocation = { location, lat, lon };
+      this.pendingLocation = { location, lat, lon, score };
       return;
     }
 
@@ -112,7 +112,7 @@ const WeatherSceneEngine = {
         this.updateLocationTitle(location);
         
         // Update confidence score from existing reliability data
-        this.updateConfidenceScore(location, lat, lon);
+        this.updateConfidenceScore(location, lat, lon, score);
       } else {
         console.warn('Failed to load scene data, using fallback');
         await this.transitionToScene(data.scene || this.getFallbackScene(), null);
@@ -254,10 +254,22 @@ const WeatherSceneEngine = {
     this.animateValue('scenePressure', weather.pressure_hpa, 0, ' hPa');
   },
 
-  /**
-   * Update confidence score from reliability service
-   */
-  async updateConfidenceScore(location, lat = null, lon = null) {
+  async updateConfidenceScore(location, lat = null, lon = null, score = null) {
+    const confElem = document.getElementById('sceneConfidence');
+    if (!confElem) return;
+
+    if (score !== null && score !== undefined && !isNaN(score)) {
+      this.animateValue('sceneConfidence', Number(score), 0, '/100');
+      this.pulseCard(confElem.closest('.weather-card'));
+      return;
+    }
+
+    if (typeof WeatherTrustCommon !== 'undefined' && WeatherTrustCommon.current && WeatherTrustCommon.current.trust_score !== undefined) {
+      this.animateValue('sceneConfidence', Number(WeatherTrustCommon.current.trust_score), 0, '/100');
+      this.pulseCard(confElem.closest('.weather-card'));
+      return;
+    }
+
     try {
       let url = `/api/reliability?location=${encodeURIComponent(location)}&lead_day=1`;
       if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
@@ -266,7 +278,6 @@ const WeatherSceneEngine = {
       const response = await fetch(url);
       const data = await response.json();
       
-      const confElem = document.getElementById('sceneConfidence');
       if (confElem) {
         if (data && data.available !== false && data.reliability_score !== undefined) {
           this.animateValue('sceneConfidence', data.reliability_score, 0, '/100');
@@ -277,7 +288,6 @@ const WeatherSceneEngine = {
       }
     } catch (error) {
       console.error('Error fetching confidence score:', error);
-      const confElem = document.getElementById('sceneConfidence');
       if (confElem) confElem.textContent = '--/100';
     }
   },

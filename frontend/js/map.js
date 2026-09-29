@@ -77,8 +77,9 @@ const IndiaMapUI = {
     if (!mapContainer || typeof L === 'undefined') return;
 
     if (this.map) {
-      this.map.remove();
-      this.map = null;
+      this.map.invalidateSize(true);
+      this.fitIndiaBounds(false);
+      return;
     }
 
     this.showMapLoading("Loading India reliability map...");
@@ -239,6 +240,11 @@ const IndiaMapUI = {
    * Fetches Indian location hierarchy for place resolution
    */
   async fetchLocationHierarchy() {
+    if (this.hierarchy && Object.keys(this.hierarchy).length > 0) return this.hierarchy;
+    if (typeof LiveTrackingUI !== 'undefined' && LiveTrackingUI.hierarchy && Object.keys(LiveTrackingUI.hierarchy).length > 0) {
+      this.hierarchy = LiveTrackingUI.hierarchy;
+      return this.hierarchy;
+    }
     try {
       const resp = await fetch('/api/locations/hierarchy');
       if (resp.ok) {
@@ -247,6 +253,7 @@ const IndiaMapUI = {
     } catch (e) {
       console.warn("Could not load location hierarchy:", e);
     }
+    return this.hierarchy;
   },
 
   /**
@@ -941,7 +948,12 @@ const IndiaMapUI = {
   /**
    * Sets up toolbar controls and live place/district search with typeahead dropdown
    */
+  _controlsSetup: false,
+
   setupControls() {
+    if (this._controlsSetup) return;
+    this._controlsSetup = true;
+
     const resetBtn = document.getElementById('mapResetBtn');
     if (resetBtn) {
       resetBtn.onclick = () => this.resetIndiaView();

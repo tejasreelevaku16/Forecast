@@ -10,10 +10,14 @@ const DigitalTwin = {
   playbackSpeed: 1200, // ms per step
   timerId: null,
   evolutionChart: null,
+  _listenersInitialized: false,
 
   async init(location = "Vijayawada") {
     await this.fetchReplayData(location);
-    this.setupListeners();
+    if (!this._listenersInitialized) {
+      this.setupListeners();
+      this._listenersInitialized = true;
+    }
   },
 
   async fetchReplayData(location = "Vijayawada") {

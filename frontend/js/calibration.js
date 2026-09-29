@@ -12,10 +12,15 @@
 
 let calibrationChartInstance = null;
 let rocChartInstance = null;
+let activeCalibrationController = null;
 
 async function loadCalibrationView() {
+  if (activeCalibrationController) {
+    activeCalibrationController.abort();
+  }
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  activeCalibrationController = controller;
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const resp = await fetch("/api/judge/calibration", { signal: controller.signal });
@@ -46,6 +51,7 @@ async function loadCalibrationView() {
     if (modelTag) modelTag.textContent = data.model_name || "Calibrated Random Forest";
   } catch (err) {
     clearTimeout(timeoutId);
+    if (err.name === 'AbortError') return;
     console.warn("Error loading calibration dashboard:", err);
     const interpEl = document.getElementById("calibrationInterpretationText");
     if (interpEl) {
@@ -57,6 +63,10 @@ async function loadCalibrationView() {
           </button>
         </div>
       `;
+    }
+  } finally {
+    if (activeCalibrationController === controller) {
+      activeCalibrationController = null;
     }
   }
 }

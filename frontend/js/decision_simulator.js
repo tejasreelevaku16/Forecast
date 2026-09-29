@@ -6,10 +6,14 @@
 const DecisionSimulator = {
   debounceTimer: null,
   presets: {},
+  _initialized: false,
 
   init() {
-    this.setupListeners();
-    this.fetchPresets();
+    if (!this._initialized) {
+      this.setupListeners();
+      this.fetchPresets();
+      this._initialized = true;
+    }
     this.runSimulation(); // initial run
   },
 

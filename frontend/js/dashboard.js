@@ -276,6 +276,8 @@ function updateDashboardHeroCards(weatherData, reliabilityData) {
 /**
  * Loads and refreshes all dashboard modules across all 10 pages
  */
+let activeSearchController = null;
+
 function normalizeLocationSelection(location, lat = null, lon = null, state = null) {
   const source = location && typeof location === 'object'
     ? location
@@ -310,11 +312,58 @@ function normalizeLocationSelection(location, lat = null, lon = null, state = nu
   };
 }
 
-async function searchLocationResults(query) {
-  const response = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`);
+async function searchLocationResults(query, signal = null) {
+  const response = await fetch(`/api/weather/search?q=${encodeURIComponent(query)}`, { signal });
   if (!response.ok) throw new Error(`Location search returned HTTP ${response.status}`);
   const results = await response.json();
   return Array.isArray(results) ? results.map(result => normalizeLocationSelection(result)) : [];
+}
+
+function updateAppLocation(locationInput, lat = null, lon = null, state = null) {
+  const selectedLocation = normalizeLocationSelection(locationInput, lat, lon, state);
+  const locationQuery = selectedLocation.place;
+  currentLocation = locationQuery;
+  window.selectedLocation = selectedLocation;
+  window.currentSelectedLocation = locationQuery;
+  window.currentSelectedLat = selectedLocation.latitude;
+  window.currentSelectedLon = selectedLocation.longitude;
+
+  if (typeof WeatherTrustCommon !== 'undefined') {
+    WeatherTrustCommon.setLocation(selectedLocation);
+  }
+
+  // Update search input to resolved displayName
+  const searchInput = document.getElementById('citySearchInput');
+  if (searchInput && selectedLocation.displayName) {
+    searchInput.value = selectedLocation.displayName;
+  }
+
+  // Update active page view without re-triggering unwanted modules
+  const activePage = (typeof AppRouter !== 'undefined' && AppRouter.currentPage) ? AppRouter.currentPage : 'dashboard';
+  if (activePage === 'dashboard') {
+    loadDashboard(selectedLocation);
+  } else if (activePage === 'daywise' && typeof loadDaywiseForecast === 'function') {
+    loadDaywiseForecast(locationQuery);
+  } else if (activePage === 'uncertainty' && typeof loadUncertaintyView === 'function') {
+    loadUncertaintyView(locationQuery);
+  } else if (activePage === 'drift' && typeof DriftUI !== 'undefined' && typeof DriftUI.reloadDrift === 'function') {
+    DriftUI.reloadDrift(locationQuery);
+  } else if (activePage === 'live-weather' && typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.selectLocation === 'function') {
+    LiveTrackingUI.selectLocation(selectedLocation.state, locationQuery, false, selectedLocation);
+  } else if (activePage === 'map' && typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
+    IndiaMapUI.selectLocation(selectedLocation, false);
+    if (typeof window.DistrictPassport !== 'undefined') {
+      window.DistrictPassport.loadPassport(locationQuery);
+    }
+  } else if (activePage === 'stakeholder' && typeof StakeholderUI !== 'undefined' && typeof StakeholderUI.onDistrictChanged === 'function') {
+    StakeholderUI.onDistrictChanged(selectedLocation.district || locationQuery);
+  } else if (activePage === 'explain' && typeof loadExplainabilityData === 'function') {
+    loadExplainabilityData(locationQuery, 6);
+  } else if (activePage === 'forecast-replay' && typeof window.DigitalTwin !== 'undefined' && typeof window.DigitalTwin.fetchReplayData === 'function') {
+    window.DigitalTwin.fetchReplayData(locationQuery);
+  } else {
+    loadDashboard(selectedLocation);
+  }
 }
 
 function selectSearchResult(result) {
@@ -327,8 +376,11 @@ function selectSearchResult(result) {
   const searchInput = document.getElementById('citySearchInput');
   const searchDropdown = document.getElementById('searchDropdown');
   if (searchInput) searchInput.value = location.displayName;
-  if (searchDropdown) searchDropdown.classList.remove('active');
-  loadDashboard(location);
+  if (searchDropdown) {
+    searchDropdown.classList.remove('active');
+    searchDropdown.innerHTML = '';
+  }
+  updateAppLocation(location);
 }
 
 async function loadDashboard(locationInput, sector = currentSector, lat = null, lon = null, state = null) {
@@ -341,6 +393,9 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
   currentLocation = locationQuery;
   currentSector = sector;
   window.selectedLocation = selectedLocation;
+  window.currentSelectedLocation = locationQuery;
+  window.currentSelectedLat = lat;
+  window.currentSelectedLon = lon;
   window.currentWeatherInsights = null;
   if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.renderAll(null);
 
@@ -362,7 +417,7 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
   hideError();
 
   try {
-    // Concurrent data retrieval from existing backend services
+    // Concurrent data retrieval scoped strictly to Dashboard needs
     const [weatherData, reliabilityData, driftData] = await Promise.all([
       WeatherUI.fetchForecast(locationQuery, lat, lon, state),
       ReliabilityUI.fetchOverview(locationQuery, 6, sector, lat, lon, state),
@@ -391,20 +446,20 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
       WeatherTrustCommon.setLocation(resolvedLocation);
     }
     window.selectedLocation = resolvedLocation;
-    if (resolvedLocation.latitude !== null && resolvedLocation.longitude !== null && typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.selectLocation === 'function') {
-      LiveTrackingUI.selectLocation(resolvedLocation.state, resolvedLocation.place, false, resolvedLocation);
-    }
+    window.currentSelectedLocation = resolvedLocation.place;
+    window.currentSelectedLat = resolvedLat;
+    window.currentSelectedLon = resolvedLon;
 
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
     hideLoading();
 
-    // Update Weather Scene Engine (Live Weather Scene) with exact coordinates
+    // Update Weather Scene Engine with exact coordinates and existing score
     if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
-      WeatherSceneEngine.loadSceneForLocation(locationQuery, resolvedLat, resolvedLon);
+      WeatherSceneEngine.loadSceneForLocation(locationQuery, resolvedLat, resolvedLon, reliabilityData?.reliability_score);
     }
 
-    // Page 2: Live Weather / Live Tracking Page View
+    // Populate weather elements for seamless transition if user clicks into details
     if (weatherData && weatherData.available !== false && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
       WeatherUI.renderHourlyTimeline(weatherData.hourly);
@@ -414,19 +469,9 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
       if (typeof renderHourlyTrendChart === 'function') {
         renderHourlyTrendChart(weatherData.hourly);
       }
-    } else {
-      WeatherUI.renderCurrentWeather(null, locationQuery);
-      WeatherUI.renderHourlyTimeline([]);
-      WeatherUI.renderDailyForecast([], null);
-      WeatherUI.renderAlerts([]);
     }
 
-    // Live Tracking Unified Sections (Daily Forecast, Drift, History, Reliability)
-    if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.renderLiveTrackingSections === 'function') {
-      LiveTrackingUI.renderLiveTrackingSections(weatherData, reliabilityData, driftData, insightsData);
-    }
-
-    // Page 4: Forecast Trust Page View
+    // Forecast Trust Overview Hero
     if (reliabilityData && reliabilityUi && typeof reliabilityUi.renderHero === 'function') {
       reliabilityUi.renderHero(reliabilityData);
       if (typeof renderBustRiskChart === 'function' && reliabilityData.available !== false) {
@@ -434,58 +479,17 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
       }
     }
 
-    // Page 5: Forecast Drift Page View
+    // Drift Hero Card Snapshot
     if (driftData) {
       DriftUI.renderDriftSection(driftData);
     }
 
-    // Page 7: Alerts Page View
-    await fetchAndRenderAlertsPage(locationQuery);
+    // Alerts Badge Count
+    fetchAndRenderAlertsPage(locationQuery);
 
-    // Page 6: India Map View synchronization
-    if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.selectLocation === 'function') {
-      if (resolvedLat !== null && resolvedLon !== null && !isNaN(resolvedLat) && !isNaN(resolvedLon)) {
-        const locObj = {
-          place: locationQuery,
-          city: resolvedLocation.city,
-          district: resolvedDistrict,
-          state: resolvedState || 'India',
-          state_code: resolvedLocation.state_code,
-          country: 'India',
-          latitude: Number(resolvedLat),
-          longitude: Number(resolvedLon)
-        };
-        IndiaMapUI.selectLocation(locObj, false);
-      }
-    }
-
-    // Page 9: Technical / Judge View
-    if (typeof JudgeUI !== 'undefined') {
-      JudgeUI.fetchMetrics().then(data => {
-        JudgeUI.renderJudgeDashboard(data);
-      });
-    }
-
-    // SIH 10/10 Synchronization
-    window.currentSelectedLocation = locationQuery;
-    if (typeof loadDaywiseForecast === 'function') loadDaywiseForecast(locationQuery);
-    if (typeof loadUncertaintyView === 'function') loadUncertaintyView(locationQuery);
-    if (typeof loadCalibrationView === 'function') loadCalibrationView();
-    if (typeof loadExplainabilityData === 'function') loadExplainabilityData(locationQuery, 6);
-    if (typeof loadConfidenceMapData === 'function' && typeof currentConfidenceLeadDay !== 'undefined') {
-      loadConfidenceMapData(currentConfidenceLeadDay);
-    }
+    // Dashboard Multi-Agent Intelligence Widget
     if (typeof window.MultiAgentIntelligence !== 'undefined') {
       window.MultiAgentIntelligence.loadIntelligence(locationQuery, 6);
-    }
-    if (typeof window.DistrictPassport !== 'undefined') {
-      window.DistrictPassport.loadPassport(locationQuery);
-    }
-    if (typeof window.DigitalTwin !== 'undefined') {
-      window.DigitalTwin.fetchReplayData(locationQuery);
-    }
-    if (typeof window.ResourceOptimization !== 'undefined') {
-      window.ResourceOptimization.loadResourcePlan(locationQuery, 6);
     }
 
     hideLoading();
@@ -552,6 +556,9 @@ async function fetchAndRenderAlertsPage(locationName) {
  * Setup Event Listeners
  */
 function setupEventListeners() {
+  if (window._dashboardListenersSetup) return;
+  window._dashboardListenersSetup = true;
+
   // Quick location pills
   const pills = document.querySelectorAll('.pill-btn');
   pills.forEach(pill => {
@@ -559,7 +566,7 @@ function setupEventListeners() {
       pills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const loc = pill.getAttribute('data-location');
-      loadDashboard(loc);
+      updateAppLocation(loc);
     });
   });
 
@@ -594,12 +601,21 @@ function setupEventListeners() {
       searchDropdown.innerHTML = '';
 
       if (query.length < 2) {
+        if (activeSearchController) {
+          activeSearchController.abort();
+          activeSearchController = null;
+        }
         return;
       }
 
       debounceTimer = setTimeout(async () => {
         try {
-          const results = await searchLocationResults(query);
+          if (activeSearchController) {
+            activeSearchController.abort();
+          }
+          activeSearchController = new AbortController();
+
+          const results = await searchLocationResults(query, activeSearchController.signal);
           if (searchInput.value.trim() !== query) return;
 
           if (results.length > 0) {
@@ -608,21 +624,13 @@ function setupEventListeners() {
               const div = document.createElement('div');
               div.className = 'search-dropdown-item';
               const name = document.createElement('strong');
-              name.textContent = item.displayName;
+              name.textContent = item.displayName || item.name;
+
               const badge = document.createElement('span');
               badge.className = 'badge badge-neutral search-reliability-badge';
-              badge.textContent = 'Checking';
+              badge.textContent = item.state || item.country || 'India';
+
               div.append(name, badge);
-              if (typeof WeatherTrustInsightsUI !== 'undefined') {
-                WeatherTrustInsightsUI.fetchLocationBadge(item).then(score => {
-                  if (!div.isConnected || searchInput.value.trim() !== query) return;
-                  badge.replaceWith(WeatherTrustInsightsUI.makeBadge(score.available ? score.score : null, 'search-reliability-badge'));
-                }).catch(() => {
-                  if (div.isConnected && searchInput.value.trim() === query) {
-                    badge.textContent = 'Unavailable';
-                  }
-                });
-              }
               div.addEventListener('click', () => {
                 selectSearchResult(item);
               });
@@ -633,8 +641,11 @@ function setupEventListeners() {
             searchDropdown.classList.remove('active');
           }
         } catch (err) {
+          if (err.name === 'AbortError') return;
           console.error("Location search failed:", err);
           if (searchInput.value.trim() === query) showError("Location search is temporarily unavailable. Please try again.");
+        } finally {
+          activeSearchController = null;
         }
       }, 250);
     });
@@ -658,6 +669,7 @@ function setupEventListeners() {
             }
             showError(`Location "${query}" not found. Please select a valid Indian city or district.`);
           } catch (err) {
+            if (err.name === 'AbortError') return;
             console.error("Location search failed:", err);
             showError("Location search is temporarily unavailable. Please try again.");
           }
@@ -688,7 +700,7 @@ function setupEventListeners() {
                 const matchedLoc = data.current.location;
                 if (searchInput) searchInput.value = matchedLoc;
                 pills.forEach(p => p.classList.remove('active'));
-                loadDashboard(matchedLoc);
+                updateAppLocation(matchedLoc, latitude, longitude);
               }
             }
           } catch (err) {
@@ -714,7 +726,7 @@ function setupEventListeners() {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.classList.add('spinning');
-      await loadDashboard(currentLocation);
+      updateAppLocation(currentLocation);
       setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
     });
   }
@@ -724,7 +736,7 @@ function setupEventListeners() {
   if (retryBtn) {
     retryBtn.addEventListener('click', () => {
       hideError();
-      loadDashboard(currentLocation);
+      updateAppLocation(currentLocation);
     });
   }
 
@@ -732,7 +744,7 @@ function setupEventListeners() {
   if (!window._weatherTrustRefreshTimer) {
     window._weatherTrustRefreshTimer = setInterval(() => {
       console.log("[WeatherTrust] 30-minute auto-refresh triggered...");
-      loadDashboard(currentLocation);
+      updateAppLocation(currentLocation);
     }, 30 * 60 * 1000);
   }
 }
@@ -744,10 +756,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.init === 'function') {
     LiveTrackingUI.init();
   }
-  const activePill = document.querySelector('.pill-btn.active');
-  const initialLoc = activePill ? activePill.getAttribute('data-location') : "Delhi";
-  loadDashboard(initialLoc);
-  if (typeof IndiaMapUI !== 'undefined' && typeof IndiaMapUI.initMap === 'function') {
-    IndiaMapUI.initMap();
+  const currentRoute = (typeof AppRouter !== 'undefined' && typeof AppRouter.getRouteFromUrl === 'function')
+    ? AppRouter.getRouteFromUrl()
+    : 'dashboard';
+  if (currentRoute === 'dashboard') {
+    const activePill = document.querySelector('.pill-btn.active');
+    const initialLoc = window.currentSelectedLocation || (activePill ? activePill.getAttribute('data-location') : "Delhi");
+    loadDashboard(initialLoc);
   }
 });

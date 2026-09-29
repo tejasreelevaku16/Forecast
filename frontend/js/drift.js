@@ -5,10 +5,15 @@
 
 const DriftUI = {
   driftChartInstance: null,
+  activeDriftController: null,
 
   async fetchDriftHistory(locationName = "Krishna District", lat = null, lon = null) {
+    if (this.activeDriftController) {
+      this.activeDriftController.abort();
+    }
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    this.activeDriftController = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
       let url = `/api/drift/history?location=${encodeURIComponent(locationName)}`;
@@ -21,8 +26,13 @@ const DriftUI = {
       return await resp.json();
     } catch (e) {
       clearTimeout(timeoutId);
+      if (e.name === 'AbortError') return null;
       console.warn("Failed to fetch drift history:", e);
       return null;
+    } finally {
+      if (this.activeDriftController === controller) {
+        this.activeDriftController = null;
+      }
     }
   },
 

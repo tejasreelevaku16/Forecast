@@ -58,9 +58,15 @@ async function initConfidenceMap() {
 
   // Load GeoJSON if not cached
   try {
-    const geoResp = await fetch("/data/india_states.geojson");
-    if (geoResp.ok) {
-      statesGeojsonData = await geoResp.json();
+    if (!statesGeojsonData) {
+      if (typeof IndiaMapUI !== 'undefined' && IndiaMapUI.rawGeoJson) {
+        statesGeojsonData = IndiaMapUI.rawGeoJson;
+      } else {
+        const geoResp = await fetch("/data/india_states.geojson");
+        if (geoResp.ok) {
+          statesGeojsonData = await geoResp.json();
+        }
+      }
     }
   } catch (err) {
     console.warn("Could not load local states geojson:", err);
@@ -358,7 +364,7 @@ window.openExplainabilityModal = async function (location, leadDay = 6) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6500);
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const resp = await fetch(`/api/explain/bust?location=${encodeURIComponent(location)}&lead_day=${leadDay}`, { signal: controller.signal });
@@ -371,6 +377,7 @@ window.openExplainabilityModal = async function (location, leadDay = 6) {
     }
   } catch (err) {
     clearTimeout(timeoutId);
+    if (err.name === 'AbortError') return;
     console.warn("Modal explainability error:", err);
     renderExplainabilityModalContent(null, location, leadDay);
   }

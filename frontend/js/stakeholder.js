@@ -19,11 +19,16 @@ const StakeholderUI = {
   disasterMap: null,
   charts: {},
   cachedData: {},
+  _initialized: false,
+  _districtsLoaded: false,
 
   init() {
     this.currentLocation = window.currentSelectedLocation || "Krishna District";
-    this.setupEventListeners();
-    this.setupRoleTabs();
+    if (!this._initialized) {
+      this.setupEventListeners();
+      this.setupRoleTabs();
+      this._initialized = true;
+    }
     this.populateDistrictSelect();
     this.setLeadDay(this.currentLeadDay, false);
     this.switchRole(this.activeRole, true);
@@ -101,6 +106,18 @@ const StakeholderUI = {
     const distSelect = document.getElementById("stakeholderDistrictSelect");
     if (!distSelect) return;
 
+    if (this._districtsLoaded && distSelect.options.length > 1) {
+      if (this.currentLocation) {
+        for (let i = 0; i < distSelect.options.length; i++) {
+          if (distSelect.options[i].value.toLowerCase() === this.currentLocation.toLowerCase()) {
+            distSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      return;
+    }
+
     fetch("/api/map/districts")
       .then((r) => r.json())
       .then((districts) => {
@@ -114,6 +131,7 @@ const StakeholderUI = {
           }
           distSelect.appendChild(opt);
         });
+        this._districtsLoaded = true;
       })
       .catch(() => {
         const defaults = ["Krishna District", "Vijayawada", "Visakhapatnam", "Guntur", "Hyderabad", "Bengaluru Urban", "Mumbai City", "Delhi, NCR"];

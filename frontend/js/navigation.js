@@ -111,6 +111,13 @@ const AppRouter = {
 
   navigateTo(pageSlug, pushHistory = true) {
     const target = this.normalizeRoute(pageSlug);
+    const previousPage = this.currentPage;
+
+    // Page deactivation cleanup
+    if (previousPage && previousPage !== target) {
+      this.onPageDeactivated(previousPage);
+    }
+
     this.currentPage = target;
     const selectedLocation = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
     if (selectedLocation) {
@@ -157,6 +164,22 @@ const AppRouter = {
     this.onPageActivated(target);
   },
 
+  onPageDeactivated(pageSlug) {
+    // Stop animator loop when leaving dashboard
+    if (pageSlug === "dashboard") {
+      if (typeof WeatherSceneEngine !== "undefined" && WeatherSceneEngine.animator) {
+        WeatherSceneEngine.animator.setPaused(true);
+      }
+    }
+
+    // Pause replay playback when leaving forecast-replay
+    if (pageSlug === "forecast-replay") {
+      if (typeof window.DigitalTwin !== "undefined" && typeof window.DigitalTwin.pause === "function") {
+        window.DigitalTwin.pause();
+      }
+    }
+  },
+
   onPageActivated(pageSlug) {
     const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
@@ -166,6 +189,16 @@ const AppRouter = {
         WeatherSceneEngine.animator.setPaused(false);
       } else {
         WeatherSceneEngine.animator.setPaused(true);
+      }
+    }
+
+    // Dashboard View Activation
+    if (pageSlug === "dashboard") {
+      if (typeof loadDashboard === "function") {
+        loadDashboard(loc);
+      }
+      if (typeof window.MultiAgentIntelligence !== "undefined") {
+        window.MultiAgentIntelligence.loadIntelligence(loc, 6);
       }
     }
 
@@ -188,6 +221,9 @@ const AppRouter = {
             IndiaMapUI.map.invalidateSize(true);
             IndiaMapUI.fitIndiaBounds(false);
           }
+        }
+        if (typeof window.DistrictPassport !== "undefined") {
+          window.DistrictPassport.loadPassport(loc);
         }
       }, 150);
     }
@@ -240,14 +276,6 @@ const AppRouter = {
       if (typeof WeatherTrustInsightsUI !== "undefined") {
         WeatherTrustInsightsUI.renderAdvisories(window.currentWeatherInsights);
       }
-    }
-
-    if (pageSlug === "map" && typeof window.DistrictPassport !== "undefined") {
-      window.DistrictPassport.loadPassport(loc);
-    }
-
-    if (pageSlug === "dashboard" && typeof window.MultiAgentIntelligence !== "undefined") {
-      window.MultiAgentIntelligence.loadIntelligence(loc, 6);
     }
 
     // Trigger Technical Evaluation (Judge) metrics
