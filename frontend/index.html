@@ -2443,13 +2443,24 @@
                   </div>
                 </div>
 
-                <!-- Synchronized District Selector -->
-                <div class="sync-district-selector-wrap">
-                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">District:</span>
-                  <select id="stakeholderDistrictSelect" class="sync-district-select">
-                    <option value="Krishna District">Krishna District (AP)</option>
+                <!-- Synchronized State Selector -->
+                <div class="sync-state-selector-wrap" style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">State / UT:</span>
+                  <select id="stakeholderStateSelect" class="sync-district-select">
+                    <option value="Andhra Pradesh">Andhra Pradesh (26)</option>
                   </select>
                 </div>
+
+                <!-- Synchronized District Selector -->
+                <div class="sync-district-selector-wrap" style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">District:</span>
+                  <select id="stakeholderDistrictSelect" class="sync-district-select">
+                    <option value="NTR">NTR (Vijayawada)</option>
+                  </select>
+                </div>
+
+                <!-- State District Count Badge -->
+                <span id="stakeholderStateCountBadge" class="badge badge-neutral" style="font-size: 0.75rem;">26 Districts</span>
               </div>
             </div>
 
@@ -2492,7 +2503,7 @@
                   <div class="kpi-value-row">
                     <span class="kpi-main-val" id="fcKpiReliableDistricts">--</span>
                   </div>
-                  <div class="kpi-hint">Districts with Trust Score ≥ 60% across India</div>
+                  <div class="kpi-hint" id="fcKpiRelDistHint">Districts with Trust Score ≥ 60% in State</div>
                 </div>
 
                 <div class="stakeholder-kpi-card" style="--kpi-accent: #f59e0b;">
@@ -2504,7 +2515,7 @@
                     <span class="kpi-main-val" id="fcKpiHighUncertainty" style="color: #f59e0b;">--</span>
                     <span class="kpi-sub-badge badge-risk-mod">Watchlist</span>
                   </div>
-                  <div class="kpi-hint">Districts with Bust Probability ≥ 60%</div>
+                  <div class="kpi-hint" id="fcKpiHighUncertHint">Districts with Bust Probability ≥ 60% in State</div>
                 </div>
               </div>
 
@@ -2514,7 +2525,7 @@
                   <div class="stakeholder-panel-header">
                     <div>
                       <h3 class="stakeholder-panel-title"><span>🗺️</span> Live Forecast Confidence Map (Day 1–10)</h3>
-                      <p class="stakeholder-panel-subtitle">Interactive GIS GIS district-level trust mapping and bust monitoring</p>
+                      <p class="stakeholder-panel-subtitle">Interactive GIS district-level trust mapping and bust monitoring for selected state</p>
                     </div>
                     <div style="display: flex; gap: 8px;">
                       <button id="forecasterExportCsvBtn" class="btn-stakeholder-action btn-outline-glow">
@@ -3020,46 +3031,60 @@
                 </div>
               </div>
 
-              <!-- Sowing Advisory & Irrigation Recommendation -->
+              <!-- Embedded Agriculture-Oriented Spatial Map & Sowing/Irrigation Guidance -->
               <div class="stakeholder-grid-2">
                 <div class="stakeholder-panel">
                   <div class="stakeholder-panel-header">
                     <div>
-                      <h3 class="stakeholder-panel-title"><span>🌱</span> Sowing Advisory & Soil Moisture</h3>
-                      <p class="stakeholder-panel-subtitle">Seedbed suitability based on thermal and moisture conditions</p>
+                      <h3 class="stakeholder-panel-title"><span>🌾</span> Agro-Meteorological & Soil Spatial Map</h3>
+                      <p class="stakeholder-panel-subtitle">District-wise soil moisture, agricultural suitability, rainfall, and crop stress</p>
                     </div>
-                    <span class="badge badge-risk-low" id="agSoilMoistureStatus">Optimal</span>
+                    <span class="badge badge-risk-low" id="agMapStateBadge">Agro Spatial GIS</span>
                   </div>
-                  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 14px;">
-                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px 18px; text-align: center;">
-                      <span style="font-size: 0.7rem; color: #94a3b8; display: block;">Topsoil Moisture</span>
-                      <strong id="agSoilMoistureVal" style="font-size: 1.6rem; color: #10b981;">--%</strong>
-                    </div>
-                    <div>
-                      <h4 id="agSowingWindowTitle" style="font-size: 0.9rem; color: #f8fafc; margin: 0 0 4px 0;">--</h4>
-                      <p id="agSowingGuidance" style="font-size: 0.775rem; color: #cbd5e1; margin: 0; line-height: 1.4;"></p>
-                    </div>
-                  </div>
-                  <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">Optimal Sowing Crops:</div>
-                  <div id="agSowingCropsList" style="display: flex; flex-wrap: wrap;"></div>
+                  <div id="agricultureSpatialMap" class="portal-map-frame"></div>
                 </div>
 
-                <!-- Irrigation Recommendation -->
-                <div class="stakeholder-panel">
-                  <div class="stakeholder-panel-header">
-                    <div>
-                      <h3 class="stakeholder-panel-title"><span>💧</span> Irrigation Recommendation</h3>
-                      <p class="stakeholder-panel-subtitle">Actionable irrigation scheduling preventing water wastage</p>
+                <!-- Sowing Advisory & Irrigation Recommendation -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="stakeholder-panel" style="flex: 1;">
+                    <div class="stakeholder-panel-header">
+                      <div>
+                        <h3 class="stakeholder-panel-title"><span>🌱</span> Sowing Advisory & Soil Moisture</h3>
+                        <p class="stakeholder-panel-subtitle">Seedbed suitability based on thermal and moisture conditions</p>
+                      </div>
+                      <span class="badge badge-risk-low" id="agSoilMoistureStatus">Optimal</span>
                     </div>
-                    <span class="badge badge-neutral">Smart Water Advisory</span>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 14px;">
+                      <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px 18px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: #94a3b8; display: block;">Topsoil Moisture</span>
+                        <strong id="agSoilMoistureVal" style="font-size: 1.6rem; color: #10b981;">--%</strong>
+                      </div>
+                      <div>
+                        <h4 id="agSowingWindowTitle" style="font-size: 0.9rem; color: #f8fafc; margin: 0 0 4px 0;">--</h4>
+                        <p id="agSowingGuidance" style="font-size: 0.775rem; color: #cbd5e1; margin: 0; line-height: 1.4;"></p>
+                      </div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">Optimal Sowing Crops:</div>
+                    <div id="agSowingCropsList" style="display: flex; flex-wrap: wrap;"></div>
                   </div>
-                  <div style="background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38bdf8; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
-                    <h4 id="agIrrigActionTitle" style="font-size: 1rem; color: #38bdf8; margin: 0 0 4px 0;">--</h4>
-                    <p id="agIrrigDetail" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;"></p>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-                    <span style="color: #94a3b8;">Estimated Water Saved:</span>
-                    <strong id="agIrrigWaterSaved" style="color: #10b981; font-size: 1rem;">-- m³/ha</strong>
+
+                  <!-- Irrigation Recommendation -->
+                  <div class="stakeholder-panel">
+                    <div class="stakeholder-panel-header">
+                      <div>
+                        <h3 class="stakeholder-panel-title"><span>💧</span> Irrigation Recommendation</h3>
+                        <p class="stakeholder-panel-subtitle">Actionable irrigation scheduling preventing water wastage</p>
+                      </div>
+                      <span class="badge badge-neutral">Smart Water Advisory</span>
+                    </div>
+                    <div style="background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38bdf8; padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;">
+                      <h4 id="agIrrigActionTitle" style="font-size: 1rem; color: #38bdf8; margin: 0 0 4px 0;">--</h4>
+                      <p id="agIrrigDetail" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0;"></p>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                      <span style="color: #94a3b8;">Estimated Water Saved:</span>
+                      <strong id="agIrrigWaterSaved" style="color: #10b981; font-size: 1rem;">-- m³/ha</strong>
+                    </div>
                   </div>
                 </div>
               </div>

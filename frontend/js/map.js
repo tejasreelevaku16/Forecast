@@ -41,30 +41,24 @@ const IndiaMapUI = {
   searchDebounceTimer: null,
 
   /**
-   * Fits the complete India boundary comfortably within the map container
+   * Fits the complete Indian region (mainland India down to southern tip, Kerala,
+   * Tamil Nadu, Lakshadweep, Andaman & Nicobar Islands, and Sri Lanka for geographic context)
+   * comfortably within the map container without clipping southern latitudes.
    */
   fitIndiaBounds(animate = false) {
-    if (!this.map || !this.geoJsonLayer || typeof this.geoJsonLayer.getBounds !== 'function') return;
-    const bounds = this.geoJsonLayer.getBounds();
-    if (!bounds || !bounds.isValid()) return;
+    if (!this.map) return;
 
-    if (!this.indiaBoundsLogged && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-      const northEast = bounds.getNorthEast();
-      const southWest = bounds.getSouthWest();
-      console.info('India GeoJSON bounds:', {
-        north: northEast.lat,
-        south: southWest.lat,
-        east: northEast.lng,
-        west: southWest.lng,
-      });
-      this.indiaBoundsLogged = true;
-    }
+    // Subcontinent bounding box covering Siachen/Ladakh in the North to south of Sri Lanka & Great Nicobar
+    // South: 4.0°N | North: 37.5°N | West: 67.0°E | East: 98.0°E
+    const comprehensiveBounds = L.latLngBounds(
+      [4.0, 67.0],
+      [37.5, 98.0]
+    );
 
     this.map.invalidateSize({ pan: false });
-    this.map.fitBounds(bounds, {
-      paddingTopLeft: [24, 24],
-      paddingBottomRight: [24, 24],
-      maxZoom: 5,
+    this.map.fitBounds(comprehensiveBounds, {
+      padding: [12, 12],
+      maxZoom: 5.5,
       animate,
     });
   },
@@ -86,18 +80,18 @@ const IndiaMapUI = {
 
     try {
       this.map = L.map('indiaMap', {
-        center: [22.0, 82.0],
-        zoom: 4.5,
+        center: [21.0, 82.5],
+        zoom: 4.25,
         minZoom: 3.5,
         maxZoom: 12,
         zoomSnap: 0.25,
         zoomDelta: 0.5,
         zoomControl: true,
         maxBounds: [
-          [2.0, 60.0],
-          [40.0, 105.0]
+          [-12.0, 50.0],
+          [45.0, 115.0]
         ],
-        maxBoundsViscosity: 0.6,
+        maxBoundsViscosity: 0.0,
       });
 
       buildOsmTileLayer().addTo(this.map);
@@ -135,9 +129,6 @@ const IndiaMapUI = {
       this.renderGeoJsonLayer();
       this.hideMapLoading();
 
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      this.fitIndiaBounds(false);
-
       // Synchronize with currently active location if set, without zooming in to preserve India view
       const activeLoc = (typeof WeatherTrustCommon !== 'undefined' && WeatherTrustCommon.currentLocation && WeatherTrustCommon.currentLocation.latitude && WeatherTrustCommon.currentLocation.longitude)
         ? {
@@ -159,6 +150,11 @@ const IndiaMapUI = {
             longitude: 81.1389,
           };
       await this.selectLocation(activeLoc, false);
+
+      requestAnimationFrame(() => {
+        this.map.invalidateSize(true);
+        this.fitIndiaBounds(false);
+      });
     } catch (err) {
       console.error("India Map Initialization Error:", err);
       this.showMapError("India map could not be loaded. Please retry.", "general");

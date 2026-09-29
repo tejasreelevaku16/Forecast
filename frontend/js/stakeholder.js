@@ -14,24 +14,39 @@
 const StakeholderUI = {
   activeRole: localStorage.getItem("weathertrust_active_role") || "forecaster",
   currentLeadDay: 6,
-  currentLocation: "Krishna District",
+  currentState: "Andhra Pradesh",
+  currentDistrict: "NTR",
+  currentLocation: "Vijayawada",
+
   forecasterMap: null,
   disasterMap: null,
+  agricultureMap: null,
+
+  forecasterMarkerLayer: null,
+  disasterMarkerLayer: null,
+  agricultureMarkerLayer: null,
+
   charts: {},
   cachedData: {},
+  cachedStates: [],
+  cachedDistricts: {},
   _initialized: false,
-  _districtsLoaded: false,
+  _listenersBound: false,
+  _activeFetchController: null,
 
   init() {
-    this.currentLocation = window.currentSelectedLocation || "Krishna District";
     if (!this._initialized) {
       this.setupEventListeners();
       this.setupRoleTabs();
       this._initialized = true;
     }
-    this.populateDistrictSelect();
-    this.setLeadDay(this.currentLeadDay, false);
-    this.switchRole(this.activeRole, true);
+
+    // Resolve initial state & district from global context if available
+    this.syncFromGlobalLocation(window.currentSelectedLocation || "Vijayawada");
+    this.loadStatesAndDistricts(() => {
+      this.setLeadDay(this.currentLeadDay, false);
+      this.switchRole(this.activeRole, true);
+    });
   },
 
   setupEventListeners() {
@@ -48,7 +63,14 @@ const StakeholderUI = {
       }
     });
 
-    // District select dropdown delegation
+    // State select dropdown change
+    document.addEventListener("change", (e) => {
+      if (e.target && e.target.id === "stakeholderStateSelect") {
+        this.onStateChanged(e.target.value);
+      }
+    });
+
+    // District select dropdown change
     document.addEventListener("change", (e) => {
       if (e.target && e.target.id === "stakeholderDistrictSelect") {
         this.onDistrictChanged(e.target.value);
@@ -102,41 +124,153 @@ const StakeholderUI = {
     });
   },
 
-  populateDistrictSelect() {
-    const distSelect = document.getElementById("stakeholderDistrictSelect");
-    if (!distSelect) return;
+  syncFromGlobalLocation(locStr) {
+    if (!locStr) return;
+    const clean = String(locStr).trim();
+    if (!clean) return;
 
-    if (this._districtsLoaded && distSelect.options.length > 1) {
-      if (this.currentLocation) {
-        for (let i = 0; i < distSelect.options.length; i++) {
-          if (distSelect.options[i].value.toLowerCase() === this.currentLocation.toLowerCase()) {
-            distSelect.selectedIndex = i;
-            break;
-          }
+    // Direct match against known state names
+    const cleanLower = clean.toLowerCase();
+    if (cleanLower.includes("odisha") || cleanLower.includes("bhubaneswar") || cleanLower.includes("puri") || cleanLower.includes("cuttack")) {
+      this.currentState = "Odisha";
+      if (cleanLower.includes("puri")) this.currentDistrict = "Puri";
+      else if (cleanLower.includes("cuttack")) this.currentDistrict = "Cuttack";
+      else this.currentDistrict = "Khordha";
+      this.currentLocation = clean;
+    } else if (cleanLower.includes("jammu") || cleanLower.includes("kashmir") || cleanLower.includes("srinagar")) {
+      this.currentState = "Jammu and Kashmir";
+      if (cleanLower.includes("srinagar")) this.currentDistrict = "Srinagar";
+      else if (cleanLower.includes("anantnag")) this.currentDistrict = "Anantnag";
+      else this.currentDistrict = "Jammu";
+      this.currentLocation = clean;
+    } else if (cleanLower.includes("maharashtra") || cleanLower.includes("mumbai") || cleanLower.includes("pune") || cleanLower.includes("nagpur")) {
+      this.currentState = "Maharashtra";
+      if (cleanLower.includes("pune")) this.currentDistrict = "Pune";
+      else if (cleanLower.includes("nagpur")) this.currentDistrict = "Nagpur";
+      else this.currentDistrict = "Mumbai City";
+      this.currentLocation = clean;
+    } else if (cleanLower.includes("bihar") || cleanLower.includes("patna") || cleanLower.includes("gaya")) {
+      this.currentState = "Bihar";
+      if (cleanLower.includes("gaya")) this.currentDistrict = "Gaya";
+      else this.currentDistrict = "Patna";
+      this.currentLocation = clean;
+    } else if (cleanLower.includes("delhi")) {
+      this.currentState = "Delhi";
+      this.currentDistrict = "New Delhi";
+      this.currentLocation = "New Delhi";
+    } else if (cleanLower.includes("andhra") || cleanLower.includes("vijayawada") || cleanLower.includes("visakhapatnam") || cleanLower.includes("krishna") || cleanLower.includes("guntur")) {
+      this.currentState = "Andhra Pradesh";
+      if (cleanLower.includes("visakhapatnam")) this.currentDistrict = "Visakhapatnam";
+      else if (cleanLower.includes("guntur")) this.currentDistrict = "Guntur";
+      else this.currentDistrict = "NTR";
+      this.currentLocation = clean;
+    } else {
+      this.currentLocation = clean;
+    }
+  },
+
+  async loadStatesAndDistricts(callback) {
+    try {
+      if (!this.cachedStates || this.cachedStates.length === 0) {
+        const res = await fetch("/api/stakeholder/states");
+        if (res.ok) {
+          this.cachedStates = await res.json();
         }
       }
-      return;
+    } catch (err) {
+      console.warn("[StakeholderUI] Error fetching states:", err);
     }
 
-    fetch("/api/map/districts")
-      .then((r) => r.json())
-      .then((districts) => {
-        distSelect.innerHTML = "";
-        districts.forEach((d) => {
-          const opt = document.createElement("option");
-          opt.value = d.name;
-          opt.textContent = `${d.name} (${d.state})`;
-          if (d.name.toLowerCase() === this.currentLocation.toLowerCase()) {
-            opt.selected = true;
+    const stateSelect = document.getElementById("stakeholderStateSelect");
+    if (stateSelect && this.cachedStates.length > 0) {
+      stateSelect.innerHTML = this.cachedStates
+        .map((s) => `<option value="${s.name}" ${s.name === this.currentState ? "selected" : ""}>${s.name} (${s.official_districts})</option>`)
+        .join("");
+    }
+
+    await this.fetchAndPopulateDistricts(this.currentState);
+
+    if (typeof callback === "function") {
+      callback();
+    }
+  },
+
+  async fetchAndPopulateDistricts(stateName) {
+    const distSelect = document.getElementById("stakeholderDistrictSelect");
+    const countBadge = document.getElementById("stakeholderStateCountBadge");
+
+    try {
+      let districts = this.cachedDistricts[stateName];
+      if (!districts) {
+        const res = await fetch(`/api/stakeholder/districts?state=${encodeURIComponent(stateName)}`);
+        if (res.ok) {
+          districts = await res.json();
+          this.cachedDistricts[stateName] = districts;
+        }
+      }
+
+      if (districts && districts.length > 0) {
+        if (distSelect) {
+          distSelect.innerHTML = districts
+            .map((d) => {
+              const isSelected =
+                d.name.toLowerCase() === this.currentDistrict.toLowerCase() ||
+                (d.city && d.city.toLowerCase() === this.currentDistrict.toLowerCase());
+              return `<option value="${d.name}" ${isSelected ? "selected" : ""}>${d.name} ${d.city && d.city !== d.name ? `(${d.city})` : ""}</option>`;
+            })
+            .join("");
+
+          // If currentDistrict is not in the new state, select the first district
+          const hasSelected = districts.some(
+            (d) => d.name.toLowerCase() === this.currentDistrict.toLowerCase() || (d.city && d.city.toLowerCase() === this.currentDistrict.toLowerCase())
+          );
+          if (!hasSelected && districts.length > 0) {
+            this.currentDistrict = districts[0].name;
+            this.currentLocation = districts[0].city || districts[0].name;
+            distSelect.selectedIndex = 0;
           }
-          distSelect.appendChild(opt);
-        });
-        this._districtsLoaded = true;
-      })
-      .catch(() => {
-        const defaults = ["Krishna District", "Vijayawada", "Visakhapatnam", "Guntur", "Hyderabad", "Bengaluru Urban", "Mumbai City", "Delhi, NCR"];
-        distSelect.innerHTML = defaults.map((d) => `<option value="${d}">${d}</option>`).join("");
-      });
+        }
+
+        const stateObj = this.cachedStates.find((s) => s.name === stateName);
+        const officialCount = stateObj ? stateObj.official_districts : districts.length;
+        if (countBadge) {
+          countBadge.textContent = `${officialCount} Districts in ${stateName}`;
+        }
+      }
+    } catch (err) {
+      console.warn("[StakeholderUI] Error fetching districts for state:", stateName, err);
+    }
+  },
+
+  async onStateChanged(newState) {
+    if (!newState) return;
+    this.currentState = newState;
+    await this.fetchAndPopulateDistricts(newState);
+
+    const distSelect = document.getElementById("stakeholderDistrictSelect");
+    if (distSelect && distSelect.value) {
+      this.currentDistrict = distSelect.value;
+      const stateDistricts = this.cachedDistricts[newState] || [];
+      const dObj = stateDistricts.find((d) => d.name === this.currentDistrict);
+      this.currentLocation = dObj ? dObj.city || dObj.name : this.currentDistrict;
+    }
+
+    window.currentSelectedLocation = this.currentLocation;
+    this.loadActivePortalData();
+  },
+
+  onDistrictChanged(newDistrict) {
+    if (!newDistrict) return;
+    this.currentDistrict = newDistrict;
+
+    const stateDistricts = this.cachedDistricts[this.currentState] || [];
+    const dObj = stateDistricts.find(
+      (d) => d.name.toLowerCase() === newDistrict.toLowerCase() || (d.city && d.city.toLowerCase() === newDistrict.toLowerCase())
+    );
+    this.currentLocation = dObj ? dObj.city || dObj.name : newDistrict;
+    window.currentSelectedLocation = this.currentLocation;
+
+    this.loadActivePortalData();
   },
 
   setLeadDay(day, shouldFetch = true) {
@@ -154,44 +288,6 @@ const StakeholderUI = {
     if (shouldFetch) {
       this.loadActivePortalData();
     }
-  },
-
-  onDistrictChanged(newLoc) {
-    if (!newLoc) return;
-    this.currentLocation = newLoc;
-    window.currentSelectedLocation = newLoc;
-    window.currentSelectedLat = null;
-    window.currentSelectedLon = null;
-    window.selectedLocation = null;
-    try {
-      localStorage.setItem("weathertrust-selected-location", JSON.stringify({ name: newLoc }));
-    } catch (e) {}
-
-    // Synchronize select dropdown value if not matching
-    const distSelect = document.getElementById("stakeholderDistrictSelect");
-    if (distSelect && distSelect.value !== newLoc) {
-      let found = false;
-      for (let i = 0; i < distSelect.options.length; i++) {
-        if (distSelect.options[i].value.toLowerCase() === newLoc.toLowerCase()) {
-          distSelect.selectedIndex = i;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        const opt = document.createElement("option");
-        opt.value = newLoc;
-        opt.textContent = newLoc;
-        opt.selected = true;
-        distSelect.appendChild(opt);
-      }
-    }
-
-    // Sync header input if present
-    const headerInput = document.getElementById("citySearchInput");
-    if (headerInput) headerInput.value = newLoc;
-
-    this.loadActivePortalData();
   },
 
   switchRole(roleName, shouldFetch = true) {
@@ -213,12 +309,16 @@ const StakeholderUI = {
     // Update Operator Banner
     this.updateOperatorBanner(roleName);
 
-    // Resize active map
-    if (roleName === "forecaster" && this.forecasterMap) {
-      setTimeout(() => this.forecasterMap.invalidateSize(), 150);
-    } else if (roleName === "disaster" && this.disasterMap) {
-      setTimeout(() => this.disasterMap.invalidateSize(), 150);
-    }
+    // Invalidate active maps
+    setTimeout(() => {
+      if (roleName === "forecaster" && this.forecasterMap) {
+        this.forecasterMap.invalidateSize();
+      } else if (roleName === "disaster" && this.disasterMap) {
+        this.disasterMap.invalidateSize();
+      } else if (roleName === "agriculture" && this.agricultureMap) {
+        this.agricultureMap.invalidateSize();
+      }
+    }, 150);
 
     if (shouldFetch) {
       this.loadActivePortalData();
@@ -245,7 +345,9 @@ const StakeholderUI = {
   },
 
   loadActivePortalData() {
-    const loc = this.currentLocation || window.currentSelectedLocation || "Krishna District";
+    const state = this.currentState || "Andhra Pradesh";
+    const district = this.currentDistrict || "NTR";
+    const loc = this.currentLocation || "Vijayawada";
     const day = this.currentLeadDay || 6;
     const role = this.activeRole || "forecaster";
 
@@ -270,19 +372,14 @@ const StakeholderUI = {
           this.renderAdminPortal(data);
         })
         .catch((err) => {
-          if (err.name === 'AbortError') return;
+          if (err.name === "AbortError") return;
           console.error("[StakeholderUI] Admin fetch error:", err);
           this.renderPortalError("admin", err.message, loc);
         });
       return;
     }
 
-    let endpoint = `/api/stakeholder/${role}?location=${encodeURIComponent(loc)}&lead_day=${day}`;
-    if (window.selectedLocation && (window.selectedLocation.name === loc || window.selectedLocation.district === loc || window.selectedLocation.place === loc)) {
-      if (window.selectedLocation.latitude !== null && window.selectedLocation.longitude !== null) {
-        endpoint += `&lat=${window.selectedLocation.latitude}&lon=${window.selectedLocation.longitude}`;
-      }
-    }
+    const endpoint = `/api/stakeholder/${role}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}&location=${encodeURIComponent(loc)}&lead_day=${day}`;
 
     fetch(endpoint, { signal: controller.signal })
       .then(async (r) => {
@@ -301,9 +398,9 @@ const StakeholderUI = {
         else if (role === "public") this.renderPublicPortal(data);
       })
       .catch((err) => {
-        if (err.name === 'AbortError') return;
+        if (err.name === "AbortError") return;
         console.error(`[StakeholderUI] ${role} fetch error:`, err);
-        this.renderPortalError(role, err.message, loc);
+        this.renderPortalError(role, err.message, `${district}, ${state}`);
       });
   },
 
@@ -314,15 +411,16 @@ const StakeholderUI = {
     if (!alertBox) {
       alertBox = document.createElement("div");
       alertBox.className = "stakeholder-error-banner";
-      alertBox.style.cssText = "background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; color: #fca5a5; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;";
+      alertBox.style.cssText =
+        "background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; color: #fca5a5; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;";
       container.prepend(alertBox);
     }
     alertBox.innerHTML = `
       <div>
-        <strong>Operational Data Unavailable:</strong> Unable to load ${role} portal data for <em>${location}</em> (${errorMsg}).
+        <strong>Operational Data Notice:</strong> Loading ${role} intelligence for <em>${location}</em>... (${errorMsg}).
       </div>
       <button onclick="StakeholderUI.loadActivePortalData()" class="btn btn-sm btn-outline-neutral" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
-        🔄 Retry
+        🔄 Refresh
       </button>
     `;
   },
@@ -332,6 +430,14 @@ const StakeholderUI = {
     if (!container) return;
     const alertBox = container.querySelector(".stakeholder-error-banner");
     if (alertBox) alertBox.remove();
+  },
+
+  // Helper: Create Dark OpenStreetMap Tile Layer
+  buildMapTileLayer() {
+    return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      maxZoom: 18,
+    });
   },
 
   // =========================================================================
@@ -346,13 +452,19 @@ const StakeholderUI = {
     if (bustVal) bustVal.textContent = `${d.bust_probability_pct}%`;
 
     const relDistVal = document.getElementById("fcKpiReliableDistricts");
-    if (relDistVal) relDistVal.textContent = `${d.reliable_districts_count} (${d.reliable_districts_pct}%)`;
+    if (relDistVal) relDistVal.textContent = `${d.reliable_districts_count} / ${d.total_state_districts}`;
+
+    const relDistHint = document.getElementById("fcKpiRelDistHint");
+    if (relDistHint) relDistHint.textContent = `Districts with Trust Score ≥ 60% in ${d.state}`;
 
     const highUncertVal = document.getElementById("fcKpiHighUncertainty");
     if (highUncertVal) highUncertVal.textContent = `${d.high_uncertainty_districts_count}`;
 
-    // 2. Forecaster Live Leaflet Confidence Map
-    this.renderForecasterMap(d.focus_lead_day);
+    const highUncertHint = document.getElementById("fcKpiHighUncertHint");
+    if (highUncertHint) highUncertHint.textContent = `Districts with Bust Probability ≥ 60% in ${d.state}`;
+
+    // 2. Forecaster Embedded Map
+    this.renderForecasterMap(d.map_data, d.district, d.state);
 
     // 3. Model vs AI Comparison
     const mAi = d.model_vs_ai || {};
@@ -418,7 +530,7 @@ const StakeholderUI = {
       driftStabEl.className = `badge ${drift.stability === "HIGH" ? "badge-risk-low" : drift.stability === "LOW" ? "badge-risk-high" : "badge-risk-mod"}`;
     }
 
-    // 7. Uncertainty Heatmap (Day 1-10 x 4 parameters)
+    // 7. Uncertainty Heatmap
     const heatmapTable = document.getElementById("fcUncertaintyHeatmapTable");
     if (heatmapTable && d.uncertainty_heatmap) {
       this.renderUncertaintyHeatmap(d.uncertainty_heatmap);
@@ -432,7 +544,7 @@ const StakeholderUI = {
     // 9. Operational Briefing
     const brief = d.operational_briefing || {};
     const briefTitle = document.getElementById("fcBriefingTitle");
-    if (briefTitle) briefTitle.textContent = brief.headline || "Operational Synoptic Assessment";
+    if (briefTitle) briefTitle.textContent = brief.headline || `Operational Synoptic Assessment for ${d.district}, ${d.state}`;
 
     const briefText = document.getElementById("fcBriefingSynopsis");
     if (briefText) briefText.textContent = brief.synopsis || "Analyzing atmospheric consistency...";
@@ -441,7 +553,7 @@ const StakeholderUI = {
     if (briefGuidance) briefGuidance.textContent = brief.chief_meteorologist_guidance || "Standard operational guidelines.";
   },
 
-  renderForecasterMap(leadDay) {
+  renderForecasterMap(mapData, focusDistrict, stateName) {
     const mapContainer = document.getElementById("forecasterConfidenceMap");
     if (!mapContainer || typeof L === "undefined") return;
 
@@ -452,25 +564,19 @@ const StakeholderUI = {
         }
         this.forecasterMap = L.map("forecasterConfidenceMap", {
           center: [20.5937, 78.9629],
-          zoom: 4,
+          zoom: 5,
           zoomControl: true,
         });
-
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-          maxZoom: 18,
-        }).addTo(this.forecasterMap);
+        this.buildMapTileLayer().addTo(this.forecasterMap);
       } catch (err) {
-        console.warn("[StakeholderUI] Map init warning:", err);
+        console.warn("[StakeholderUI] Forecaster map init warning:", err);
       }
     }
 
     if (this.forecasterMap) {
       setTimeout(() => this.forecasterMap.invalidateSize(), 100);
-      setTimeout(() => this.forecasterMap.invalidateSize(), 300);
     }
 
-    // Clear previous markers
     if (this.forecasterMarkerLayer && this.forecasterMap) {
       this.forecasterMap.removeLayer(this.forecasterMarkerLayer);
     }
@@ -478,45 +584,71 @@ const StakeholderUI = {
       this.forecasterMarkerLayer = L.layerGroup().addTo(this.forecasterMap);
     }
 
-    fetch(`/api/map/india-reliability?day=${leadDay}`)
-      .then((r) => r.json())
-      .then((districts) => {
-        districts.forEach((d) => {
-          const lat = d.lat;
-          const lon = d.lon;
-          const score = d.reliability.reliability_score;
-          const bust = d.reliability.bust_probability_pct;
-          const color = d.reliability.color || (score >= 60 ? "#10b981" : score >= 40 ? "#f59e0b" : "#ef4444");
+    if (mapData && mapData.length > 0) {
+      const latLngs = [];
+      let focusLatLng = null;
 
-          const circle = L.circleMarker([lat, lon], {
-            radius: 8,
-            fillColor: color,
-            color: "#ffffff",
-            weight: 1.5,
-            opacity: 0.9,
-            fillOpacity: 0.85,
-          });
+      mapData.forEach((d) => {
+        const isFocused = d.is_focused || (focusDistrict && d.name.toLowerCase() === focusDistrict.toLowerCase());
+        const latLng = [d.lat, d.lon];
+        latLngs.push(latLng);
+        if (isFocused) focusLatLng = latLng;
 
-          circle.bindPopup(`
-            <div style="font-family: sans-serif; min-width: 160px; color: #0b1120;">
-              <strong style="font-size: 0.95rem;">${d.name}</strong><br>
-              <span style="font-size: 0.8rem; color: #475569;">${d.state}</span>
-              <hr style="margin: 6px 0; border: 0; border-top: 1px solid #cbd5e1;">
-              <div style="font-size: 0.8rem;">Confidence: <strong>${score}%</strong></div>
-              <div style="font-size: 0.8rem;">Bust Risk: <strong>${bust}%</strong></div>
-              <div style="font-size: 0.8rem;">Rain: <strong>${d.weather.rainfall || 0} mm</strong></div>
-              <button onclick="StakeholderUI.onDistrictChanged('${d.name}')" style="margin-top: 8px; width: 100%; padding: 4px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
-                Select District
-              </button>
-            </div>
-          `);
+        const radius = isFocused ? 11 : 7;
+        const color = d.color || (d.confidence_score >= 60 ? "#10b981" : d.confidence_score >= 40 ? "#f59e0b" : "#ef4444");
 
-          this.forecasterMarkerLayer.addLayer(circle);
+        const marker = L.circleMarker(latLng, {
+          radius: radius,
+          fillColor: color,
+          color: isFocused ? "#ffffff" : "#0f172a",
+          weight: isFocused ? 3 : 1.5,
+          opacity: 1.0,
+          fillOpacity: 0.85,
         });
 
-        // Invalidate size to ensure crisp display
-        setTimeout(() => this.forecasterMap.invalidateSize(), 150);
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; min-width: 170px; color: #0b1120; padding: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="font-size: 0.95rem; color: #0f172a;">${d.name}</strong>
+              <span style="font-size: 0.7rem; background: ${color}; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
+                ${d.confidence_score}% Trust
+              </span>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;">${stateName || d.state}</span>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #cbd5e1;">
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌧️ Rain: <strong>${d.expected_rainfall_mm} mm</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌡️ Temp: <strong>${d.temperature_c} °C</strong> | 💨 Wind: <strong>${d.wind_kmh} km/h</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">⚠️ Bust Risk: <strong>${d.bust_probability}%</strong></div>
+            <div style="font-size: 0.8rem; color: #0284c7; font-weight: 600;">☁️ ${d.weather_condition}</div>
+            <button onclick="StakeholderUI.onDistrictChanged('${d.name}')" style="margin-top: 8px; width: 100%; padding: 5px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">
+              ${isFocused ? "✓ Currently Selected" : "Select District"}
+            </button>
+          </div>
+        `);
+
+        this.forecasterMarkerLayer.addLayer(marker);
+
+        // Highlight ring for focused district
+        if (isFocused) {
+          const pulseRing = L.circleMarker(latLng, {
+            radius: 17,
+            color: "#38bdf8",
+            weight: 2,
+            opacity: 0.7,
+            fill: false,
+          });
+          this.forecasterMarkerLayer.addLayer(pulseRing);
+        }
       });
+
+      if (latLngs.length > 0 && this.forecasterMap) {
+        if (latLngs.length === 1 && focusLatLng) {
+          this.forecasterMap.setView(focusLatLng, 9);
+        } else {
+          this.forecasterMap.fitBounds(L.latLngBounds(latLngs), { padding: [25, 25], maxZoom: 9 });
+        }
+      }
+    }
   },
 
   renderUncertaintyHeatmap(data) {
@@ -535,7 +667,14 @@ const StakeholderUI = {
       for (let d = 1; d <= 10; d++) {
         const item = data.find((x) => x.parameter === param && x.lead_day === d);
         if (item) {
-          const cls = item.uncertainty_level === "LOW" ? "cell-low" : item.uncertainty_level === "MODERATE" ? "cell-moderate" : item.uncertainty_level === "HIGH" ? "cell-high" : "cell-extreme";
+          const cls =
+            item.uncertainty_level === "LOW"
+              ? "cell-low"
+              : item.uncertainty_level === "MODERATE"
+              ? "cell-moderate"
+              : item.uncertainty_level === "HIGH"
+              ? "cell-high"
+              : "cell-extreme";
           html += `<td><div class="heatmap-cell ${cls}" title="${item.uncertainty_level}: ±${item.spread_value} ${item.unit}">${item.spread_value} <span style="font-size: 0.6rem;">${item.unit}</span></div></td>`;
         } else {
           html += `<td>-</td>`;
@@ -576,7 +715,7 @@ const StakeholderUI = {
             fill: true,
             tension: 0.3,
             pointBackgroundColor: "#38bdf8",
-            pointRadius: 5,
+            pointRadius: 4,
           },
           {
             label: "Upper 95% Bound",
@@ -650,7 +789,13 @@ const StakeholderUI = {
         container.innerHTML = `
           <div class="phase-header-row">
             <span class="phase-title">${phaseData.phase}</span>
-            <span class="phase-badge ${phaseData.severity === "CRITICAL" ? "badge-risk-high" : phaseData.severity === "HIGH ALERT" ? "badge-risk-high" : "badge-risk-mod"}">${phaseData.severity}</span>
+            <span class="phase-badge ${
+              phaseData.severity === "CRITICAL"
+                ? "badge-risk-high"
+                : phaseData.severity === "HIGH ALERT"
+                ? "badge-risk-high"
+                : "badge-risk-mod"
+            }">${phaseData.severity}</span>
           </div>
           <div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc; margin-bottom: 4px;">
             ${phaseData.rainfall_mm} mm <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">/ Max Wind ${phaseData.max_wind_kmh} km/h</span>
@@ -668,7 +813,7 @@ const StakeholderUI = {
     }
 
     // 3. Disaster Flood Risk Leaflet Map
-    this.renderDisasterMap(d.flood_risk_map_data);
+    this.renderDisasterMap(d.flood_risk_map_data, d.district, d.state);
 
     // 4. High-Risk District Ranking Table
     const tableBody = document.getElementById("dmDistrictRankingTableBody");
@@ -676,10 +821,12 @@ const StakeholderUI = {
       tableBody.innerHTML = d.high_risk_districts
         .map(
           (dist, idx) => `
-        <tr>
+        <tr style="${dist.is_focused ? "background: rgba(56, 189, 248, 0.1);" : ""}">
           <td><span style="font-weight: 800; color: #94a3b8;">#${idx + 1}</span></td>
           <td><strong style="color: #f8fafc;">${dist.name}</strong><br><span style="font-size: 0.7rem; color: #64748b;">${dist.state}</span></td>
-          <td><span class="badge ${dist.alert_level === "RED" ? "badge-risk-high" : dist.alert_level === "ORANGE" ? "badge-risk-mod" : "badge-risk-low"}">${dist.alert_level}</span></td>
+          <td><span class="badge ${
+            dist.alert_level === "RED" ? "badge-risk-high" : dist.alert_level === "ORANGE" ? "badge-risk-mod" : "badge-risk-low"
+          }">${dist.alert_level}</span></td>
           <td><span style="color: #38bdf8; font-weight: 700;">${dist.expected_rainfall_mm} mm</span></td>
           <td>${dist.wind_speed_kmh} km/h</td>
           <td><span style="color: ${dist.bust_risk_pct >= 50 ? "#ef4444" : "#10b981"}; font-weight: 700;">${dist.bust_risk_pct}%</span></td>
@@ -687,7 +834,7 @@ const StakeholderUI = {
           <td><span style="font-size: 0.75rem; color: #cbd5e1;">${dist.key_threat}</span></td>
           <td>
             <button onclick="StakeholderUI.onDistrictChanged('${dist.name}')" class="btn btn-sm btn-outline-neutral" style="padding: 2px 8px; font-size: 0.7rem;">
-              Focus
+              ${dist.is_focused ? "✓ Focused" : "Focus"}
             </button>
           </td>
         </tr>
@@ -699,7 +846,10 @@ const StakeholderUI = {
     // 5. Cyclone & Heatwave Risk Monitor
     const cyc = d.cyclone_risk_monitor || {};
     const cycName = document.getElementById("dmCycloneName");
-    if (cycName) cycName.textContent = cyc.active_system_name || "Normal Trough";
+    if (cycName) cycName.textContent = cyc.active_system_name || "Regional Trough";
+
+    const cycBadge = document.getElementById("dmCycloneBadge");
+    if (cycBadge) cycBadge.textContent = cyc.system_category || "Tracked System";
 
     const cycPress = document.getElementById("dmCyclonePressure");
     if (cycPress) cycPress.textContent = `${cyc.central_pressure_hpa || 1012} hPa (Drop: ${cyc.pressure_drop_hpa || 0} hPa)`;
@@ -708,7 +858,7 @@ const StakeholderUI = {
     if (cycWind) cycWind.textContent = `${cyc.max_sustained_winds_kmh || 30} km/h`;
 
     const cycSurge = document.getElementById("dmCycloneSurge");
-    if (cycSurge) cycSurge.textContent = cyc.coastal_surge_warning || "Normal Tide";
+    if (cycSurge) cycSurge.textContent = cyc.coastal_surge_warning || "Normal Water Level";
 
     // 6. Resource Allocations
     const resList = document.getElementById("dmResourceAllocationsList");
@@ -749,7 +899,7 @@ const StakeholderUI = {
     if (sitrepSummary) sitrepSummary.textContent = sitrep.executive_summary || "";
   },
 
-  renderDisasterMap(floodData) {
+  renderDisasterMap(floodData, focusDistrict, stateName) {
     const mapContainer = document.getElementById("disasterFloodMap");
     if (!mapContainer || typeof L === "undefined") return;
 
@@ -759,15 +909,11 @@ const StakeholderUI = {
           mapContainer._leaflet_id = null;
         }
         this.disasterMap = L.map("disasterFloodMap", {
-          center: [17.0, 81.0],
-          zoom: 6,
+          center: [20.5937, 78.9629],
+          zoom: 5,
           zoomControl: true,
         });
-
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-          maxZoom: 18,
-        }).addTo(this.disasterMap);
+        this.buildMapTileLayer().addTo(this.disasterMap);
       } catch (err) {
         console.warn("[StakeholderUI] Disaster map init warning:", err);
       }
@@ -775,7 +921,6 @@ const StakeholderUI = {
 
     if (this.disasterMap) {
       setTimeout(() => this.disasterMap.invalidateSize(), 100);
-      setTimeout(() => this.disasterMap.invalidateSize(), 300);
     }
 
     if (this.disasterMarkerLayer && this.disasterMap) {
@@ -785,31 +930,67 @@ const StakeholderUI = {
       this.disasterMarkerLayer = L.layerGroup().addTo(this.disasterMap);
     }
 
-    if (floodData) {
+    if (floodData && floodData.length > 0) {
+      const latLngs = [];
+      let focusLatLng = null;
+
       floodData.forEach((f) => {
-        const radius = Math.max(12, Math.min(30, f.rain_mm * 0.4));
-        const circle = L.circle([f.lat, f.lon], {
-          radius: radius * 1000,
-          color: f.color,
-          fillColor: f.color,
-          fillOpacity: 0.45,
-          weight: 2,
+        const isFocused = f.is_focused || (focusDistrict && f.district.toLowerCase() === focusDistrict.toLowerCase());
+        const latLng = [f.lat, f.lon];
+        latLngs.push(latLng);
+        if (isFocused) focusLatLng = latLng;
+
+        const baseRadiusKm = Math.max(12, Math.min(32, f.rain_mm * 0.45));
+        const circle = L.circle(latLng, {
+          radius: baseRadiusKm * 1000,
+          color: f.color || (f.alert_level === "RED" ? "#ef4444" : f.alert_level === "ORANGE" ? "#f59e0b" : "#10b981"),
+          fillColor: f.color || "#ef4444",
+          fillOpacity: isFocused ? 0.6 : 0.35,
+          weight: isFocused ? 3 : 1.5,
         });
 
         circle.bindPopup(`
-          <div style="font-family: sans-serif; min-width: 150px; color: #0b1120;">
-            <strong style="font-size: 0.95rem;">${f.district} (${f.state})</strong><br>
-            <span style="font-weight: 700; color: ${f.color};">Alert: ${f.alert_level}</span>
+          <div style="font-family: sans-serif; min-width: 170px; color: #0b1120; padding: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="font-size: 0.95rem; color: #0f172a;">${f.district}</strong>
+              <span style="font-size: 0.7rem; background: ${f.color}; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
+                ${f.alert_level} ALERT
+              </span>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;">${stateName || f.state}</span>
             <hr style="margin: 6px 0; border: 0; border-top: 1px solid #cbd5e1;">
-            <div>Expected Rain: <strong>${f.rain_mm} mm</strong></div>
-            <div>Flood Risk Index: <strong>${f.flood_index} / 100</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌧️ Expected 24h Rain: <strong>${f.rain_mm} mm</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌊 Flood Risk Index: <strong>${f.flood_index} / 100</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">💨 Max Wind: <strong>${f.wind_kmh} km/h</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">👥 Pop at Risk: <strong>${(f.population_at_risk || 0).toLocaleString()}</strong></div>
+            <div style="font-size: 0.775rem; color: #dc2626; font-weight: 600; margin-top: 4px;">⚠️ ${f.key_threat}</div>
+            <button onclick="StakeholderUI.onDistrictChanged('${f.district}')" style="margin-top: 8px; width: 100%; padding: 5px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">
+              ${isFocused ? "✓ Focused District" : "Focus District Risk"}
+            </button>
           </div>
         `);
 
         this.disasterMarkerLayer.addLayer(circle);
+
+        if (isFocused) {
+          const centerDot = L.circleMarker(latLng, {
+            radius: 6,
+            fillColor: "#ffffff",
+            color: f.color,
+            weight: 2,
+            fillOpacity: 1.0,
+          });
+          this.disasterMarkerLayer.addLayer(centerDot);
+        }
       });
 
-      setTimeout(() => this.disasterMap.invalidateSize(), 150);
+      if (latLngs.length > 0 && this.disasterMap) {
+        if (latLngs.length === 1 && focusLatLng) {
+          this.disasterMap.setView(focusLatLng, 8);
+        } else {
+          this.disasterMap.fitBounds(L.latLngBounds(latLngs), { padding: [25, 25], maxZoom: 9 });
+        }
+      }
     }
   },
 
@@ -819,7 +1000,7 @@ const StakeholderUI = {
   renderAgriculturePortal(d) {
     // 1. KPI Cards
     const relAgri = document.getElementById("agKpiReliableDistricts");
-    if (relAgri) relAgri.textContent = `${d.reliable_rainfall_districts_count || 14} Districts`;
+    if (relAgri) relAgri.textContent = `${d.reliable_rainfall_districts_count || 0} / ${d.total_state_districts || 0}`;
 
     const cropRisk = document.getElementById("agKpiCropRisk");
     if (cropRisk) cropRisk.textContent = d.crop_risk_level || "Moderate";
@@ -830,12 +1011,15 @@ const StakeholderUI = {
     const rainConf = document.getElementById("agKpiRainConfidence");
     if (rainConf) rainConf.textContent = `${d.rainfall_reliability_score || 72}%`;
 
-    // 2. Soil Moisture & Sowing Advisory
+    // 2. Embedded Agriculture Spatial Map
+    this.renderAgricultureMap(d.agro_map_data, d.district, d.state);
+
+    // 3. Soil Moisture & Sowing Advisory
     const soilMoist = document.getElementById("agSoilMoistureVal");
     if (soilMoist) soilMoist.textContent = `${d.soil_moisture_pct}%`;
 
     const soilStatus = document.getElementById("agSoilMoistureStatus");
-    if (soilStatus) soilStatus.textContent = d.soil_moisture_status || "Optimal Field Capacity";
+    if (soilStatus) soilStatus.textContent = `${d.soil_moisture_status} (${d.soil_type || "Alluvial"})`;
 
     const sow = d.sowing_advisory || {};
     const sowTitle = document.getElementById("agSowingWindowTitle");
@@ -846,10 +1030,12 @@ const StakeholderUI = {
 
     const sowCrops = document.getElementById("agSowingCropsList");
     if (sowCrops && sow.optimal_crops) {
-      sowCrops.innerHTML = sow.optimal_crops.map((c) => `<span class="badge badge-neutral" style="margin-right: 6px; margin-bottom: 6px;">${c}</span>`).join("");
+      sowCrops.innerHTML = sow.optimal_crops
+        .map((c) => `<span class="badge badge-neutral" style="margin-right: 6px; margin-bottom: 6px; font-size: 0.75rem;">🌾 ${c}</span>`)
+        .join("");
     }
 
-    // 3. Irrigation Recommendation
+    // 4. Irrigation Recommendation
     const irrig = d.irrigation_recommendation || {};
     const irrigAction = document.getElementById("agIrrigActionTitle");
     if (irrigAction) irrigAction.textContent = irrig.recommendation || "Postpone Irrigation";
@@ -860,7 +1046,7 @@ const StakeholderUI = {
     const irrigSaved = document.getElementById("agIrrigWaterSaved");
     if (irrigSaved) irrigSaved.textContent = `${irrig.estimated_water_saved_m3_per_hectare || 0} m³/ha`;
 
-    // 4. Crop Stress Indicators
+    // 5. Crop Stress Indicators
     const stress = d.crop_stress_indicators || {};
     const heatStress = document.getElementById("agThermalStressVal");
     if (heatStress) heatStress.textContent = stress.thermal_heat_stress || "Low";
@@ -871,7 +1057,7 @@ const StakeholderUI = {
     const waterlogRisk = document.getElementById("agWaterlogRiskVal");
     if (waterlogRisk) waterlogRisk.textContent = stress.waterlogging_risk || "Low";
 
-    // 5. Weekly Agricultural Calendar (7 Days)
+    // 6. Weekly Agricultural Calendar (7 Days)
     const calendarGrid = document.getElementById("agWeeklyCalendarGrid");
     if (calendarGrid && d.weekly_outlook) {
       calendarGrid.innerHTML = d.weekly_outlook
@@ -893,7 +1079,7 @@ const StakeholderUI = {
         .join("");
     }
 
-    // 6. District Crop Impacts
+    // 7. District Crop Impacts
     const cropList = document.getElementById("agCropImpactsList");
     if (cropList && d.crop_impacts) {
       cropList.innerHTML = d.crop_impacts
@@ -910,6 +1096,106 @@ const StakeholderUI = {
       `
         )
         .join("");
+    }
+  },
+
+  renderAgricultureMap(agroData, focusDistrict, stateName) {
+    const mapContainer = document.getElementById("agricultureSpatialMap");
+    if (!mapContainer || typeof L === "undefined") return;
+
+    if (!this.agricultureMap) {
+      try {
+        if (mapContainer._leaflet_id) {
+          mapContainer._leaflet_id = null;
+        }
+        this.agricultureMap = L.map("agricultureSpatialMap", {
+          center: [20.5937, 78.9629],
+          zoom: 5,
+          zoomControl: true,
+        });
+        this.buildMapTileLayer().addTo(this.agricultureMap);
+      } catch (err) {
+        console.warn("[StakeholderUI] Agriculture map init warning:", err);
+      }
+    }
+
+    if (this.agricultureMap) {
+      setTimeout(() => this.agricultureMap.invalidateSize(), 100);
+    }
+
+    if (this.agricultureMarkerLayer && this.agricultureMap) {
+      this.agricultureMap.removeLayer(this.agricultureMarkerLayer);
+    }
+    if (this.agricultureMap) {
+      this.agricultureMarkerLayer = L.layerGroup().addTo(this.agricultureMap);
+    }
+
+    if (agroData && agroData.length > 0) {
+      const latLngs = [];
+      let focusLatLng = null;
+
+      agroData.forEach((a) => {
+        const isFocused = a.is_focused || (focusDistrict && a.district.toLowerCase() === focusDistrict.toLowerCase());
+        const latLng = [a.lat, a.lon];
+        latLngs.push(latLng);
+        if (isFocused) focusLatLng = latLng;
+
+        const radius = isFocused ? 12 : 8;
+        const color = a.color || (a.suitability_score >= 70 ? "#10b981" : a.suitability_score >= 50 ? "#f59e0b" : "#ef4444");
+
+        const marker = L.circleMarker(latLng, {
+          radius: radius,
+          fillColor: color,
+          color: isFocused ? "#ffffff" : "#0f172a",
+          weight: isFocused ? 3 : 1.5,
+          opacity: 1.0,
+          fillOpacity: 0.85,
+        });
+
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; min-width: 175px; color: #0b1120; padding: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <strong style="font-size: 0.95rem; color: #0f172a;">${a.district}</strong>
+              <span style="font-size: 0.7rem; background: ${color}; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
+                ${a.suitability_score}/100 Suitability
+              </span>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;">${stateName || a.state}</span>
+            <hr style="margin: 6px 0; border: 0; border-top: 1px solid #cbd5e1;">
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌱 Soil Type: <strong>${a.soil_type}</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">💧 Soil Moisture: <strong>${a.soil_moisture_pct}%</strong> (${a.soil_moisture_status})</div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">🌧️ 7-Day Rainfall: <strong>${a.rainfall_mm} mm</strong></div>
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">⚠️ Crop Risk: <strong>${a.crop_risk_level}</strong></div>
+            <div style="font-size: 0.75rem; color: #059669; font-weight: 600; margin-top: 4px;">
+              🌾 Recommended: ${(a.recommended_crops || []).join(", ")}
+            </div>
+            <button onclick="StakeholderUI.onDistrictChanged('${a.district}')" style="margin-top: 8px; width: 100%; padding: 5px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">
+              ${isFocused ? "✓ Focused District" : "Select District for Advisory"}
+            </button>
+          </div>
+        `);
+
+        this.agricultureMarkerLayer.addLayer(marker);
+
+        if (isFocused) {
+          const pulseRing = L.circleMarker(latLng, {
+            radius: 18,
+            color: "#10b981",
+            weight: 2,
+            opacity: 0.8,
+            fill: false,
+          });
+          this.agricultureMarkerLayer.addLayer(pulseRing);
+        }
+      });
+
+      if (latLngs.length > 0 && this.agricultureMap) {
+        if (latLngs.length === 1 && focusLatLng) {
+          this.agricultureMap.setView(focusLatLng, 9);
+        } else {
+          this.agricultureMap.fitBounds(L.latLngBounds(latLngs), { padding: [25, 25], maxZoom: 9 });
+        }
+      }
     }
   },
 
@@ -962,6 +1248,7 @@ const StakeholderUI = {
     const cardsGrid = document.getElementById("pub10DayCardsGrid");
     if (cardsGrid && d.forecast_10_day) {
       const getIconEmoji = (icon) => {
+        if (!icon) return "⛅";
         if (icon.includes("heavy")) return "⛈️";
         if (icon.includes("rain")) return "🌧️";
         if (icon.includes("lightning")) return "⚡";
@@ -1099,7 +1386,7 @@ const StakeholderUI = {
 
   copyWhatsAppText() {
     const card = (this.cachedData.public && this.cachedData.public.shareable_card) || {};
-    const text = card.whatsapp_text || `Weather in ${this.currentLocation}: Checked via WeatherTrust AI.`;
+    const text = card.whatsapp_text || `Weather in ${this.currentDistrict}, ${this.currentState}: Checked via WeatherTrust AI.`;
     navigator.clipboard.writeText(text).then(() => {
       alert("Weather update copied to clipboard! Paste directly into WhatsApp or SMS.");
     });
@@ -1223,7 +1510,6 @@ const StakeholderUI = {
             New Accuracy: <strong>${resp.new_accuracy}%</strong> (Gain: +${(resp.new_accuracy - resp.previous_accuracy).toFixed(2)}%) | ROC-AUC: <strong>${resp.roc_auc}</strong> | Duration: ${resp.training_duration_sec}s
           `;
         }
-        // Refresh admin data
         this.loadActivePortalData();
       })
       .catch((err) => {
@@ -1294,7 +1580,7 @@ const StakeholderUI = {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `WeatherTrust_Forecaster_${this.currentLocation}_Day${this.currentLeadDay}.csv`);
+    link.setAttribute("download", `WeatherTrust_Forecaster_${this.currentState}_${this.currentDistrict}_Day${this.currentLeadDay}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

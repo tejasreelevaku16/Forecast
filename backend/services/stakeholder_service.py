@@ -1502,22 +1502,34 @@ def get_disaster_portal_data(
         for d in district_rankings
     ]
     
-    # 5. Active Weather System / Cyclone Risk Monitor
+    # 5. Active Weather System / Hazard Risk Monitor
     curr_pressure = 1012.0
     if forecast.available and forecast.daily:
         curr_pressure = forecast.daily[0].pressure_hpa or 1012.0
     pressure_anomaly = round(1013.25 - curr_pressure, 1)
     
     is_coastal = "coastal" in state_meta.get("regime", "").lower() or "bay of bengal" in state_meta.get("regime", "").lower() or "arabian" in state_meta.get("regime", "").lower()
+    is_himalayan = "himalayan" in state_meta.get("regime", "").lower() or "alpine" in state_meta.get("regime", "").lower() or "montane" in state_meta.get("regime", "").lower()
+
+    if is_coastal:
+        system_name = f"{state_meta.get('code', 'IND')}-Trough & Low Pressure System" if pressure_anomaly > 3.0 else f"Bay/Arabian Marine System ({state_name})"
+        coastal_surge = "1.2m Astronomical Tide Surge Alert" if p2_wind > 40 else "Normal Sea-Level Water Activity"
+    elif is_himalayan:
+        system_name = f"Western Disturbance Activity ({state_name})" if pressure_anomaly > 2.0 else f"Orographic Weather Pattern ({state_name})"
+        coastal_surge = "Flash Inundation & Snowmelt Alert" if p1_rain > 20 else "Normal Stream Discharge"
+    else:
+        system_name = f"Continental Monsoonal Trough ({state_name})" if pressure_anomaly > 3.0 else f"Regional Weather System ({state_name})"
+        coastal_surge = "Localized Embankment Pressure" if p1_rain > 30 else "Normal River Basin Levels"
+
     cyclone_risk = {
-        "active_system_name": f"{state_meta.get('code', 'IND')}-Trough & Low Pressure System" if pressure_anomaly > 3.0 else f"Regional Weather System ({state_name})",
-        "system_category": "Well-Marked Low Pressure" if pressure_anomaly > 5.0 else ("Depression" if pressure_anomaly > 8.0 else "Normal Sea-Level Pressure"),
+        "active_system_name": system_name,
+        "system_category": "Well-Marked Low Pressure" if pressure_anomaly > 5.0 else ("Depression / Active Disturbance" if pressure_anomaly > 3.0 else "Normal Barometric Gradient"),
         "central_pressure_hpa": round(curr_pressure, 1),
         "pressure_drop_hpa": pressure_anomaly,
         "max_sustained_winds_kmh": round(p2_wind, 1),
         "estimated_landfall_window": f"{lead_day * 24} - {(lead_day + 1) * 24} Hours",
-        "cyclone_threat_level": "ELEVATED" if pressure_anomaly > 4.0 or p2_wind > 45 else "LOW / ROUTINE",
-        "coastal_surge_warning": "1.2m Astronomical Tide Surge Alert" if (p2_wind > 40 and is_coastal) else "Normal Water Level Activity",
+        "cyclone_threat_level": "ELEVATED" if (pressure_anomaly > 4.0 or p2_wind > 45) else "LOW / ROUTINE",
+        "coastal_surge_warning": coastal_surge,
     }
     
     # Heatwave risk monitor
@@ -1816,6 +1828,12 @@ def get_agriculture_portal_data(
             "is_focused": d_is_focused,
         })
     
+    focused_d_meta = next(
+        (d for d in state_meta.get("districts", []) if d["name"].lower() == district_name.lower() or d.get("city", "").lower() == district_name.lower()),
+        (state_meta.get("districts", [{}])[0] if state_meta.get("districts") else {})
+    )
+    focused_soil_type = focused_d_meta.get("soil_type", "Alluvial Loam")
+
     agri_res = {
         "location": loc_clean or district_name,
         "district": district_name,
@@ -1830,7 +1848,7 @@ def get_agriculture_portal_data(
         "reliable_rainfall_districts_count": reliable_count,
         "soil_moisture_pct": estimated_soil_moisture,
         "soil_moisture_status": moisture_status,
-        "soil_type": state_meta.get("districts", [{}])[0].get("soil_type", "Alluvial Loam"),
+        "soil_type": focused_soil_type,
         "sowing_advisory": sowing_advisory,
         "irrigation_recommendation": irrigation_rec,
         "crop_stress_indicators": crop_stress,

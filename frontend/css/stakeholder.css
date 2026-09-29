@@ -378,6 +378,10 @@
   z-index: 10;
 }
 
+.portal-map-frame .leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.3) brightness(0.75);
+}
+
 /* Tables & Rows */
 .stakeholder-table {
   width: 100%;

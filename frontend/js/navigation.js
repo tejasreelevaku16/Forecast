@@ -225,7 +225,13 @@ const AppRouter = {
         if (typeof window.DistrictPassport !== "undefined") {
           window.DistrictPassport.loadPassport(loc);
         }
-      }, 150);
+      }, 100);
+      setTimeout(() => {
+        if (typeof IndiaMapUI !== "undefined" && IndiaMapUI.map) {
+          IndiaMapUI.map.invalidateSize(true);
+          IndiaMapUI.fitIndiaBounds(false);
+        }
+      }, 300);
     }
 
     // Trigger Day-wise ML Predictions

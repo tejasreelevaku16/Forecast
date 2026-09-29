@@ -5,11 +5,35 @@ Smart India Hackathon (SIH) — Problem ID: 26079
 Title: AI-Based Forecast Bust Detection for Medium-Range Weather Forecasts
 """
 
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
+
+# Automatically load persistent .env configuration
+def _load_env():
+    env_file = BASE_DIR / ".env"
+    if env_file.exists():
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            try:
+                with open(env_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k, v = k.strip(), v.strip().strip("\"'")
+                            if k and k not in os.environ:
+                                os.environ[k] = v
+            except Exception as e:
+                print(f"[config] Notice loading .env: {e}")
+
+_load_env()
+
 DATA_DIR = BASE_DIR / "data"
 RAW_DATA_PATH = DATA_DIR / "raw" / "historical_forecast_vs_actual.csv"
 PROCESSED_DATA_PATH = DATA_DIR / "processed" / "features_dataset.csv"
@@ -21,9 +45,9 @@ MODEL_PATH = MODEL_DIR / "forecast_reliability_model.pkl"
 SAMPLE_DIR = DATA_DIR / "sample"
 
 # Server configuration
-HOST: str = "127.0.0.1"
-PORT: int = 8000
-DEBUG: bool = True
+HOST: str = os.getenv("HOST", "127.0.0.1")
+PORT: int = int(os.getenv("PORT", "8000"))
+DEBUG: bool = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
 
 # Platform & SIH Metadata
 APP_NAME: str = "WeatherTrust AI"
@@ -71,10 +95,11 @@ SUPPORTED_SECTORS: List[str] = [
     "Renewable Energy"
 ]
 
-# Live Weather API Settings (Open-Meteo: free, accurate, zero secret leakage)
+# Live Weather & GIS Settings (Open-Meteo & OSM: zero key leakage, built-in fallback)
 OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_GEOCODING_URL: str = "https://geocoding-api.open-meteo.com/v1/search"
-CARTO_API_KEY: str = "PASTE_MY_CARTO_KEY_HERE"
+MAP_API_KEY: str = os.getenv("MAP_API_KEY", "weathertrust_operational_gis_token_2026")
+CARTO_API_KEY: str = os.getenv("CARTO_API_KEY", "weathertrust_operational_gis_token_2026")
 API_TIMEOUT_SECONDS: int = 6
 
 # Forecast Bust Definition Criteria (NCMRWF / IMD Medium-Range Verification Standards)
