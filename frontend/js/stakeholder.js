@@ -379,7 +379,9 @@ const StakeholderUI = {
       return;
     }
 
-    const endpoint = `/api/stakeholder/${role}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}&location=${encodeURIComponent(loc)}&lead_day=${day}`;
+    const hasCoords = window.currentSelectedLat !== null && window.currentSelectedLat !== undefined && window.currentSelectedLon !== null && window.currentSelectedLon !== undefined;
+    const coordParams = hasCoords ? `&lat=${window.currentSelectedLat}&lon=${window.currentSelectedLon}` : "";
+    const endpoint = `/api/stakeholder/${role}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}&location=${encodeURIComponent(loc)}&lead_day=${day}${coordParams}`;
 
     fetch(endpoint, { signal: controller.signal })
       .then(async (r) => {

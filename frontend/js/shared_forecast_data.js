@@ -227,3 +227,205 @@ const WeatherTrustCommon = {
 
 // Expose globally
 window.WeatherTrustCommon = WeatherTrustCommon;
+
+// Restore the full selected location, including GPS coordinates, between visits.
+try {
+  const savedLocation = localStorage.getItem("weathertrust-authoritative-location");
+  if (savedLocation) {
+    const parsedLocation = JSON.parse(savedLocation);
+    if (parsedLocation && (parsedLocation.place || parsedLocation.name)) {
+      WeatherTrustCommon.setLocation(parsedLocation);
+    }
+  }
+} catch (_) {}
+
+// Cache GET responses for the SPA session so page-specific loaders can reuse
+// their own warmed data when a page is opened. Endpoints and payloads remain
+// separate; the cache key is the complete request URL.
+const WEATHERTRUST_API_CACHE_TTL = 5 * 60 * 1000;
+const WEATHERTRUST_API_CACHE_LIMIT = 128;
+const WEATHERTRUST_API_STALE_TTL = 24 * 60 * 60 * 1000;
+const WEATHERTRUST_API_SESSION_KEY = "weathertrust-api-cache-v1";
+const WEATHERTRUST_API_SESSION_LIMIT = 1536 * 1024;
+const weatherTrustApiCache = new Map();
+const weatherTrustApiInflight = new Map();
+const weatherTrustNativeFetch = window.fetch.bind(window);
+
+// Restore compact, successful page-specific responses for this browser tab.
+// This lets pages render immediately from their own last result while live
+// requests refresh in the background after a reload or brief connection loss.
+try {
+  const saved = JSON.parse(sessionStorage.getItem(WEATHERTRUST_API_SESSION_KEY) || "{}");
+  for (const [key, value] of Object.entries(saved)) {
+    if (value && value.savedAt && Date.now() - value.savedAt <= WEATHERTRUST_API_STALE_TTL) {
+      weatherTrustApiCache.set(key, {
+        ...value.record,
+        expiresAt: value.savedAt + WEATHERTRUST_API_CACHE_TTL,
+        savedAt: value.savedAt,
+      });
+    }
+  }
+} catch (_) {}
+
+function weatherTrustPersistApiResponse(key, record) {
+  // Large GIS responses are fetched on demand and should not consume browser
+  // storage needed by the location-specific page data.
+  if (record.body.length > 128 * 1024) return;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(WEATHERTRUST_API_SESSION_KEY) || "{}");
+    saved[key] = { savedAt: Date.now(), record };
+    let entries = Object.entries(saved).sort((a, b) => b[1].savedAt - a[1].savedAt);
+    let compact = Object.fromEntries(entries);
+    while (entries.length && JSON.stringify(compact).length > WEATHERTRUST_API_SESSION_LIMIT) {
+      entries.pop();
+      compact = Object.fromEntries(entries);
+    }
+    sessionStorage.setItem(WEATHERTRUST_API_SESSION_KEY, JSON.stringify(compact));
+  } catch (_) {}
+}
+
+function weatherTrustResponse(record) {
+  const headers = record.contentType ? { "Content-Type": record.contentType } : {};
+  if (record.stale) headers["X-WeatherTrust-Stale"] = "true";
+  return new Response(record.body, {
+    status: record.status,
+    statusText: record.statusText,
+    headers,
+  });
+}
+
+function weatherTrustAbortable(promise, signal) {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason || new DOMException("Aborted", "AbortError"));
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(signal.reason || new DOMException("Aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => { signal.removeEventListener("abort", onAbort); resolve(value); },
+      (error) => { signal.removeEventListener("abort", onAbort); reject(error); }
+    );
+  });
+}
+
+window.fetch = function weatherTrustCachedFetch(input, init = {}) {
+  const requestUrl = typeof input === "string" ? input : input.url;
+  const method = String(init.method || (typeof input === "string" ? "GET" : input.method) || "GET").toUpperCase();
+  let url;
+  try { url = new URL(requestUrl, window.location.href); } catch (_) { return weatherTrustNativeFetch(input, init); }
+
+  if (method !== "GET" || url.origin !== window.location.origin || !url.pathname.startsWith("/api/") || init.cache === "no-store") {
+    return weatherTrustNativeFetch(input, init);
+  }
+
+  const key = url.href;
+  const now = Date.now();
+  const cached = weatherTrustApiCache.get(key);
+  if (cached && cached.expiresAt > now) return Promise.resolve(weatherTrustResponse(cached));
+  const stale = cached && cached.savedAt && now - cached.savedAt <= WEATHERTRUST_API_STALE_TTL
+    ? { ...cached, stale: true }
+    : null;
+
+  let pending = weatherTrustApiInflight.get(key);
+  if (!pending) {
+    // Keep the shared network request alive when one page is left mid-load;
+    // other pages and the background warmer can still use its result.
+    const requestInit = { ...init };
+    delete requestInit.signal;
+    pending = weatherTrustNativeFetch(input, requestInit)
+      .then(async (response) => {
+        const body = await response.clone().text();
+        const record = {
+          body,
+          status: response.status,
+          statusText: response.statusText,
+          contentType: response.headers.get("content-type") || "",
+        };
+        if (response.ok) {
+          if (weatherTrustApiCache.size >= WEATHERTRUST_API_CACHE_LIMIT) {
+            weatherTrustApiCache.delete(weatherTrustApiCache.keys().next().value);
+          }
+          const savedAt = Date.now();
+          weatherTrustApiCache.set(key, { ...record, expiresAt: savedAt + WEATHERTRUST_API_CACHE_TTL, savedAt });
+          weatherTrustPersistApiResponse(key, record);
+        }
+        return response.ok || !stale ? record : stale;
+      })
+      .catch((error) => {
+        if (stale) return stale;
+        throw error;
+      })
+      .finally(() => weatherTrustApiInflight.delete(key));
+    weatherTrustApiInflight.set(key, pending);
+  }
+
+  return weatherTrustAbortable(pending, init.signal).then(weatherTrustResponse);
+};
+
+const weatherTrustPreloadRuns = new Map();
+WeatherTrustCommon.preloadPageData = function preloadPageData(location = this.getLocation()) {
+  const selected = location && typeof location === "object" ? location : { name: String(location || "Krishna District") };
+  const place = selected.place || selected.name || selected.city || "Krishna District";
+  const district = selected.district || place;
+  const state = selected.state || selected.region || "";
+  const lat = selected.latitude ?? selected.lat ?? null;
+  const lon = selected.longitude ?? selected.lon ?? null;
+  const sector = typeof currentSector !== "undefined" ? currentSector : "General Public";
+  const preloadKey = `${place.toLowerCase()}|${lat ?? ""}|${lon ?? ""}|${state.toLowerCase()}|${sector}`;
+  const existingRun = weatherTrustPreloadRuns.get(preloadKey);
+  if (existingRun && existingRun.expiresAt > Date.now()) return existingRun.promise;
+  const hasCoords = lat !== null && lon !== null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lon));
+  const enc = encodeURIComponent;
+  const gpsParams = hasCoords ? `&lat=${lat}&lon=${lon}` : "";
+  const regionParam = state ? `&region=${enc(state)}` : "";
+  let activeRole = "forecaster";
+  try { activeRole = localStorage.getItem("weathertrust_active_role") || activeRole; } catch (_) {}
+  const urls = [
+    `/api/weather/forecast?location=${enc(place)}${hasCoords ? `&lat=${lat}&lon=${lon}` : ""}${regionParam}`,
+    `/api/reliability/overview?location=${enc(place)}&lead_day=6&sector=${enc(sector)}${gpsParams}${regionParam}`,
+    `/api/reliability/daywise?location=${enc(place)}${hasCoords ? `&lat=${lat}&lon=${lon}` : ""}`,
+    `/api/reliability/uncertainty?location=${enc(place)}${hasCoords ? `&lat=${lat}&lon=${lon}` : ""}`,
+    `/api/drift/history?location=${enc(place)}${hasCoords ? `&lat=${lat}&lon=${lon}` : ""}`,
+    `/api/explain/bust?location=${enc(place)}&lead_day=6`,
+    `/api/explain/why-chain?location=${enc(place)}&lead_day=6`,
+    `/api/weather/digital-twin?location=${enc(place)}`,
+    `/api/weather/scene?location=${enc(place)}${hasCoords ? `&lat=${lat}&lon=${lon}` : ""}`,
+    `/api/insights/badge?location=${enc(place)}&lead_day=1${gpsParams}${regionParam}`,
+    `/api/alerts/reliability?location=${enc(place)}`,
+    `/api/intelligence/multi-agent?location=${enc(place)}&lead_day=6`,
+    `/api/reliability/passport?district=${enc(district)}`,
+    `/api/stakeholder/resource-optimization?location=${enc(place)}&lead_day=6`,
+    `/api/stakeholder/${activeRole}?state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&location=${enc(place)}&lead_day=6${gpsParams}`,
+    "/api/judge/calibration",
+    "/api/judge/metrics",
+    "/api/simulator/presets",
+    "/api/locations/hierarchy",
+    "/api/stakeholder/states",
+    "/api/map/states?day=1",
+    "/api/map/states?day=6",
+    "/api/map/india-reliability?day=1",
+    "/api/map/india-reliability?day=6",
+    `/api/stakeholder/agriculture?state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&location=${enc(place)}&lead_day=6${gpsParams}`,
+    `/api/stakeholder/disaster?state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&location=${enc(place)}&lead_day=6${gpsParams}`,
+    `/api/stakeholder/forecaster?state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&location=${enc(place)}&lead_day=6${gpsParams}`,
+    `/api/stakeholder/public?state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&location=${enc(place)}&lead_day=6${gpsParams}`,
+    "/api/stakeholder/admin",
+    `/api/stakeholder/agriculture/map?location=${enc(place)}&state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&lead_day=6`,
+    `/api/stakeholder/disaster/map?location=${enc(place)}&state=${enc(state || "Andhra Pradesh")}&district=${enc(district)}&lead_day=6`,
+    `/api/stakeholder/districts?state=${enc(state || "Andhra Pradesh")}`,
+  ];
+  if (hasCoords) {
+    urls.push(`/api/live-weather?latitude=${lat}&longitude=${lon}&location=${enc(place)}&region=${enc(state)}`);
+    urls.push(`/api/drift/summary?location=${enc(place)}&lat=${lat}&lon=${lon}`);
+  }
+
+  let cursor = 0;
+  const workers = Array.from({ length: 3 }, async () => {
+    while (cursor < urls.length) {
+      const url = urls[cursor++];
+      try { await window.fetch(url, { priority: "low" }); } catch (_) {}
+    }
+  });
+  const promise = Promise.all(workers);
+  weatherTrustPreloadRuns.set(preloadKey, { promise, expiresAt: Date.now() + WEATHERTRUST_API_CACHE_TTL });
+  return promise;
+};

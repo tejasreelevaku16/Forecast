@@ -78,6 +78,7 @@ const AppRouter = {
     this.setupLinkInterception();
     this.setupHamburgerMenu();
     this.setupPopStateListener();
+    this.monitorDataServer();
 
     const storedLocation = localStorage.getItem('weathertrust-selected-location');
     if (storedLocation) {
@@ -93,6 +94,50 @@ const AppRouter = {
 
     const initialRoute = this.getRouteFromUrl();
     this.navigateTo(initialRoute, false);
+    if (initialRoute !== "dashboard" && typeof loadDashboard === "function") {
+      // Build the dashboard forecast snapshot in the background even when a
+      // deep link opened another page, so dependent page data uses its location.
+      loadDashboard(window.selectedLocation || window.currentSelectedLocation || "Krishna District");
+    }
+
+    // Warm each page's own API payloads after the first view has started. The
+    // SPA response cache lets route loaders render from these results later.
+    const warmPageData = () => {
+      if (typeof WeatherTrustCommon !== "undefined" && typeof WeatherTrustCommon.preloadPageData === "function") {
+        WeatherTrustCommon.preloadPageData(window.selectedLocation || WeatherTrustCommon.getLocation());
+      }
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(warmPageData, { timeout: 1500 });
+    } else {
+      setTimeout(warmPageData, 1000);
+    }
+  },
+
+  monitorDataServer() {
+    if (window._weatherTrustHealthTimer) return;
+    const check = async () => {
+      const label = document.getElementById("backendStatusText");
+      const dot = document.getElementById("backendStatusDot");
+      if (!label || !dot) return;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      try {
+        const response = await fetch("/api/health", { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("Data server not ready");
+        label.textContent = "FastAPI Live";
+        dot.style.backgroundColor = "var(--risk-low)";
+        dot.style.opacity = "1";
+      } catch (_) {
+        label.textContent = "Waiting for data server";
+        dot.style.backgroundColor = "var(--risk-mod)";
+        dot.style.opacity = "0.65";
+      } finally {
+        clearTimeout(timeout);
+      }
+    };
+    check();
+    window._weatherTrustHealthTimer = setInterval(check, 10000);
   },
 
   getRouteFromUrl() {
@@ -195,10 +240,8 @@ const AppRouter = {
     // Dashboard View Activation
     if (pageSlug === "dashboard") {
       if (typeof loadDashboard === "function") {
-        loadDashboard(loc);
-      }
-      if (typeof window.MultiAgentIntelligence !== "undefined") {
-        window.MultiAgentIntelligence.loadIntelligence(loc, 6);
+        // Keep exact GPS coordinates and region when returning to Dashboard.
+        loadDashboard(window.selectedLocation || loc);
       }
     }
 
@@ -256,7 +299,12 @@ const AppRouter = {
 
     // Synchronize Live Tracking page location hierarchy
     if (pageSlug === "live-weather" && typeof LiveTrackingUI !== "undefined" && typeof LiveTrackingUI.findAndSelectLocation === "function") {
-      LiveTrackingUI.findAndSelectLocation(loc);
+      const selected = window.selectedLocation;
+      if (selected && selected.latitude !== null && selected.latitude !== undefined && selected.longitude !== null && selected.longitude !== undefined) {
+        LiveTrackingUI.selectLocation(selected.state || "India", selected.place || selected.name || loc, false, selected);
+      } else {
+        LiveTrackingUI.findAndSelectLocation(loc);
+      }
     }
 
     // Trigger Forecast Drift Monitor

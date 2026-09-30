@@ -72,11 +72,20 @@ def _safe_get(url: str, timeout: int = config.API_TIMEOUT_SECONDS) -> requests.R
     """Executes HTTP GET with certifi or fallback to verify=False if Windows SSL roots are absent."""
     try:
         import certifi
-        return requests.get(url, timeout=timeout, verify=certifi.where())
-    except Exception:
+        try:
+            return requests.get(url, timeout=timeout, verify=certifi.where())
+        except requests.exceptions.SSLError:
+            # Only retry certificate failures; retrying timeouts or connection
+            # errors doubles the request latency without improving recovery.
+            pass
+    except ImportError:
+        pass
+    try:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         return requests.get(url, timeout=timeout, verify=False)
+    except requests.exceptions.SSLError:
+        raise
 
 
 def geocode_location(location_name: str) -> Optional[Dict[str, Any]]:

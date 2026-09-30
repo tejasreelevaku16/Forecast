@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import joblib
 import numpy as np
+import threading
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -36,6 +37,9 @@ from ml.event_classifier import classify_synoptic_weather_event
 
 # Global Model Artifact Cache
 _MODEL_BUNDLE: Optional[Dict[str, Any]] = None
+_OVERVIEW_CACHE: Dict[tuple, tuple] = {}
+_OVERVIEW_CACHE_TTL_SECONDS = 300
+_OVERVIEW_CACHE_LOCK = threading.Lock()
 
 
 def get_model_bundle() -> Optional[Dict[str, Any]]:
@@ -66,6 +70,51 @@ def get_forecast_reliability_overview(
     """
     Computes ML-backed reliability assessment and bust probability for Day 1–10 from live forecast data.
     """
+    # Page navigation often requests the same overview repeatedly. Reuse the
+    # location and sector result while its underlying forecast is still fresh.
+    cache_key = (
+        str(location or "").strip().lower(),
+        round(float(lat), 4) if lat is not None else None,
+        round(float(lon), 4) if lon is not None else None,
+        str(region or "").strip().lower(),
+        int(focus_lead_day),
+        str(sector or "").strip().lower(),
+    )
+    now = datetime.now()
+    with _OVERVIEW_CACHE_LOCK:
+        cached = _OVERVIEW_CACHE.get(cache_key)
+        if cached and (now - cached[0]).total_seconds() < _OVERVIEW_CACHE_TTL_SECONDS:
+            return cached[1]
+
+    result = _compute_forecast_reliability_overview(
+        location=location,
+        focus_lead_day=focus_lead_day,
+        sector=sector,
+        lat=lat,
+        lon=lon,
+        region=region,
+    )
+    with _OVERVIEW_CACHE_LOCK:
+        expired = [
+            key for key, (created_at, _) in _OVERVIEW_CACHE.items()
+            if (now - created_at).total_seconds() >= _OVERVIEW_CACHE_TTL_SECONDS
+        ]
+        for key in expired:
+            _OVERVIEW_CACHE.pop(key, None)
+        if len(_OVERVIEW_CACHE) >= 512 and cache_key not in _OVERVIEW_CACHE:
+            _OVERVIEW_CACHE.pop(next(iter(_OVERVIEW_CACHE)))
+        _OVERVIEW_CACHE[cache_key] = (now, result)
+    return result
+
+
+def _compute_forecast_reliability_overview(
+    location: str = "Vijayawada",
+    focus_lead_day: int = 6,
+    sector: str = "General Public",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+    region: Optional[str] = None,
+) -> ReliabilityOverview:
     bundle = get_model_bundle()
     forecast_data = get_full_forecast_response(location_query=location, lat=lat, lon=lon, region=region)
     if not forecast_data.available or not forecast_data.daily or len(forecast_data.daily) == 0:

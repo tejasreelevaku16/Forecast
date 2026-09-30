@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="/css/stakeholder.css">
   <link rel="stylesheet" href="/css/sih_differentiators.css">
   <link rel="stylesheet" href="/css/background.css">
+  <link rel="stylesheet" href="/css/responsive.css">
 </head>
 <body>
 
@@ -212,8 +213,8 @@
 
         <!-- Live Server Status -->
         <div class="header-status">
-          <div class="live-dot"></div>
-          <span>FastAPI Live</span>
+          <div class="live-dot" id="backendStatusDot"></div>
+          <span id="backendStatusText" aria-live="polite">Connecting to data server…</span>
         </div>
       </header>
 

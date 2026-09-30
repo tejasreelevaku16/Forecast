@@ -449,6 +449,9 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
     window.currentSelectedLocation = resolvedLocation.place;
     window.currentSelectedLat = resolvedLat;
     window.currentSelectedLon = resolvedLon;
+    if (typeof WeatherTrustCommon !== 'undefined' && typeof WeatherTrustCommon.preloadPageData === 'function') {
+      WeatherTrustCommon.preloadPageData(resolvedLocation);
+    }
 
     // Update Central Dashboard Overview Entrypoint
     updateDashboardHeroCards(weatherData, reliabilityData);
@@ -700,7 +703,7 @@ function setupEventListeners() {
                 const matchedLoc = data.current.location;
                 if (searchInput) searchInput.value = matchedLoc;
                 pills.forEach(p => p.classList.remove('active'));
-                updateAppLocation(matchedLoc, latitude, longitude);
+                updateAppLocation(matchedLoc, latitude, longitude, data.current.region || null);
               }
             }
           } catch (err) {
@@ -716,7 +719,7 @@ function setupEventListeners() {
           locateBtn.innerHTML = '<span>📍</span> Locate';
           locateBtn.disabled = false;
         },
-        { timeout: 10000, enableHighAccuracy: true }
+        { timeout: 5000, maximumAge: 300000, enableHighAccuracy: false }
       );
     });
   }
@@ -756,10 +759,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof LiveTrackingUI !== 'undefined' && typeof LiveTrackingUI.init === 'function') {
     LiveTrackingUI.init();
   }
-  const currentRoute = (typeof AppRouter !== 'undefined' && typeof AppRouter.getRouteFromUrl === 'function')
-    ? AppRouter.getRouteFromUrl()
-    : 'dashboard';
-  if (currentRoute === 'dashboard') {
+  // AppRouter already activates and loads the initial route from its own
+  // DOMContentLoaded handler. Keep this fallback for standalone embedding.
+  if (typeof AppRouter === 'undefined') {
     const activePill = document.querySelector('.pill-btn.active');
     const initialLoc = window.currentSelectedLocation || (activePill ? activePill.getAttribute('data-location') : "Delhi");
     loadDashboard(initialLoc);

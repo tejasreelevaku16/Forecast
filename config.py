@@ -100,7 +100,7 @@ OPEN_METEO_FORECAST_URL: str = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_GEOCODING_URL: str = "https://geocoding-api.open-meteo.com/v1/search"
 MAP_API_KEY: str = os.getenv("MAP_API_KEY", "weathertrust_operational_gis_token_2026")
 CARTO_API_KEY: str = os.getenv("CARTO_API_KEY", "weathertrust_operational_gis_token_2026")
-API_TIMEOUT_SECONDS: int = 6
+API_TIMEOUT_SECONDS: int = 5
 
 # Forecast Bust Definition Criteria (NCMRWF / IMD Medium-Range Verification Standards)
 RAIN_BUST_ABSOLUTE_DIFF_MM: float = 25.0
