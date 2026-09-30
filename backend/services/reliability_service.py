@@ -32,6 +32,7 @@ from backend.services.risk_classifier import classify_bust_risk
 from backend.services.historical_error_service import get_district_historical_error_prior
 from ml.feature_engineering import extract_features_for_inference
 from ml.explain import compute_shap_explanations, explain_prediction
+from ml.event_classifier import classify_synoptic_weather_event
 
 # Global Model Artifact Cache
 _MODEL_BUNDLE: Optional[Dict[str, Any]] = None
@@ -133,6 +134,17 @@ def get_forecast_reliability_overview(
         hist_prior_info = get_district_historical_error_prior(location, lead_day=d)
         reg_prior = hist_prior_info.get("historical_bust_rate", 0.35)
 
+        # Centralized Event Classification
+        _, synoptic_event, _ = classify_synoptic_weather_event(
+            month=month,
+            rainfall_mm=fc_rain,
+            temp_c=fc_temp,
+            pressure_hpa=est_pressure,
+            wind_speed_kmh=fc_wind,
+            humidity_pct=fc_humidity,
+            latitude=lat
+        )
+
         # Build feature vector & run ML model
         if bundle is not None:
             model = bundle["model"]
@@ -150,7 +162,7 @@ def get_forecast_reliability_overview(
                 drift_rainfall=drift_rain,
                 month=month,
                 historical_error_prior=reg_prior,
-                weather_event_type="Heavy Rainfall" if fc_rain >= 25 else "Active Monsoon"
+                weather_event_type=synoptic_event
             )
             x_scaled = scaler.transform(x_vec)
             prob_raw = float(model.predict_proba(x_scaled)[0, 1])
@@ -198,27 +210,55 @@ def get_forecast_reliability_overview(
 
             # SHAP-driven explainability factors
             if bundle is not None:
+                lead_sq = float(d ** 2)
+                p_drop = max(0.0, 1013.25 - est_pressure)
+                conv_inst = (fc_rain * fc_humidity) / 100.0
+                rain_var = fc_rain * 0.35 + drift_rain * 0.65
+                is_cycl = 1.0 if synoptic_event in ["Cyclone", "Monsoon Depression", "Heavy Rainfall"] else 0.0
+                is_hw = 1.0 if synoptic_event == "Heat Wave" or fc_temp >= 38.0 else 0.0
+
                 feat_dict = {
                     "lead_day": float(d),
+                    "lead_day_sq": lead_sq,
                     "forecast_rainfall": float(fc_rain),
                     "forecast_temp": float(fc_temp),
                     "forecast_pressure": float(est_pressure),
                     "humidity": float(fc_humidity),
                     "wind_speed": float(fc_wind),
                     "run_drift_rainfall_mm": float(drift_rain),
-                    "pressure_drop": max(0.0, 1013.25 - est_pressure),
-                    "convective_instability": (fc_rain * fc_humidity) / 100.0,
-                    "rainfall_variability": fc_rain * 0.35 + drift_rain * 0.65,
+                    "pressure_drop": p_drop,
+                    "convective_instability": conv_inst,
+                    "rainfall_variability": rain_var,
+                    "sin_month": float(np.sin(2 * np.pi * month / 12.0)),
+                    "cos_month": float(np.cos(2 * np.pi * month / 12.0)),
                     "historical_error_prior": float(reg_prior),
+                    "is_cyclone_or_depression": is_cycl,
+                    "is_heat_wave": is_hw,
                 }
-                raw_reasons = explain_prediction(
+                shap_res = compute_shap_explanations(
                     feature_dict=feat_dict,
                     feature_names=bundle["feature_names"],
                     raw_model=bundle.get("raw_model", bundle["model"]),
                     scaler=bundle["scaler"],
                     bust_prob_pct=bust_prob,
                 )
-                focus_reasons = [ExplainabilityFactor(**r) for r in raw_reasons]
+                focus_reasons = []
+                top_feats = shap_res.get("top_features", [])
+                for idx, f in enumerate(top_feats[:4]):
+                    feat_name = f.get("feature", "Factor")
+                    direction = f.get("direction", "Negative")
+                    val = f.get("value", 0.0)
+                    unit = f.get("unit", "")
+                    impact = f.get("impact", 0.5)
+                    severity = "high" if impact >= 0.6 else ("moderate" if impact >= 0.3 else "low")
+                    icon_type = "drift" if "Drift" in feat_name else ("variability" if "Rain" in feat_name or "Convective" in feat_name else "error")
+                    focus_reasons.append(ExplainabilityFactor(
+                        id=f"shap_factor_{idx+1}",
+                        icon_type=icon_type,
+                        title=f"{feat_name} ({f.get('shap_value', 0.0):+.2f} SHAP)",
+                        description=f"Current: {val} {unit}. {'Elevates bust uncertainty' if direction == 'Negative' else 'Stabilizes confidence'} under shap.TreeExplainer.",
+                        severity=severity
+                    ))
 
     # Focus drift snapshot
     focus_drift = ForecastDriftSnapshot(
@@ -349,8 +389,10 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
             "lead_day": lead_day,
             "confidence": 0,
             "bust_probability": 0,
+            "bust_probability_pct": 0,
             "risk": "Unknown",
-            "summary": "Explainability analysis unavailable for this location.",
+            "risk_level": "Unknown",
+            "summary": "Explanation unavailable because the reliability model has not produced an explanation for this location.",
             "top_features": [],
             "recommendation": "Select a supported location or check connection."
         }
@@ -373,9 +415,22 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
 
     hist_prior_info = get_district_historical_error_prior(location, lead_day=lead_day)
     reg_prior = hist_prior_info.get("historical_bust_rate", 0.35)
+    month = datetime.now().month
+
+    _, synoptic_event, _ = classify_synoptic_weather_event(
+        month=month,
+        rainfall_mm=fc_rain,
+        temp_c=fc_temp,
+        pressure_hpa=est_pressure,
+        wind_speed_kmh=fc_wind,
+        humidity_pct=fc_humidity,
+    )
+    is_cycl = 1.0 if synoptic_event in ["Cyclone", "Monsoon Depression", "Heavy Rainfall"] else 0.0
+    is_hw = 1.0 if synoptic_event == "Heat Wave" or fc_temp >= 38.0 else 0.0
 
     feat_dict = {
         "lead_day": float(lead_day),
+        "lead_day_sq": float(lead_day ** 2),
         "forecast_rainfall": float(fc_rain),
         "forecast_temp": float(fc_temp),
         "forecast_pressure": float(est_pressure),
@@ -385,7 +440,11 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
         "pressure_drop": max(0.0, 1013.25 - est_pressure),
         "convective_instability": (fc_rain * fc_humidity) / 100.0,
         "rainfall_variability": fc_rain * 0.35 + drift_rain * 0.65,
+        "sin_month": float(np.sin(2 * np.pi * month / 12.0)),
+        "cos_month": float(np.cos(2 * np.pi * month / 12.0)),
         "historical_error_prior": float(reg_prior),
+        "is_cyclone_or_depression": is_cycl,
+        "is_heat_wave": is_hw,
     }
 
     if bundle is not None:
@@ -398,9 +457,6 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
         )
     else:
         shap_res = {
-            "confidence": day_item.reliability_score,
-            "bust_probability": day_item.bust_probability_pct,
-            "risk": day_item.risk_level.title(),
             "summary": "Forecast stability determined by calibrated atmospheric lead-day decay.",
             "top_features": [
                 {"feature": "Pressure Drop", "impact": 0.42, "direction": "Negative"},
@@ -414,4 +470,9 @@ def get_shap_explainability_detail(location: str = "Vijayawada", lead_day: int =
     shap_res["location"] = location
     shap_res["lead_day"] = lead_day
     shap_res["target_date"] = day_item.date
+    shap_res["confidence"] = day_item.reliability_score
+    shap_res["bust_probability"] = day_item.bust_probability_pct
+    shap_res["bust_probability_pct"] = day_item.bust_probability_pct
+    shap_res["risk"] = day_item.risk_level.title()
+    shap_res["risk_level"] = day_item.risk_level.title()
     return shap_res

@@ -146,6 +146,64 @@ def api_agriculture_portal(
         return _stakeholder_error("agriculture", location or district or state, e)
 
 
+@router.get("/agriculture/map", summary="Agriculture Agro-Meteorological Map Data")
+def api_agriculture_map(
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
+    lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+) -> Dict[str, Any]:
+    """Provides district-level agro-meteorological map data, soil moisture, and crop suitability."""
+    try:
+        portal_data = get_agriculture_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)
+        return {
+            "status": "success",
+            "role": "agriculture",
+            "location": location or district or state or "Krishna District",
+            "lead_day": lead_day,
+            "map_data": portal_data.get("agro_map_data", []),
+            "kpis": {
+                "reliable_districts": portal_data.get("reliable_rainfall_districts_count", 0),
+                "crop_risk_level": portal_data.get("crop_risk_level", "Moderate"),
+                "irrigation_need": portal_data.get("irrigation_need", "Postpone"),
+                "rainfall_reliability": portal_data.get("rainfall_reliability_score", 75),
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e), "map_data": []}
+
+
+@router.get("/disaster/map", summary="Disaster Management Flood Risk Map Data")
+def api_disaster_map(
+    location: Optional[str] = Query(None, description="City or district name"),
+    state: Optional[str] = Query(None, description="Optional state name"),
+    district: Optional[str] = Query(None, description="Optional district name"),
+    lead_day: int = Query(6, ge=1, le=10, description="Lead day (1 to 10)"),
+    lat: Optional[float] = Query(None, description="Optional latitude"),
+    lon: Optional[float] = Query(None, description="Optional longitude"),
+) -> Dict[str, Any]:
+    """Provides district-level inundation, flood risk, and 72h accumulation map data."""
+    try:
+        portal_data = get_disaster_portal_data(location=location, state=state, district=district, focus_lead_day=lead_day, lat=lat, lon=lon)
+        return {
+            "status": "success",
+            "role": "disaster",
+            "location": location or district or state or "Krishna District",
+            "lead_day": lead_day,
+            "map_data": portal_data.get("flood_risk_map_data", []),
+            "kpis": {
+                "red_alerts": portal_data.get("red_alert_districts_count", 0),
+                "population_at_risk": portal_data.get("population_at_risk_total", 0),
+                "critical_zones": portal_data.get("critical_rainfall_zones_count", 0),
+                "active_systems": portal_data.get("active_weather_systems_count", 1),
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e), "map_data": []}
+
+
 @router.get("/public", summary="Public Citizen Portal Weather & Reliability Data")
 def api_public_portal(
     location: Optional[str] = Query(None, description="City or district name"),

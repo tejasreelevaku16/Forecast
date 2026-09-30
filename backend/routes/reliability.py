@@ -22,6 +22,11 @@ def _clean_str(val, default):
         return default
     return str(val)
 
+def _clean_optional_str(val):
+    if val is None or hasattr(val, "default"):
+        return None
+    return str(val)
+
 def _clean_int(val, default):
     if val is None or hasattr(val, "default"):
         return default
@@ -29,6 +34,14 @@ def _clean_int(val, default):
         return int(val)
     except (ValueError, TypeError):
         return default
+
+def _clean_float(val):
+    if val is None or hasattr(val, "default"):
+        return None
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
 
 @router.get("/overview", response_model=ReliabilityOverview, summary="Get Forecast Trust Overview")
 def trust_overview(
@@ -46,7 +59,10 @@ def trust_overview(
     loc = _clean_str(location, "Krishna District")
     day = _clean_int(lead_day, 6)
     sec = _clean_str(sector, "General Public")
-    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec, lat=lat, lon=lon, region=region)
+    c_lat = _clean_float(lat)
+    c_lon = _clean_float(lon)
+    c_reg = _clean_optional_str(region)
+    return get_forecast_reliability_overview(location=loc, focus_lead_day=day, sector=sec, lat=c_lat, lon=c_lon, region=c_reg)
 
 
 @router.get("/daywise", summary="Get Day 1 to Day 10 Independent ML Predictions (SIH Feature 2)")
@@ -61,7 +77,11 @@ def api_daywise_reliability(
     Produces independent ML predictions for every lead day (Day 1 through Day 10)
     with Confidence, Bust Probability, Risk Category, SHAP summary, Drift, and Uncertainty.
     """
-    return get_daywise_reliability(location=location, lat=lat, lon=lon, region=region)
+    loc = _clean_str(location, "Vijayawada")
+    c_lat = _clean_float(lat)
+    c_lon = _clean_float(lon)
+    c_reg = _clean_optional_str(region)
+    return get_daywise_reliability(location=loc, lat=c_lat, lon=c_lon, region=c_reg)
 
 
 @router.get("/uncertainty", summary="Get Forecast Uncertainty & Variability Profile (SIH Feature 3)")

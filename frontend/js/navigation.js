@@ -150,7 +150,7 @@ const AppRouter = {
 
     // Update browser URL & history
     if (pushHistory) {
-      window.history.pushState({ page: target }, "", `/${target}`);
+      window.history.pushState({ page: target, original: pageSlug }, "", `/${pageSlug}`);
     }
 
     // Scroll to top of main content
@@ -161,7 +161,7 @@ const AppRouter = {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Handle view-specific lifecycle events
-    this.onPageActivated(target);
+    this.onPageActivated(target, pageSlug);
   },
 
   onPageDeactivated(pageSlug) {
@@ -180,7 +180,7 @@ const AppRouter = {
     }
   },
 
-  onPageActivated(pageSlug) {
+  onPageActivated(pageSlug, rawSlug) {
     const loc = window.currentSelectedLocation || (typeof currentLocation !== "undefined" ? currentLocation : "Krishna District");
 
     // Weather Scene Animator Lifecycle (Active only on Dashboard)
@@ -293,9 +293,36 @@ const AppRouter = {
 
     // Trigger Stakeholder Workspace & Resource Optimization AI
     if (pageSlug === "stakeholder") {
+      const explicitRole = (rawSlug && ["agriculture", "disaster", "forecaster", "public", "admin"].includes(rawSlug.toLowerCase()))
+        ? rawSlug.toLowerCase()
+        : null;
+
       setTimeout(() => {
         if (typeof StakeholderUI !== "undefined") {
-          StakeholderUI.init();
+          if (explicitRole) {
+            StakeholderUI.switchRole(explicitRole, true);
+          } else {
+            StakeholderUI.init();
+          }
+          // Multiple invalidation passes to guarantee maps render crisply across page navigations
+          setTimeout(() => {
+            if (StakeholderUI.activeRole === "agriculture" && StakeholderUI.agricultureMap) {
+              StakeholderUI.agricultureMap.invalidateSize();
+            } else if (StakeholderUI.activeRole === "disaster" && StakeholderUI.disasterMap) {
+              StakeholderUI.disasterMap.invalidateSize();
+            } else if (StakeholderUI.activeRole === "forecaster" && StakeholderUI.forecasterMap) {
+              StakeholderUI.forecasterMap.invalidateSize();
+            }
+          }, 100);
+          setTimeout(() => {
+            if (StakeholderUI.activeRole === "agriculture" && StakeholderUI.agricultureMap) {
+              StakeholderUI.agricultureMap.invalidateSize();
+            } else if (StakeholderUI.activeRole === "disaster" && StakeholderUI.disasterMap) {
+              StakeholderUI.disasterMap.invalidateSize();
+            } else if (StakeholderUI.activeRole === "forecaster" && StakeholderUI.forecasterMap) {
+              StakeholderUI.forecasterMap.invalidateSize();
+            }
+          }, 300);
         } else if (typeof window.initStakeholderWorkspace === "function") {
           window.initStakeholderWorkspace();
         }

@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -155,6 +155,46 @@ def api_live_tracking(
     clean_loc = str(location) if location and not hasattr(location, "default") else "Vijayawada"
     clean_reg = str(region) if region and not hasattr(region, "default") else None
     return get_live_tracking_data(location=clean_loc, lat=final_lat, lon=final_lon, region=clean_reg)
+
+
+@app.get("/api/map/config", tags=["Interactive India Map"])
+def api_map_config():
+    """Returns persistent map configuration status without leaking private secrets."""
+    has_key = bool(config.MAP_API_KEY and config.MAP_API_KEY != "PASTE_MY_CARTO_KEY_HERE")
+    return {
+        "status": "configured" if has_key else "default",
+        "provider": "CARTO / OpenStreetMap",
+        "has_key": has_key,
+        "tile_style": "dark_all",
+    }
+
+
+@app.get("/api/agriculture/map", tags=["Stakeholder Workspace"])
+def direct_agriculture_map(
+    location: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    lead_day: int = Query(6, ge=1, le=10),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
+):
+    """Direct endpoint: GET /api/agriculture/map."""
+    from backend.routes.stakeholder import api_agriculture_map
+    return api_agriculture_map(location=location, state=state, district=district, lead_day=lead_day, lat=lat, lon=lon)
+
+
+@app.get("/api/disaster/map", tags=["Stakeholder Workspace"])
+def direct_disaster_map(
+    location: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    district: Optional[str] = Query(None),
+    lead_day: int = Query(6, ge=1, le=10),
+    lat: Optional[float] = Query(None),
+    lon: Optional[float] = Query(None),
+):
+    """Direct endpoint: GET /api/disaster/map."""
+    from backend.routes.stakeholder import api_disaster_map
+    return api_disaster_map(location=location, state=state, district=district, lead_day=lead_day, lat=lat, lon=lon)
 
 
 # Static Frontend Mounting & SPA Page Routing
