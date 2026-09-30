@@ -8,6 +8,7 @@
 let mapInstance = null;
 let currentLocation = "Krishna District";
 let currentSector = "General Public";
+let dashboardLoadSequence = 0;
 
 /**
  * Global Loading and Error State Helpers
@@ -384,6 +385,7 @@ function selectSearchResult(result) {
 }
 
 async function loadDashboard(locationInput, sector = currentSector, lat = null, lon = null, state = null) {
+  const requestSequence = ++dashboardLoadSequence;
   const reliabilityUi = typeof window !== 'undefined' ? window.ReliabilityUI : undefined;
   const selectedLocation = normalizeLocationSelection(locationInput, lat, lon, state);
   const locationQuery = selectedLocation.place;
@@ -423,11 +425,12 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
       ReliabilityUI.fetchOverview(locationQuery, 6, sector, lat, lon, state),
       DriftUI.fetchDriftHistory(locationQuery, lat, lon),
     ]);
-    const insightsData = typeof WeatherTrustInsightsUI !== 'undefined'
-      ? await WeatherTrustInsightsUI.fetchInsights(weatherData, reliabilityData, reliabilityData?.focus_lead_day || 6)
-      : null;
-    window.currentWeatherInsights = insightsData;
-    if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.renderAll(insightsData);
+    if (requestSequence !== dashboardLoadSequence || (typeof AppRouter !== 'undefined' && AppRouter.currentPage !== 'dashboard')) return;
+    // Start secondary insight work without making the core weather and
+    // reliability cards wait for it.
+    const insightsPromise = typeof WeatherTrustInsightsUI !== 'undefined'
+      ? WeatherTrustInsightsUI.fetchInsights(weatherData, reliabilityData, reliabilityData?.focus_lead_day || 6).catch(() => null)
+      : Promise.resolve(null);
 
     // Resolve exact coordinates and state dynamically from returned weather data
     const resolvedLat = (lat !== null && !isNaN(lat)) ? Number(lat) : (weatherData && weatherData.current ? Number(weatherData.current.latitude) : null);
@@ -449,42 +452,44 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
     window.currentSelectedLocation = resolvedLocation.place;
     window.currentSelectedLat = resolvedLat;
     window.currentSelectedLon = resolvedLon;
-    if (typeof WeatherTrustCommon !== 'undefined' && typeof WeatherTrustCommon.preloadPageData === 'function') {
-      WeatherTrustCommon.preloadPageData(resolvedLocation);
-    }
 
-    // Update Central Dashboard Overview Entrypoint
+    // Paint the primary data as soon as its three requests finish.
     updateDashboardHeroCards(weatherData, reliabilityData);
-    hideLoading();
 
-    // Update Weather Scene Engine with exact coordinates and existing score
-    if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
-      WeatherSceneEngine.loadSceneForLocation(locationQuery, resolvedLat, resolvedLon, reliabilityData?.reliability_score);
-    }
-
-    // Populate weather elements for seamless transition if user clicks into details
     if (weatherData && weatherData.available !== false && weatherData.current) {
       WeatherUI.renderCurrentWeather(weatherData.current);
       WeatherUI.renderHourlyTimeline(weatherData.hourly);
-      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData, insightsData);
+      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData);
       WeatherUI.renderAlerts(weatherData.alerts);
-
       if (typeof renderHourlyTrendChart === 'function') {
         renderHourlyTrendChart(weatherData.hourly);
       }
     }
 
-    // Forecast Trust Overview Hero
     if (reliabilityData && reliabilityUi && typeof reliabilityUi.renderHero === 'function') {
       reliabilityUi.renderHero(reliabilityData);
       if (typeof renderBustRiskChart === 'function' && reliabilityData.available !== false) {
         renderBustRiskChart(reliabilityData.lead_days);
       }
     }
+    if (driftData) DriftUI.renderDriftSection(driftData);
+    hideLoading();
 
-    // Drift Hero Card Snapshot
-    if (driftData) {
-      DriftUI.renderDriftSection(driftData);
+    // Defer cross-page warming until after the visible dashboard has painted.
+    const warmOtherPages = () => {
+      if (typeof WeatherTrustCommon !== 'undefined' && typeof WeatherTrustCommon.preloadPageData === 'function') {
+        WeatherTrustCommon.preloadPageData(resolvedLocation);
+      }
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(warmOtherPages, { timeout: 2000 });
+    } else {
+      setTimeout(warmOtherPages, 1200);
+    }
+
+    // Update Weather Scene Engine with exact coordinates and existing score
+    if (typeof WeatherSceneEngine !== 'undefined' && WeatherSceneEngine.loadSceneForLocation) {
+      WeatherSceneEngine.loadSceneForLocation(locationQuery, resolvedLat, resolvedLon, reliabilityData?.reliability_score);
     }
 
     // Alerts Badge Count
@@ -495,7 +500,13 @@ async function loadDashboard(locationInput, sector = currentSector, lat = null, 
       window.MultiAgentIntelligence.loadIntelligence(locationQuery, 6);
     }
 
-    hideLoading();
+    const insightsData = await insightsPromise;
+    if (requestSequence !== dashboardLoadSequence || (typeof AppRouter !== 'undefined' && AppRouter.currentPage !== 'dashboard')) return;
+    window.currentWeatherInsights = insightsData;
+    if (typeof WeatherTrustInsightsUI !== 'undefined') WeatherTrustInsightsUI.renderAll(insightsData);
+    if (weatherData && weatherData.available !== false && weatherData.current) {
+      WeatherUI.renderDailyForecast(weatherData.daily, reliabilityData, insightsData);
+    }
   } catch (err) {
     console.error("loadDashboard error:", err);
     hideLoading();

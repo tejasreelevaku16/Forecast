@@ -94,14 +94,10 @@ const AppRouter = {
 
     const initialRoute = this.getRouteFromUrl();
     this.navigateTo(initialRoute, false);
-    if (initialRoute !== "dashboard" && typeof loadDashboard === "function") {
-      // Build the dashboard forecast snapshot in the background even when a
-      // deep link opened another page, so dependent page data uses its location.
-      loadDashboard(window.selectedLocation || window.currentSelectedLocation || "Krishna District");
-    }
 
-    // Warm each page's own API payloads after the first view has started. The
-    // SPA response cache lets route loaders render from these results later.
+    // Warm each page's own API payloads after the opened page has started.
+    // Avoid loading the hidden dashboard as well: that duplicates expensive
+    // forecast work on deep links and competes with the page the user opened.
     const warmPageData = () => {
       if (typeof WeatherTrustCommon !== "undefined" && typeof WeatherTrustCommon.preloadPageData === "function") {
         WeatherTrustCommon.preloadPageData(window.selectedLocation || WeatherTrustCommon.getLocation());

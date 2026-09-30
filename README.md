@@ -153,3 +153,19 @@ py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 - **Model Calibration & Reliability**: `http://127.0.0.1:8000/calibration`
 - **Explainable AI (SHAP)**: `http://127.0.0.1:8000/explain`
 - **Interactive Swagger API Docs**: `http://127.0.0.1:8000/docs`
+
+### Deploy to Render
+
+Create a **Python Web Service** from the repository's `main` branch (the frontend
+must be served by FastAPI so its `/api/...` requests reach the backend). Use:
+
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- **Health check path:** `/api/health`
+- **Python version:** pinned by `.python-version`
+
+For an always-available service, select an always-on paid compute plan. Render's
+free web services spin down after 15 minutes without requests, so their first
+request after inactivity can have a cold-start delay. No hosting plan can
+guarantee zero latency; this app caches successful page data and paints the
+dashboard's core weather/reliability data before slower secondary insights.
