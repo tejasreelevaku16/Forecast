@@ -36,6 +36,11 @@ video {
 }
 
 @media (max-width: 1024px) {
+  /* Allow the fixed mobile/tablet drawer to stack above the page overlay. */
+  .app-container {
+    z-index: auto;
+  }
+
   .hero-grid,
   .charts-grid,
   .map-layout-grid {
